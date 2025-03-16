@@ -32,6 +32,28 @@ export interface Agency {
 }
 
 /**
+ * Agency Model type alias for database operations
+ */
+export type AgencyModel = Agency;
+
+/**
+ * Input type for creating a new agency
+ */
+export interface CreateAgencyInput {
+  name: string;
+  slug?: string;
+}
+
+/**
+ * Input type for updating an agency
+ */
+export interface UpdateAgencyInput {
+  id: number;
+  name: string;
+  slug?: string;
+}
+
+/**
  * Agency User model represents users belonging to an agency
  */
 export interface AgencyUser {
@@ -64,7 +86,7 @@ export enum AgencyUserStatus {
 }
 
 /**
- * Client model represents a client of an agency
+ * Client model represents a client or potential client of an agency
  */
 export interface Client {
   id: string;
@@ -86,6 +108,57 @@ export interface Client {
   contactPosition: string | null;
   createdAt: Date;
   updatedAt: Date;
+}
+
+/**
+ * Client Model type alias for database operations
+ */
+export type ClientModel = Client;
+
+/**
+ * Input type for creating a new client
+ */
+export interface CreateClientInput {
+  name: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  country?: string;
+  status?: ClientStatus;
+  notes?: string;
+  avatarUrl?: string;
+  website?: string;
+  industry?: string;
+  companySize?: string;
+  contactName?: string;
+  contactPosition?: string;
+  agencyId?: number;
+}
+
+/**
+ * Input type for updating a client
+ */
+export interface UpdateClientInput {
+  id: number;
+  name?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  country?: string;
+  status?: ClientStatus;
+  notes?: string;
+  avatarUrl?: string;
+  website?: string;
+  industry?: string;
+  companySize?: string;
+  contactName?: string;
+  contactPosition?: string;
 }
 
 /**
@@ -128,6 +201,46 @@ export interface Project {
   estimatedHours: number | null;
   createdAt: Date;
   updatedAt: Date;
+}
+
+/**
+ * Project Model type alias for database operations
+ */
+export type ProjectModel = Project;
+
+/**
+ * Input type for creating a new project
+ */
+export interface CreateProjectInput {
+  name: string;
+  description?: string;
+  clientId: number;
+  agencyId: number;
+  status?: ProjectStatus;
+  startDate?: Date;
+  endDate?: Date;
+  budget?: number;
+  budgetCurrency?: string;
+  budgetType?: BudgetType;
+  estimatedHours?: number;
+}
+
+/**
+ * Input type for updating a project
+ */
+export interface UpdateProjectInput {
+  id: number;
+  name?: string;
+  description?: string;
+  clientId?: number;
+  agencyId?: number;
+  status?: ProjectStatus;
+  startDate?: Date;
+  endDate?: Date;
+  budget?: number;
+  budgetCurrency?: string;
+  budgetType?: BudgetType;
+  estimatedHours?: number;
 }
 
 /**
