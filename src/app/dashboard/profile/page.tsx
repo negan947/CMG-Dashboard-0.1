@@ -7,7 +7,7 @@ import { useTheme } from 'next-themes';
 import { LogOut, UserRound, Mail, Phone, Building, Shield } from 'lucide-react';
 
 export default function ProfilePage() {
-  const { user, signOut } = useAuth();
+  const { user, logout } = useAuth();
   const router = useRouter();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -16,8 +16,8 @@ export default function ProfilePage() {
   const handleLogout = async () => {
     try {
       setIsLoggingOut(true);
-      await signOut();
-      router.push('/auth/login');
+      await logout();
+      // No need to push to login page as the logout function already handles it
     } catch (error) {
       console.error('Error logging out:', error);
     } finally {
