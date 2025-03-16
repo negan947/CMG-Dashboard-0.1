@@ -63,6 +63,7 @@ The build command is exclusively for production preparation, not for development
 - Radix UI for component primitives
 - React Hook Form for form handling
 - Zod for schema validation
+- Zustand for state management
 - date-fns for date manipulation
 - Sonner for toast notifications
 
@@ -72,28 +73,50 @@ The build command is exclusively for production preparation, not for development
 
 ```
 src/
+├── __tests__/
+    └── auth/ # Authentication pages
 ├── app/ # Next.js app router pages
+    ├── (dashboard)/
+    ├── api/
+    │   └── mcp/
+    │   │   └── supabase/
     ├── auth/ # Authentication pages
     │   ├── callback/ # Auth callback handling
     │   ├── login/ # Login page
+    │   ├── magic-link/
     │   ├── register/ # Registration page
     │   ├── reset-password/ # Password reset
     │   └── update-password/ # Password update
     ├── auth-check/
-    └── auth-test/
+    ├── auth-test/
     │   ├── api-test/
     │   ├── comprehensive/
     │   └── supabase-config/
+    └── dashboard/ # Dashboard pages
+    │   └── clients/ # Client management
 ├── components/ # Reusable UI components
+    ├── auth/ # Authentication pages
+    ├── dashboard/ # Dashboard pages
+    ├── layout/
     └── ui/ # UI component library (Radix UI)
+    │   └── charts/
 ├── config/ # Configuration files
 ├── context/ # React context providers
+├── db/
 ├── features/ # Feature-specific code
 ├── hooks/ # Custom React hooks
+    └── __tests__/
 ├── layouts/ # Layout components
 ├── lib/ # Utility functions and shared code
+    ├── __tests__/
+    ├── schemas/
+    │   └── __tests__/
+    └── stores/
+    │   └── __tests__/
 ├── services/ # Service layer for API calls
-└── styles/ # Global styles
+    └── __tests__/
+├── styles/ # Global styles
+└── types/
 ```
 
 ### Naming Conventions
@@ -169,6 +192,27 @@ src/
 - Agency settings include: name, logo, address, billing details
 - Agency users have roles: owner, admin, member
 
+## Theming Implementation Guidelines
+
+### When implementing or modifying themes:
+
+- Always check current theme with `const { theme } = useTheme()` and `const isDark = theme === 'dark'` or `theme !== 'light'`
+- Use conditional classes with template literals or the cn() utility
+- For dark mode UI elements, use zinc/charcoal color palette (#121212, #1C1C1E, zinc-800, etc.)
+- For light mode UI elements, maintain the existing white/blue color scheme
+- Implement proper theme hydration handling with mounted state checks
+- Use frosted glass effect with backdrop-blur and semi-transparent backgrounds
+- Add subtle texture effects only to dark mode with SVG noise patterns
+
+### When creating new UI components:
+
+- Make sure all components are theme-aware from the start
+- Check existing components like ChartCard, MetricCard for reference implementation
+- Use layered effects (gradients, shadows, textures) for depth
+- Implement proper transitions between theme states
+- Use z-index correctly to maintain proper layer order
+- Test components in both light and dark modes
+
 ## AI Assistant Guidelines
 
 ### When Generating Code
@@ -179,25 +223,7 @@ src/
 - Implement proper error handling and validation
 - Use Zod for data validation
 - Follow React best practices (hooks, functional components)
-
-### Database Interactions
-
-- Always use the MCP server for database access
-- Check `.cursor/mcp.json` for connection details
-- Use proper error handling for database operations
-- Implement Row Level Security (RLS) for data protection
-- Use transactions for operations that modify multiple tables
-
-### Authentication
-
-- Use Supabase Auth for authentication
-- Use the `@supabase/ssr` package for authentication
-- Use `createServerClient` for server components and middleware
-- Use `createBrowserClient` for client components
-- Implement proper session management with cookies
-- Handle auth state changes consistently
-- Protect routes with middleware
-- Use Next.js router for navigation after auth actions
+- Ensure all UI components support both light and dark themes
 
 ### UI Components
 
@@ -205,6 +231,9 @@ src/
 - Follow accessibility best practices
 - Implement responsive design
 - Use semantic HTML elements
+- Ensure all components handle theme changes gracefully
+- Implement proper frosted glass effects following project conventions
+- Match existing style patterns for consistency
 
 ### State Management
 

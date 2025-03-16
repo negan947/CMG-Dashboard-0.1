@@ -1,6 +1,7 @@
 import { ReactNode, useState, useEffect } from 'react';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
+import { useTheme } from 'next-themes';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -9,6 +10,8 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [isMobile, setIsMobile] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   // Detect mobile view
   useEffect(() => {
@@ -53,7 +56,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         />
         
         {/* Page content */}
-        <main className="flex-1 overflow-auto bg-gray-50 p-6">
+        <main className={`flex-1 overflow-auto p-6 ${
+          isDark ? 'bg-[#121212]' : 'bg-gray-50'
+        }`}>
           {children}
         </main>
       </div>
