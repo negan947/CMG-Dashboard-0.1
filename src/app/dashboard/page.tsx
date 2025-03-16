@@ -46,7 +46,7 @@ export default function DashboardPage() {
   const clientCategoriesData = categories.map(c => ({
     name: c.name,
     value: c.count,
-    color: c.color,
+    color: c.color || undefined,
   }));
 
   // Format client activity trend data for line chart
