@@ -71,14 +71,14 @@ export const camelToSnakeObject = (obj: Record<string, any>): Record<string, any
 /**
  * Maps database rows to model objects with camelCase properties
  */
-export function mapDbRows<T>(rows: Record<string, any>[]): T[] {
+export function mapDbRows<T extends object>(rows: Record<string, any>[]): T[] {
   return rows.map(row => snakeToCamelObject<T>(row));
 }
 
 /**
  * Maps a single database row to a model object with camelCase properties
  */
-export function mapDbRow<T>(row: Record<string, any>): T {
+export function mapDbRow<T extends object>(row: Record<string, any>): T {
   return snakeToCamelObject<T>(row);
 }
 
