@@ -1,0 +1,262 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# CMG Dashboard - Marketing Agency CRM
+
+# Cursor Brain Rules - Project-specific coding standards and AI assistance guidelines
+
+## Project Overview
+
+This project is a CRM for marketing agencies, helping them manage clients, view invoices, and more.
+The application uses Next.js, Supabase, TypeScript, and follows modern best practices.
+
+## CRITICAL RULE - DO NOT CHANGE SYSTEM ARCHITECTURE
+
+**NEVER CHANGE THE UNDERLYING SYSTEM ARCHITECTURE OR LIBRARIES WHEN MAKING IMPROVEMENTS.**
+
+When asked to improve or fix something:
+- DO NOT switch to different libraries or packages
+- DO NOT change how authentication or other core systems work
+- DO NOT replace working code with "better" alternatives
+- ONLY make minimal, targeted changes to address the specific request
+- MAINTAIN consistency with the existing codebase
+- PRESERVE the current implementation patterns
+
+This is a strict rule because changing system architecture has repeatedly broken functionality.
+
+## CRITICAL RULE - DEVELOPMENT WORKFLOW
+
+**NEVER RUN `npm run build` DURING DEVELOPMENT.**
+
+During development:
+- ONLY use `npm run dev` for running the application
+- NEVER use `npm run build` until the application is ready for production
+- DO NOT suggest production deployment steps during active development
+- For fixing development issues, focus on code changes, not build processes
+- If there are styling or other issues, look for code problems, not build problems
+
+The build command is exclusively for production preparation, not for development or troubleshooting.
+
+## MCP Integration
+
+- Always use the MCP server defined in `.cursor/mcp.json` for database access
+- Connection string format: `postgresql://postgres.mkmvxrgfjzogxhbzvgxk:PacoHera94747@aws-0-eu-central-1.pooler.supabase.com:5432/postgres`
+- When generating database queries, use Supabase client with proper error handling
+- Prefer server-side Supabase client for protected routes and client-side for user interactions
+
+## Database Schema
+
+- Main tables: clients, invoices, agencies, users, projects
+- Authentication handled through Supabase Auth (auth schema)
+- Use Row Level Security (RLS) policies for data protection
+- Agency-client relationship is many-to-many through agency_clients table
+
+## Technology Stack
+
+- React 18.3.1
+- Next.js 15.2.2
+- TypeScript
+- Supabase for authentication and database
+- Tailwind CSS for styling
+- Radix UI for component primitives
+- React Hook Form for form handling
+- Zod for schema validation
+- date-fns for date manipulation
+- Sonner for toast notifications
+
+## Code Style and Structure
+
+### File Structure
+
+```
+src/
+├── app/ # Next.js app router pages
+    ├── auth/ # Authentication pages
+    │   ├── callback/ # Auth callback handling
+    │   ├── login/ # Login page
+    │   ├── register/ # Registration page
+    │   ├── reset-password/ # Password reset
+    │   └── update-password/ # Password update
+    ├── auth-check/
+    └── auth-test/
+    │   ├── api-test/
+    │   ├── comprehensive/
+    │   └── supabase-config/
+├── components/ # Reusable UI components
+    └── ui/ # UI component library (Radix UI)
+├── config/ # Configuration files
+├── context/ # React context providers
+├── features/ # Feature-specific code
+├── hooks/ # Custom React hooks
+├── layouts/ # Layout components
+├── lib/ # Utility functions and shared code
+├── services/ # Service layer for API calls
+└── styles/ # Global styles
+```
+
+### Naming Conventions
+
+- Use lowercase with dashes for directory names (e.g., `components/auth-wizard`)
+- Use PascalCase for component files and camelCase for utility files
+- Use descriptive names that indicate purpose (e.g., `ClientDetailsForm.tsx`)
+- Prefix boolean variables with auxiliary verbs (is, has, should)
+
+## TypeScript and Zod Usage
+
+### TypeScript Best Practices
+
+- Use TypeScript for all code; prefer interfaces over types for object shapes
+- Use explicit return types for functions, especially for complex return values
+- Avoid `any` type; use proper typing or `unknown` with type guards
+
+### Zod Implementation
+
+- Utilize Zod for schema validation and type inference
+- Define schemas in separate files for reusability
+- Infer TypeScript types from Zod schemas when possible
+
+## Supabase Integration
+
+### Authentication
+
+- Use Supabase Auth for user authentication
+- Use the `@supabase/ssr` package for server-side and client-side authentication
+- Use `createServerClient` for server components and middleware
+- Use `createBrowserClient` for client components
+- Implement proper session management with cookies
+- Handle auth state changes consistently
+- Use Next.js middleware for route protection
+
+### Authentication Flow
+
+- Login: Use `supabase.auth.signInWithPassword()` and then redirect to home page using Next.js router
+- Registration: Use `supabase.auth.signUp()` with email confirmation
+- Password Reset: Use `supabase.auth.resetPasswordForEmail()` with redirect
+- Logout: Use `supabase.auth.signOut()` and redirect to login page
+- Auth Callback: Use `supabase.auth.exchangeCodeForSession()` to complete OAuth or email confirmation
+
+### Database Operations
+
+- Use typed Supabase queries with proper error handling
+- Implement RLS (Row Level Security) for data protection
+- Use transactions for operations that modify multiple tables
+
+### Real-time Subscriptions
+
+- Use Supabase real-time features for collaborative features
+- Implement proper subscription cleanup
+- Handle subscription events efficiently
+
+## CRM-Specific Guidelines
+
+### Client Management
+
+- Clients belong to agencies
+- Client data includes: name, email, phone, address, status, notes
+- Clients can have multiple projects and invoices
+
+### Invoice Management
+
+- Invoices belong to clients
+- Invoice statuses: draft, sent, paid, overdue
+- Invoice items include: description, quantity, price, tax
+
+### Agency Management
+
+- Agencies have multiple users with different roles
+- Agency settings include: name, logo, address, billing details
+- Agency users have roles: owner, admin, member
+
+## AI Assistant Guidelines
+
+### When Generating Code
+
+- Always use TypeScript with proper typing
+- Follow the project's file structure and naming conventions
+- Use Supabase client for database operations
+- Implement proper error handling and validation
+- Use Zod for data validation
+- Follow React best practices (hooks, functional components)
+
+### Database Interactions
+
+- Always use the MCP server for database access
+- Check `.cursor/mcp.json` for connection details
+- Use proper error handling for database operations
+- Implement Row Level Security (RLS) for data protection
+- Use transactions for operations that modify multiple tables
+
+### Authentication
+
+- Use Supabase Auth for authentication
+- Use the `@supabase/ssr` package for authentication
+- Use `createServerClient` for server components and middleware
+- Use `createBrowserClient` for client components
+- Implement proper session management with cookies
+- Handle auth state changes consistently
+- Protect routes with middleware
+- Use Next.js router for navigation after auth actions
+
+### UI Components
+
+- Use Tailwind CSS for styling
+- Follow accessibility best practices
+- Implement responsive design
+- Use semantic HTML elements
+
+### State Management
+
+- Use Zustand for global state management
+- Use React Query for server state management
+- Minimize the use of useState and useEffect
+- Implement proper caching and invalidation strategies
+
+### Error Handling
+
+- Handle errors and edge cases at the beginning of functions
+- Implement proper error logging and user-friendly error messages
+- Use custom error types or factories for consistent error handling
+- Handle empty states gracefully (empty lists, no results)
+
+### Performance
+
+- Use React.memo for expensive components
+- Implement useMemo and useCallback for derived values and callbacks
+- Use virtualization for long lists
+- Implement proper caching strategies with React Query
+
+### Security
+
+- Validate all user inputs with Zod
+- Implement proper authorization checks
+- Never store sensitive information in local storage
+- Use HTTPS for all API calls
+
+## Dynamic Project Structure
+
+To ensure this rule file always reflects the latest project structure, run the following command periodically to update it:
+
+```bash
+npm run update-rules
+```
+
+This will update the rule file with the latest project structure, technology stack, and UI components.
+
+## AI Assistant Instructions for Rule Updates
+
+As an AI assistant, you should suggest running the update scripts in the following scenarios:
+
+1. When the user adds new UI components to `src/components/ui/`
+2. When the user adds new dependencies to the project
+3. When the user makes significant changes to the project structure
+4. When the user asks about the project structure or technology stack and the information might be outdated
+
+To update the rules, suggest running:
+
+```bash
+npm run update-rules
+```
+
+This script will automatically update the rule file with the latest project information, ensuring that you always have accurate context about the project.
