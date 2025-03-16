@@ -2,6 +2,7 @@ import { Bell, Search, User, Menu, X, Moon, Sun } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { useTheme } from 'next-themes';
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 
 interface TopBarProps {
   toggleSidebar?: () => void;
@@ -91,18 +92,20 @@ export function TopBar({ toggleSidebar, isSidebarOpen, isMobile }: TopBarProps) 
             3
           </span>
         </button>
-        <div className="flex items-center gap-2">
-          <div className={`flex h-10 w-10 items-center justify-center rounded-full ${
-            isDark ? 'bg-zinc-800' : 'bg-gray-100'
+        
+        {/* Profile - Now clickable and linked to profile page */}
+        <Link href="/dashboard/profile" className="flex items-center gap-2">
+          <div className={`flex h-10 w-10 items-center justify-center rounded-full transition-colors ${
+            isDark ? 'bg-zinc-800 hover:bg-zinc-700' : 'bg-gray-100 hover:bg-gray-200'
           }`}>
             <User className={`h-5 w-5 ${isDark ? 'text-zinc-400' : 'text-gray-500'}`} />
           </div>
-          <div className={`hidden text-sm font-medium sm:block ${
-            isDark ? 'text-zinc-300' : 'text-gray-700'
+          <div className={`hidden text-sm font-medium transition-colors sm:block ${
+            isDark ? 'text-zinc-300 hover:text-zinc-100' : 'text-gray-700 hover:text-gray-900'
           }`}>
             {user?.email ? user.email.split('@')[0] : 'User'}
           </div>
-        </div>
+        </Link>
       </div>
     </div>
   );
