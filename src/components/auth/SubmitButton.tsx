@@ -1,4 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { useTheme } from 'next-themes';
+import { cn } from '@/lib/utils';
 
 interface SubmitButtonProps {
   children: React.ReactNode;
@@ -17,11 +19,27 @@ export const SubmitButton: React.FC<SubmitButtonProps> = ({
   onClick,
   type = 'submit',
 }) => {
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  
+  // After mounting, we can safely check the theme
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  
+  const isDark = mounted && theme === 'dark';
+  
   return (
     <button
       type={type}
       onClick={onClick}
-      className={`relative flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-70 ${className}`}
+      className={cn(
+        "relative flex w-full justify-center rounded-md px-3 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 disabled:opacity-70",
+        isDark
+          ? "bg-blue-600 text-white hover:bg-blue-500 focus:ring-blue-600 focus:ring-offset-1 focus:ring-offset-zinc-900"
+          : "bg-blue-600 text-white hover:bg-blue-500 focus:ring-blue-500 focus:ring-offset-2",
+        className
+      )}
       disabled={isLoading}
     >
       {isLoading ? (
