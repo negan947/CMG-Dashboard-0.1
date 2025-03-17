@@ -82,7 +82,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       />
       
       {/* Main content area */}
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div 
+        className={cn(
+          "flex flex-1 flex-col overflow-hidden transition-all duration-300",
+          isMobile && sidebarOpen ? "md:opacity-100 filter backdrop-blur-sm" : "filter backdrop-blur-none"
+        )}
+      >
         {/* Top Bar */}
         <TopBar 
           toggleSidebar={toggleSidebar} 

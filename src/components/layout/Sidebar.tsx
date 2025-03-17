@@ -34,16 +34,21 @@ export function Sidebar({ isOpen, isMobile, onClose }: SidebarProps = {}) {
   return (
     <>
       {/* Overlay - only on mobile when sidebar is open */}
-      {isMobile && isOpen && (
-        <div 
-          className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm md:hidden"
-          onClick={onClose}
-        />
-      )}
+      <div 
+        className={cn(
+          "fixed inset-0 z-40 md:hidden transition-all duration-300",
+          isOpen 
+            ? "bg-black/50 backdrop-blur-sm opacity-100 pointer-events-auto" 
+            : "bg-black/0 backdrop-blur-none opacity-0 pointer-events-none"
+        )}
+        onClick={onClose}
+      />
 
       {/* Sidebar */}
       <div className={cn(
-        "fixed inset-y-0 left-0 z-30 flex h-full w-64 flex-col border-r transition-transform duration-300 backdrop-blur-lg md:static md:transform-none",
+        "fixed inset-y-0 left-0 flex h-full w-64 flex-col border-r transition-transform duration-300 backdrop-blur-lg md:static md:transform-none",
+        // Use higher z-index on mobile when open to ensure it's above the TopBar
+        isMobile && isOpen ? "z-40" : "z-30",
         isDark 
           ? "bg-[rgba(20,20,25,0.8)] border-[rgba(60,60,75,0.5)] text-zinc-100" 
           : "bg-gradient-to-b from-[rgba(232,237,255,0.8)] via-[rgba(240,245,255,0.8)] to-[rgba(245,249,255,0.8)] border-[rgba(255,255,255,0.6)] text-gray-900",
