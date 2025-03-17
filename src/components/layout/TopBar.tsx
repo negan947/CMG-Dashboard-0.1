@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { NotificationsDropdown } from './NotificationsDropdown';
 
 interface TopBarProps {
   toggleSidebar?: () => void;
@@ -198,21 +199,7 @@ export function TopBar({ toggleSidebar, isSidebarOpen, isMobile }: TopBarProps) 
           </Button>
         )}
         
-        {!searchExpanded && (
-          <Button
-            size="icon"
-            variant={isDark ? "ghost" : "secondary"}
-            className={cn(
-              "relative h-10 w-10 rounded-full", 
-              !isDark && "bg-blue-50/80 hover:bg-blue-100/80"
-            )}
-          >
-            <Bell className={`h-5 w-5 ${isDark ? 'text-zinc-400' : 'text-blue-600'}`} />
-            <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] text-white">
-              3
-            </span>
-          </Button>
-        )}
+        {!searchExpanded && <NotificationsDropdown />}
         
         {/* Profile - Now clickable and linked to profile page */}
         {!searchExpanded && (

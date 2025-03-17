@@ -1,6 +1,7 @@
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { Database } from '../types/supabase';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 
 // Use hardcoded values to ensure consistency
 const supabaseUrl = 'https://mkmvxrgfjzogxhbzvgxk.supabase.co';
@@ -14,4 +15,27 @@ export async function createClient() {
     supabaseUrl,
     supabaseKey: supabaseAnonKey
   });
+}
+
+// Create an admin client that bypasses RLS
+export function createAdminClient() {
+  // For security, this requires the SUPABASE_SERVICE_ROLE_KEY environment variable
+  // This should be set in your project settings in Vercel or other hosting provider
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  
+  if (!supabaseServiceKey) {
+    console.error('Missing SUPABASE_SERVICE_ROLE_KEY environment variable');
+    throw new Error('Server configuration error');
+  }
+  
+  return createSupabaseClient(
+    supabaseUrl,
+    supabaseServiceKey,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    }
+  );
 } 
