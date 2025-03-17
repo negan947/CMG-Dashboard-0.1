@@ -5,6 +5,16 @@ const nextConfig = {
     // your project has ESLint errors.
     ignoreDuringBuilds: true,
   },
+  webpack: (config, { isServer }) => {
+    // Suppress the punycode deprecation warning
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        punycode: false,
+      };
+    }
+    return config;
+  },
 };
 
 module.exports = nextConfig; 

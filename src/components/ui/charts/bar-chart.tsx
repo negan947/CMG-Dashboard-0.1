@@ -20,7 +20,7 @@ interface BarDataSeries {
   name: string;
   key: string;
   color?: string;
-  radius?: number | number[];
+  radius?: number | [number, number, number, number];
   barSize?: number;
   stackId?: string;
 }
@@ -68,7 +68,7 @@ export function BarChart({
   const formattedSeries = series.map((item, index) => ({
     ...item,
     color: item.color || COLORS[index % COLORS.length],
-    radius: item.radius || [8, 8, 0, 0],
+    radius: item.radius || [8, 8, 0, 0] as [number, number, number, number],
     barSize: item.barSize || 24,
   }));
 
