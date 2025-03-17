@@ -36,30 +36,38 @@ export function Sidebar({ isOpen, isMobile, onClose }: SidebarProps = {}) {
       {/* Overlay - only on mobile when sidebar is open */}
       {isMobile && isOpen && (
         <div 
-          className="fixed inset-0 z-30 bg-black/50 md:hidden"
+          className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm md:hidden"
           onClick={onClose}
         />
       )}
 
       {/* Sidebar */}
       <div className={cn(
-        "fixed inset-y-0 left-0 z-30 flex h-full w-64 flex-col border-r transition-transform duration-300 md:static md:transform-none",
+        "fixed inset-y-0 left-0 z-30 flex h-full w-64 flex-col border-r transition-transform duration-300 backdrop-blur-lg md:static md:transform-none",
         isDark 
-          ? "bg-[#1C1C1E] border-zinc-800 text-zinc-100" 
-          : "bg-white border-gray-200 text-gray-900",
+          ? "bg-[rgba(20,20,25,0.8)] border-[rgba(60,60,75,0.5)] text-zinc-100" 
+          : "bg-gradient-to-b from-[rgba(232,237,255,0.8)] via-[rgba(240,245,255,0.8)] to-[rgba(245,249,255,0.8)] border-[rgba(255,255,255,0.6)] text-gray-900",
         isMobile && !isOpen ? "-translate-x-full" : "translate-x-0"
       )}>
+        {/* Subtle shine effect */}
+        <div className={cn(
+          "absolute inset-0 pointer-events-none",
+          isDark 
+            ? "bg-gradient-to-br from-zinc-800/30 via-transparent to-transparent" 
+            : "bg-gradient-to-br from-white/70 via-white/30 to-transparent"
+        )} />
+        
         {/* Subtle brushed metal texture - only in dark mode */}
         {isDark && (
-          <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{
-            backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'600\' height=\'600\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.65\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\' opacity=\'0.3\'/%3E%3C/svg%3E")',
+          <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{
+            backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'600\' height=\'600\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.65\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\' opacity=\'0.4\'/%3E%3C/svg%3E")',
             backgroundRepeat: 'repeat',
           }} />
         )}
       
         <div className={cn(
           "flex h-16 items-center border-b px-6 relative z-10",
-          isDark ? "border-zinc-800" : "border-gray-200"
+          isDark ? "border-zinc-700/50" : "border-gray-200/70"
         )}>
           <Link href="/dashboard" className="flex items-center">
             <h1 className={cn(
@@ -89,15 +97,20 @@ export function Sidebar({ isOpen, isMobile, onClose }: SidebarProps = {}) {
                   "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
                   isActive
                     ? isDark 
-                      ? "bg-zinc-800 text-zinc-100" 
-                      : "bg-gray-100 text-gray-900"
+                      ? "bg-zinc-800/80 text-zinc-100" 
+                      : "bg-gray-100/80 text-gray-900"
                     : isDark
                       ? "text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-100" 
-                      : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+                      : "text-gray-500 hover:bg-gray-100/60 hover:text-gray-900"
                 )}
                 onClick={isMobile ? onClose : undefined}
               >
-                <Icon className="h-5 w-5" />
+                <Icon className={cn(
+                  "h-5 w-5",
+                  isActive 
+                    ? isDark ? "text-blue-400" : "text-blue-600" 
+                    : ""
+                )} />
                 {item.name}
               </Link>
             );

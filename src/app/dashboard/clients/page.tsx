@@ -1,43 +1,77 @@
 'use client';
 
-import { UserCircle } from 'lucide-react';
+import { UserCircle, Plus } from 'lucide-react';
+import { GlassCard } from '@/components/ui/glass-card';
+import { useTheme } from 'next-themes';
+import { cn } from '@/lib/utils';
 
 export default function ClientsPage() {
+  const { theme } = useTheme();
+  const isDark = theme !== 'light';
+  
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Clients</h1>
-        <p className="mt-1 text-gray-500">
-          Manage your client relationships and projects.
-        </p>
-      </div>
-      
-      <div className="rounded-lg border bg-white p-6 shadow-sm">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-lg font-semibold">Your Clients</h2>
-          <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+    <div className="space-y-6 py-2">
+      <GlassCard 
+        variant="subtle"
+        title="Clients"
+        description="Manage your client relationships and projects."
+      >
+        <div className={cn(
+          "flex justify-between items-center pt-4",
+        )}>
+          <div></div>
+          <button className={cn(
+            "px-4 py-2 rounded-md text-white flex items-center gap-2 transition-colors",
+            "bg-blue-600 hover:bg-blue-700"
+          )}>
+            <Plus className="h-4 w-4" />
             Add Client
           </button>
         </div>
-        
-        <div className="space-y-4">
-          <p className="text-gray-500">Your client list will appear here.</p>
-          
-          <div className="flex flex-col gap-4 mt-6">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="flex items-center p-4 border rounded-lg hover:bg-gray-50">
-                <div className="h-10 w-10 bg-gray-100 rounded-full flex items-center justify-center mr-4">
-                  <UserCircle className="h-6 w-6 text-gray-500" />
-                </div>
-                <div>
-                  <h3 className="font-medium">Client {i + 1}</h3>
-                  <p className="text-sm text-gray-500">client{i + 1}@example.com</p>
-                </div>
+      </GlassCard>
+      
+      <GlassCard
+        color="indigo"
+        title="Your Clients"
+      >
+        <div className="space-y-4 pt-2">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div 
+              key={i} 
+              className={cn(
+                "flex items-center p-4 border rounded-lg transition-colors",
+                isDark 
+                  ? "border-zinc-700/50 hover:bg-zinc-800/30" 
+                  : "border-gray-200 hover:bg-gray-50/50"
+              )}
+            >
+              <div className={cn(
+                "h-10 w-10 rounded-full flex items-center justify-center mr-4",
+                isDark ? "bg-zinc-800/70" : "bg-gray-100/70"
+              )}>
+                <UserCircle className={cn(
+                  "h-6 w-6",
+                  isDark ? "text-zinc-300" : "text-gray-500"
+                )} />
               </div>
-            ))}
-          </div>
+              <div>
+                <h3 className={cn(
+                  "font-medium",
+                  isDark ? "text-zinc-100" : "text-gray-800"
+                )}>
+                  Client {i + 1}
+                </h3>
+                <p className={cn(
+                  "text-sm",
+                  isDark ? "text-zinc-400" : "text-gray-500"
+                )}>
+                  client{i + 1}@example.com
+                </p>
+              </div>
+            </div>
+          ))}
         </div>
-      </div>
+      </GlassCard>
     </div>
   );
 } 

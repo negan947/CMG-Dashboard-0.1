@@ -10,6 +10,8 @@ import {
   PieChart,
   MetricCard
 } from '@/components/ui/charts';
+import { GlassCard } from '@/components/ui/glass-card';
+import { cn } from '@/lib/utils';
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -81,58 +83,52 @@ export default function DashboardPage() {
 
   return (
     <div className="relative min-h-screen">
-      {/* Colorful background with gradient */}
-      <div className={`fixed inset-0 -z-10 ${
+      {/* Colorful background with gradient - using same gradient as in DashboardLayout */}
+      <div className={cn(
+        "fixed inset-0 -z-10",
         isDark 
-          ? "bg-gradient-to-br from-[#121212] via-[#1E1E1E] to-[#262626]" 
-          : "bg-gradient-to-br from-[#EAEDFF] via-[#E3E9FF] to-[#D5E3FF]"
-      }`} />
+          ? "bg-gradient-to-br from-[#0F0F12] via-[#171720] to-[#1C1C25]" 
+          : "bg-gradient-to-br from-[#E8EDFF] via-[#F0F5FF] to-[#F5F9FF]"
+      )} />
       
-      {/* White accent orbs for visual effect */}
-      <div className={`fixed -top-20 -left-20 -z-5 h-60 w-60 rounded-full ${
-        isDark 
-          ? "bg-white opacity-[0.02]" 
-          : "bg-purple-400 opacity-20"
-      } blur-[80px]`} />
-      <div className={`fixed top-1/3 right-1/4 -z-5 h-40 w-40 rounded-full ${
-        isDark 
-          ? "bg-white opacity-[0.015]" 
-          : "bg-blue-400 opacity-20"
-      } blur-[60px]`} />
-      <div className={`fixed bottom-1/4 -right-10 -z-5 h-36 w-36 rounded-full ${
-        isDark 
-          ? "bg-zinc-200 opacity-[0.01]" 
-          : "bg-pink-300 opacity-15"
-      } blur-[50px]`} />
-      <div className={`fixed top-2/3 left-1/4 -z-5 h-24 w-24 rounded-full ${
-        isDark 
-          ? "bg-zinc-300 opacity-[0.01]" 
-          : "bg-indigo-400 opacity-10"
-      } blur-[40px]`} />
+      {/* Glowing accent orbs for visual effect - matched with DashboardLayout */}
+      <div className={cn(
+        "fixed -top-20 -left-20 -z-5 h-72 w-72 rounded-full blur-[100px]",
+        isDark ? "bg-purple-900 opacity-[0.15]" : "bg-purple-400 opacity-[0.18]"
+      )} />
+      <div className={cn(
+        "fixed top-1/3 right-1/4 -z-5 h-60 w-60 rounded-full blur-[80px]",
+        isDark ? "bg-blue-900 opacity-[0.15]" : "bg-blue-400 opacity-[0.18]"
+      )} />
+      <div className={cn(
+        "fixed bottom-1/4 -right-10 -z-5 h-48 w-48 rounded-full blur-[70px]",
+        isDark ? "bg-fuchsia-900 opacity-[0.1]" : "bg-pink-300 opacity-[0.15]"
+      )} />
+      <div className={cn(
+        "fixed top-2/3 left-1/4 -z-5 h-36 w-36 rounded-full blur-[60px]",
+        isDark ? "bg-indigo-900 opacity-[0.1]" : "bg-indigo-400 opacity-[0.15]"
+      )} />
       
       {/* Subtle brushed metal texture overlay */}
-      <div className={`fixed inset-0 -z-9 opacity-[0.03] pointer-events-none ${
+      <div className={cn(
+        "fixed inset-0 -z-9 opacity-[0.05] pointer-events-none",
         isDark ? "block" : "hidden"
-      }`} style={{
-        backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'600\' height=\'600\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.65\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\' opacity=\'0.3\'/%3E%3C/svg%3E")',
+      )} style={{
+        backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'600\' height=\'600\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.65\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\' opacity=\'0.4\'/%3E%3C/svg%3E")',
         backgroundRepeat: 'repeat',
       }} />
       
       <div className="space-y-6 md:space-y-8 relative z-10 py-2">
-        <div className={`backdrop-blur-xl ${
-          isDark 
-            ? "bg-[rgba(30,30,30,0.6)] border-[rgba(60,60,65,0.55)]" 
-            : "bg-[rgba(255,255,255,0.65)] border-[rgba(255,255,255,0.4)]"
-        } border rounded-xl p-6 shadow-[0_15px_40px_rgba(0,0,0,0.15)]`}>
+        <GlassCard contentClassName="p-6">
           <h1 className={`text-2xl font-bold md:text-3xl ${
             isDark ? "text-zinc-100" : "text-gray-800"
           }`}>Welcome back, {userName}</h1>
           <p className={`mt-2 text-sm md:text-base ${
-            isDark ? "text-zinc-400" : "text-gray-600"
+            isDark ? "text-zinc-300" : "text-gray-600"
           }`}>
             Here's an overview of your marketing performance and client activities.
           </p>
-        </div>
+        </GlassCard>
         
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-4">
           <MetricCard 
@@ -191,11 +187,7 @@ export default function DashboardPage() {
           showAreaGradient={true}
         />
 
-        <div className={`backdrop-blur-xl ${
-          isDark 
-            ? "bg-[rgba(30,30,30,0.6)] border-[rgba(60,60,65,0.55)]" 
-            : "bg-[rgba(255,255,255,0.65)] border-[rgba(255,255,255,0.4)]"
-        } border rounded-xl p-6 shadow-[0_15px_40px_rgba(0,0,0,0.15)]`}>
+        <GlassCard contentClassName="p-6">
           <div className="flex flex-col items-start justify-between md:flex-row md:items-center">
             <h2 className={`text-base font-semibold md:text-lg ${
               isDark ? "text-zinc-100" : "text-gray-800"
@@ -249,97 +241,53 @@ export default function DashboardPage() {
                   </th>
                 </tr>
               </thead>
-              <tbody className={`divide-y ${
-                isDark ? "divide-zinc-700" : "divide-gray-200"
-              }`}>
-                {!campaignsLoading ? (
-                  <>
-                    <tr className={`${isDark ? "hover:bg-zinc-800/30" : "hover:bg-gray-50"} transition-colors`}>
-                      <td className={`whitespace-nowrap px-4 py-4 text-sm font-medium ${
-                        isDark ? "text-zinc-100" : "text-gray-900"
-                      }`}>Summer Sale Promotion</td>
-                      <td className={`whitespace-nowrap px-4 py-4 text-sm ${
-                        isDark ? "text-zinc-400" : "text-gray-500"
-                      }`}>Facebook</td>
-                      <td className={`whitespace-nowrap px-4 py-4 text-sm ${
-                        isDark ? "text-zinc-400" : "text-gray-500"
+              <tbody className={isDark ? "divide-y divide-zinc-700" : "divide-y divide-gray-200"}>
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i} className={`transition-colors ${
+                    isDark ? "hover:bg-zinc-800/40" : "hover:bg-gray-50/80"
+                  }`}>
+                    <td className={`whitespace-nowrap px-4 py-4 text-sm ${
+                      isDark ? "text-zinc-300" : "text-gray-800"
+                    }`}>
+                      Campaign {i + 1}
+                    </td>
+                    <td className={`whitespace-nowrap px-4 py-4 text-sm ${
+                      isDark ? "text-zinc-300" : "text-gray-800"
+                    }`}>
+                      {['Facebook', 'Instagram', 'Google', 'Twitter', 'LinkedIn'][i]}
+                    </td>
+                    <td className={`whitespace-nowrap px-4 py-4 text-sm`}>
+                      <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
+                        i % 3 === 0 
+                          ? "bg-green-100 text-green-800" 
+                          : i % 3 === 1 
+                            ? "bg-blue-100 text-blue-800" 
+                            : "bg-amber-100 text-amber-800"
                       }`}>
-                        <span className="inline-flex items-center rounded-full bg-green-500/20 px-2.5 py-0.5 text-xs font-medium text-green-200">
-                          Active
-                        </span>
-                      </td>
-                      <td className={`whitespace-nowrap px-4 py-4 text-sm ${
-                        isDark ? "text-zinc-400" : "text-gray-500"
-                      }`}>$5,000</td>
-                      <td className={`whitespace-nowrap px-4 py-4 text-sm ${
-                        isDark ? "text-zinc-400" : "text-gray-500"
-                      }`}>$2,500</td>
-                      <td className={`whitespace-nowrap px-4 py-4 text-sm ${
-                        isDark ? "text-zinc-400" : "text-gray-500"
-                      }`}>2.4x</td>
-                    </tr>
-                    <tr className={`${isDark ? "hover:bg-zinc-800/30" : "hover:bg-gray-50"} transition-colors`}>
-                      <td className={`whitespace-nowrap px-4 py-4 text-sm font-medium ${
-                        isDark ? "text-zinc-100" : "text-gray-900"
-                      }`}>Product Launch</td>
-                      <td className={`whitespace-nowrap px-4 py-4 text-sm ${
-                        isDark ? "text-zinc-400" : "text-gray-500"
-                      }`}>Google Ads</td>
-                      <td className={`whitespace-nowrap px-4 py-4 text-sm ${
-                        isDark ? "text-zinc-400" : "text-gray-500"
-                      }`}>
-                        <span className="inline-flex items-center rounded-full bg-green-500/20 px-2.5 py-0.5 text-xs font-medium text-green-200">
-                          Active
-                        </span>
-                      </td>
-                      <td className={`whitespace-nowrap px-4 py-4 text-sm ${
-                        isDark ? "text-zinc-400" : "text-gray-500"
-                      }`}>$8,000</td>
-                      <td className={`whitespace-nowrap px-4 py-4 text-sm ${
-                        isDark ? "text-zinc-400" : "text-gray-500"
-                      }`}>$3,600</td>
-                      <td className={`whitespace-nowrap px-4 py-4 text-sm ${
-                        isDark ? "text-zinc-400" : "text-gray-500"
-                      }`}>3.2x</td>
-                    </tr>
-                    <tr className={`${isDark ? "hover:bg-zinc-800/30" : "hover:bg-gray-50"} transition-colors`}>
-                      <td className={`whitespace-nowrap px-4 py-4 text-sm font-medium ${
-                        isDark ? "text-zinc-100" : "text-gray-900"
-                      }`}>Retargeting Campaign</td>
-                      <td className={`whitespace-nowrap px-4 py-4 text-sm ${
-                        isDark ? "text-zinc-400" : "text-gray-500"
-                      }`}>Google Ads</td>
-                      <td className={`whitespace-nowrap px-4 py-4 text-sm ${
-                        isDark ? "text-zinc-400" : "text-gray-500"
-                      }`}>
-                        <span className="inline-flex items-center rounded-full bg-green-500/20 px-2.5 py-0.5 text-xs font-medium text-green-200">
-                          Active
-                        </span>
-                      </td>
-                      <td className={`whitespace-nowrap px-4 py-4 text-sm ${
-                        isDark ? "text-zinc-400" : "text-gray-500"
-                      }`}>$2,000</td>
-                      <td className={`whitespace-nowrap px-4 py-4 text-sm ${
-                        isDark ? "text-zinc-400" : "text-gray-500"
-                      }`}>$450</td>
-                      <td className={`whitespace-nowrap px-4 py-4 text-sm ${
-                        isDark ? "text-zinc-400" : "text-gray-500"
-                      }`}>4.5x</td>
-                    </tr>
-                  </>
-                ) : (
-                  <tr>
-                    <td className={`px-4 py-4 text-center text-sm ${
-                      isDark ? "text-zinc-400" : "text-gray-500"
-                    }`} colSpan={6}>
-                      Loading campaign data...
+                        {i % 3 === 0 ? 'Active' : i % 3 === 1 ? 'Completed' : 'Planned'}
+                      </span>
+                    </td>
+                    <td className={`whitespace-nowrap px-4 py-4 text-sm ${
+                      isDark ? "text-zinc-300" : "text-gray-800"
+                    }`}>
+                      ${(2000 + i * 1500).toLocaleString()}
+                    </td>
+                    <td className={`whitespace-nowrap px-4 py-4 text-sm ${
+                      isDark ? "text-zinc-300" : "text-gray-800"
+                    }`}>
+                      ${Math.floor((1500 + i * 800) * (i % 3 === 1 ? 1 : 0.7)).toLocaleString()}
+                    </td>
+                    <td className={`whitespace-nowrap px-4 py-4 text-sm ${
+                      isDark ? "text-zinc-300" : "text-gray-800"
+                    }`}>
+                      {(120 + i * 15)}%
                     </td>
                   </tr>
-                )}
+                ))}
               </tbody>
             </table>
           </div>
-        </div>
+        </GlassCard>
       </div>
     </div>
   );
