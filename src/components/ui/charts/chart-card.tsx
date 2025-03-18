@@ -30,7 +30,7 @@ export function ChartCard({
       className={cn("transition-all", className)}
       color={color}
       contentClassName={cn(
-        "p-0 h-[280px] w-full", // Increased height for better label visibility
+        "p-0 min-h-[350px] h-full w-full", // Increased minimum height to match the chart
         isDark 
           ? "pt-0 sm:pt-0" 
           : "pt-0 sm:pt-0",
