@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useTheme } from 'next-themes';
 import { useEffect } from 'react';
+import { CMGLogo, CMGFavicon } from '@/components/ui/cmg-logo';
 
 interface NavItem {
   name: string;
@@ -33,6 +34,8 @@ export function Sidebar({ isOpen, isMobile, onClose }: SidebarProps = {}) {
   
   return (
     <>
+      <CMGFavicon />
+      
       {/* Overlay - only on mobile when sidebar is open */}
       <div 
         className={cn(
@@ -75,16 +78,10 @@ export function Sidebar({ isOpen, isMobile, onClose }: SidebarProps = {}) {
           isDark ? "border-zinc-700/50" : "border-gray-200/70"
         )}>
           <Link href="/dashboard" className="flex items-center">
-            <h1 className={cn(
-              "text-xl font-bold transition-colors",
-              isDark 
-                ? "text-zinc-100 hover:text-white" 
-                : "text-gray-900 hover:text-blue-600"
-            )}>
-              CMG Dashboard
-            </h1>
+            <CMGLogo className="flex-shrink-0" />
           </Link>
         </div>
+        
         <div className="flex flex-1 flex-col gap-1 p-4 relative z-10">
           {navItems.map((item) => {
             const Icon = item.icon;

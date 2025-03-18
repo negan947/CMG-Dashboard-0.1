@@ -46,59 +46,47 @@ export function DonutChart({
   const uniqueId = React.useId();
   const gradientId = `donutGradient-${uniqueId}`;
 
+  // Calculate dimensions
+  const radius = size / 2;
+  const circumference = 2 * Math.PI * innerRadius;
+  const strokeDashoffset = circumference - (value / 100) * circumference;
+  
+  // The SVG viewBox should match the size exactly
+  const viewBox = `0 0 ${size} ${size}`;
+
   return (
-    <div 
-      className={cn(className, "relative")} 
-      style={{ width: size, height: size }}
-      title={`${percentage.toFixed(1)}%`}
-    >
-      <ResponsiveContainer width="100%" height="100%">
-        <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-          <defs>
-            {/* Fill gradient */}
-            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={color} stopOpacity="1" />
-              <stop offset="100%" stopColor={color} stopOpacity="0.8" />
-            </linearGradient>
-          </defs>
-          <Pie
-            data={data}
-            dataKey="value"
-            cx="50%"
-            cy="50%"
-            innerRadius={innerRadius}
-            outerRadius={outerRadius}
-            startAngle={90}
-            endAngle={-270}
-            paddingAngle={0}
-            stroke="none"
-            animationDuration={1000}
-            animationEasing="ease-out"
-            isAnimationActive={true}
-          >
-            <Cell 
-              fill={`url(#${gradientId})`} 
-              stroke={isDark ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.7)"}
-              strokeWidth={0.5}
-              style={{ 
-                transition: "all 0.6s cubic-bezier(0.16, 1, 0.3, 1)" 
-              }} 
-            />
-            <Cell 
-              fill={bgColor} 
-              stroke={isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.03)"}
-              strokeWidth={0.5}
-            />
-          </Pie>
-        </PieChart>
-      </ResponsiveContainer>
+    <div className={cn("flex-shrink-0 relative flex items-center justify-center", className)}>
+      {/* Background circle */}
+      <svg width="100%" height="100%" viewBox={viewBox} className="absolute">
+        <circle
+          cx={radius}
+          cy={radius}
+          r={innerRadius}
+          fill="none"
+          stroke={isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)"}
+          strokeWidth={thickness}
+        />
+      </svg>
       
-      {/* Inner shadow for depth - ShadCN style */}
-      <div className="absolute inset-0 rounded-full pointer-events-none" style={{
-        boxShadow: isDark 
-          ? "inset 0 1px 2px rgba(0,0,0,0.2), 0 1px 2px rgba(255,255,255,0.05)" 
-          : "inset 0 1px 2px rgba(0,0,0,0.1), 0 1px 2px rgba(255,255,255,0.1)",
-      }} />
+      {/* Foreground arc */}
+      <svg 
+        width="100%" 
+        height="100%" 
+        viewBox={viewBox} 
+        className="absolute rotate-[-90deg]"
+      >
+        <circle
+          cx={radius}
+          cy={radius}
+          r={innerRadius}
+          fill="none"
+          stroke={color}
+          strokeWidth={thickness}
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          strokeLinecap="round"
+        />
+      </svg>
     </div>
   );
 } 

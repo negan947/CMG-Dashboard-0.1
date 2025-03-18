@@ -96,7 +96,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         />
         
         {/* Page content */}
-        <main className="flex-1 overflow-auto p-6 relative">
+        <main className="flex-1 overflow-auto p-3 sm:p-4 md:p-6 relative">
           {children}
         </main>
       </div>

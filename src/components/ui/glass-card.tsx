@@ -73,11 +73,11 @@ export function GlassCard({
         ? "shadow-sm" 
         : variant === "subtle" 
           ? isDark 
-            ? "shadow-[0_8px_30px_rgba(0,0,0,0.15)]" 
-            : "shadow-[0_8px_20px_rgba(0,0,0,0.06)]" 
+            ? "shadow-[0_4px_20px_rgba(0,0,0,0.15)]" 
+            : "shadow-[0_4px_15px_rgba(0,0,0,0.06)]" 
           : isDark 
-            ? "shadow-[0_15px_40px_rgba(0,0,0,0.2)]" 
-            : "shadow-[0_10px_25px_rgba(0,0,0,0.08)]",
+            ? "shadow-[0_8px_30px_rgba(0,0,0,0.2)]" 
+            : "shadow-[0_6px_20px_rgba(0,0,0,0.08)]",
       // Inner shine gradient
       "before:content-[''] before:absolute before:inset-0 before:bg-gradient-to-br before:opacity-40 before:rounded-xl",
       isDark 
@@ -89,13 +89,13 @@ export function GlassCard({
         ? "after:from-transparent after:via-zinc-300/30 after:to-transparent" 
         : "after:from-transparent after:via-white/90 after:to-transparent",
       variant === "default" && (isDark 
-        ? "hover:shadow-[0_20px_50px_rgba(0,0,0,0.25)] transition-all duration-300"
-        : "hover:shadow-[0_15px_30px_rgba(0,0,0,0.1)] transition-all duration-300"),
+        ? "hover:shadow-[0_12px_30px_rgba(0,0,0,0.25)] transition-all duration-300"
+        : "hover:shadow-[0_10px_25px_rgba(0,0,0,0.1)] transition-all duration-300"),
       className
     )}>
       {/* Subtle brushed metal texture */}
       {isDark && (
-        <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{
+        <div className="absolute inset-0 opacity-[0.05] pointer-events-none hidden sm:block" style={{
           backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'600\' height=\'600\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.65\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\' opacity=\'0.4\'/%3E%3C/svg%3E")',
           backgroundRepeat: 'repeat',
         }} />
@@ -103,27 +103,30 @@ export function GlassCard({
       
       {/* Inner shadow effect - more subtle in light mode */}
       <div className={cn(
-        "absolute inset-0 pointer-events-none rounded-xl",
+        "absolute inset-0 pointer-events-none rounded-xl hidden sm:block",
         isDark 
-          ? "shadow-[inset_0_0_20px_rgba(0,0,0,0.12)]" 
-          : "shadow-[inset_0_0_15px_rgba(0,0,0,0.03)]"
+          ? "shadow-[inset_0_0_15px_rgba(0,0,0,0.12)]" 
+          : "shadow-[inset_0_0_10px_rgba(0,0,0,0.03)]"
       )} />
       
       {/* Card content */}
       {(title || description || headerContent) && (
-        <CardHeader className={cn("relative z-10", headerClassName)}>
+        <CardHeader className={cn("relative z-10 p-2 sm:p-3 md:p-4 lg:p-6", headerClassName)}>
           {headerContent ? (
             headerContent
           ) : title && (
             <CardTitle className={cn(
-              "text-base font-semibold md:text-lg",
+              "text-xs sm:text-sm md:text-base lg:text-lg font-semibold",
               isDark ? "text-zinc-100" : "text-gray-800"
             )}>
               {title}
             </CardTitle>
           )}
           {!headerContent && description && (
-            <CardDescription className={isDark ? "text-zinc-300" : "text-gray-600"}>
+            <CardDescription className={cn(
+              "text-[10px] sm:text-xs md:text-sm",
+              isDark ? "text-zinc-300" : "text-gray-600"
+            )}>
               {description}
             </CardDescription>
           )}
@@ -135,7 +138,7 @@ export function GlassCard({
       </CardContent>
       
       {footerContent && (
-        <CardFooter className="relative z-10">
+        <CardFooter className="relative z-10 p-2 sm:p-3 md:p-4 lg:p-6">
           {footerContent}
         </CardFooter>
       )}

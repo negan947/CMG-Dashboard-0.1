@@ -749,7 +749,7 @@ function ClientsContent() {
       
       <div className="space-y-6 md:space-y-8 relative z-10 py-2">
         {/* Metric Cards Row */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 md:gap-4 lg:gap-5 xl:gap-6 lg:grid-cols-4 h-auto">
           <MetricCard 
             title="Total Clients" 
             value={metrics.totalClients} 
@@ -791,27 +791,27 @@ function ClientsContent() {
             {/* Delays & Follow-ups Card */}
             <GlassCard
               title="Delays & Follow-ups"
-              contentClassName="p-4"
+              contentClassName="p-2 sm:p-3 md:p-4"
             >
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {delaysAndFollowups.map((item) => (
                   <div 
                     key={item.id} 
                     className={cn(
-                      "flex items-center p-3 rounded-lg transition-colors",
+                      "flex items-center p-2 sm:p-3 rounded-lg transition-colors",
                       isDark ? "hover:bg-zinc-800/50" : "hover:bg-gray-50"
                     )}
                   >
                     {/* Priority marker */}
                     <div className={cn(
-                      "h-2 w-2 rounded-full mr-3",
+                      "h-2 w-2 rounded-full mr-2 sm:mr-3 flex-shrink-0",
                       item.priority === 'high' ? "bg-red-500" : "bg-amber-400"
                     )} />
                     
                     {/* Content */}
-                    <div className="flex-grow">
+                    <div className="flex-grow min-w-0">
                       <p className={cn(
-                        "font-medium",
+                        "text-xs sm:text-sm md:text-base font-medium truncate",
                         isDark ? "text-zinc-200" : "text-gray-700"
                       )}>
                         {item.title}
@@ -819,13 +819,15 @@ function ClientsContent() {
                     </div>
                     
                     {/* Action icon */}
-                    {item.title.includes('Call') ? (
-                      <Phone className={cn("h-4 w-4", isDark ? "text-zinc-400" : "text-gray-500")} />
-                    ) : item.title.includes('Update') ? (
-                      <Clock className={cn("h-4 w-4", isDark ? "text-zinc-400" : "text-gray-500")} />
-                    ) : (
-                      <Check className={cn("h-4 w-4", isDark ? "text-zinc-400" : "text-gray-500")} />
-                    )}
+                    <div className="flex-shrink-0 ml-2">
+                      {item.title.includes('Call') ? (
+                        <Phone className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4", isDark ? "text-zinc-400" : "text-gray-500")} />
+                      ) : item.title.includes('Update') ? (
+                        <Clock className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4", isDark ? "text-zinc-400" : "text-gray-500")} />
+                      ) : (
+                        <Check className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4", isDark ? "text-zinc-400" : "text-gray-500")} />
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -834,26 +836,26 @@ function ClientsContent() {
             {/* Quick Actions Card */}
             <GlassCard
               title="Quick Actions"
-              contentClassName="p-4"
+              contentClassName="p-2 sm:p-3 md:p-4"
             >
-              <div className="space-y-2">
+              <div className="space-y-1.5 sm:space-y-2">
                 {quickActions.map((action) => (
                   <button
                     key={action.id}
                     className={cn(
-                      "flex items-center w-full p-3 rounded-lg transition-colors text-left",
+                      "flex items-center w-full p-2 sm:p-3 rounded-lg transition-colors text-left",
                       isDark 
                         ? "hover:bg-zinc-800/50 text-zinc-200" 
                         : "hover:bg-gray-50 text-gray-700"
                     )}
                   >
                     <span className={cn(
-                      "flex items-center justify-center h-6 w-6 rounded-full mr-3",
+                      "flex items-center justify-center h-5 w-5 sm:h-6 sm:w-6 rounded-full mr-2 sm:mr-3",
                       isDark ? "bg-zinc-800" : "bg-gray-100"
                     )}>
-                      {action.icon}
+                      <span className="h-3 w-3 sm:h-4 sm:w-4">{action.icon}</span>
                     </span>
-                    <span className="font-medium">{action.title}</span>
+                    <span className="text-xs sm:text-sm md:text-base font-medium">{action.title}</span>
                   </button>
                 ))}
               </div>
@@ -907,31 +909,32 @@ function ClientsContent() {
                   <div 
                     key={client.id} 
                     className={cn(
-                      "p-4 rounded-xl mb-3 transition-colors cursor-pointer",
+                      "p-3 sm:p-4 rounded-xl mb-2 sm:mb-3 transition-colors cursor-pointer",
                       isDark ? "hover:bg-zinc-800/50" : "hover:bg-gray-50"
                     )}
                     onClick={() => handleClientClick(client)}
                   >
                     {/* Client Header */}
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center">
-                        <Avatar className="h-12 w-12 mr-4">
+                        <Avatar className="h-10 w-10 sm:h-12 sm:w-12 mr-3 sm:mr-4">
                           <AvatarFallback className={cn(
                             isDark ? "bg-zinc-800" : "bg-blue-100",
-                            isDark ? "text-zinc-200" : "text-blue-700"
+                            isDark ? "text-zinc-200" : "text-blue-700",
+                            "text-xs sm:text-sm"
                           )}>
                             {client.initials}
                           </AvatarFallback>
                         </Avatar>
                         <div>
                           <h3 className={cn(
-                            "font-semibold text-base",
+                            "font-semibold text-sm sm:text-base",
                             isDark ? "text-zinc-100" : "text-gray-800"
                           )}>
                             {client.name}
                           </h3>
                           <p className={cn(
-                            "text-sm",
+                            "text-[10px] sm:text-sm",
                             isDark ? "text-zinc-400" : "text-gray-500"
                           )}>
                             {client.status}
@@ -947,12 +950,12 @@ function ClientsContent() {
                         }}
                         aria-label={`View ${client.name}'s details`}
                       >
-                        <ChevronRight className="h-5 w-5" />
+                        <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
                       </button>
                     </div>
                     
                     {/* Progress indicator */}
-                    <div className="w-full h-1 bg-gray-200 dark:bg-gray-700 rounded-full mb-4">
+                    <div className="w-full h-1 bg-gray-200 dark:bg-gray-700 rounded-full mb-3">
                       <div 
                         className={cn(
                           "h-1 rounded-full",
@@ -964,17 +967,17 @@ function ClientsContent() {
                     </div>
                     
                     {/* Client Platforms */}
-                    <div className="space-y-3 mt-2">
+                    <div className="space-y-1.5 sm:space-y-2">
                       {client.platforms.map((platform, idx) => (
                         <div key={idx} className="flex items-center">
                           <span className={cn(
-                            "text-sm font-bold w-16",
+                            "text-[10px] sm:text-sm font-bold w-14 sm:w-16",
                             isDark ? "text-zinc-300" : "text-gray-700"
                           )}>
                             {platform.name}:
                           </span>
                           <span className={cn(
-                            "text-xs ml-2",
+                            "text-[8px] sm:text-xs ml-1 sm:ml-2",
                             isDark ? "text-zinc-400" : "text-gray-600"
                           )}>
                             {platform.stats}

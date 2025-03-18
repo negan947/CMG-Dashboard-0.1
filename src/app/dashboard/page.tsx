@@ -92,19 +92,19 @@ export default function DashboardPage() {
         backgroundRepeat: 'repeat',
       }} />
       
-      <div className="space-y-6 md:space-y-8 relative z-10 py-2">
-        <GlassCard contentClassName="p-6">
-          <h1 className={`text-2xl font-bold md:text-3xl ${
+      <div className="space-y-2 sm:space-y-3 md:space-y-5 relative z-10 py-1 md:py-2">
+        <GlassCard contentClassName="p-1.5 sm:p-2 md:p-4 lg:p-6">
+          <h1 className={`text-base sm:text-lg md:text-xl lg:text-2xl font-bold ${
             isDark ? "text-zinc-100" : "text-gray-800"
           }`}>Welcome back, {userName}</h1>
-          <p className={`mt-2 text-sm md:text-base ${
+          <p className={`text-[10px] sm:text-xs md:text-sm ${
             isDark ? "text-zinc-300" : "text-gray-600"
           }`}>
             Here's an overview of your marketing performance and client activities.
           </p>
         </GlassCard>
         
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 md:gap-4 lg:gap-5 xl:gap-6 lg:grid-cols-4">
           <MetricCard 
             title="Objectives" 
             value={53} 
@@ -145,7 +145,7 @@ export default function DashboardPage() {
         </div>
 
         {/* New Row of Metric Cards */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 md:gap-4 lg:gap-5 xl:gap-6 lg:grid-cols-4">
           <MetricCard 
             title="Total Clients" 
             value={87} 
@@ -184,7 +184,7 @@ export default function DashboardPage() {
           />
         </div>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 sm:gap-4 md:gap-5 lg:gap-6 lg:grid-cols-2">
           <PieChart
             title="Client Category"
             subtitle="This Month"
@@ -206,7 +206,7 @@ export default function DashboardPage() {
           />
         </div>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 sm:gap-4 md:gap-5 lg:gap-6 lg:grid-cols-2">
           <PieChart
             title="Funnel Channel"
             subtitle="This Month"

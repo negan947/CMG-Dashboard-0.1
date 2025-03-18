@@ -45,43 +45,41 @@ export function MetricCard({
     <GlassCard 
       className={className}
       color={color}
-      contentClassName="p-5 sm:p-6"
+      contentClassName="p-3 sm:p-3.5 md:p-4 h-full flex flex-col"
     >
-      <div className="flex flex-col h-full">
-        <div className="flex items-center justify-between">
-          <h3 className={`text-sm font-medium ${
-            isDark ? "text-zinc-300" : "text-gray-600"
-          }`}>
-            {title}
-          </h3>
-        </div>
+      <div className="flex flex-col h-full justify-between">
+        <h3 className={`text-[11px] sm:text-xs md:text-sm font-medium mb-2 sm:mb-3 ${
+          isDark ? "text-zinc-300" : "text-gray-600"
+        }`}>
+          {title}
+        </h3>
         
-        <div className="mt-4 flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-3 md:gap-4 flex-1">
           {showDonut && (
             <DonutChart
               value={value}
               color={color}
-              size={56}
-              className="shrink-0"
+              size={36}
+              className="shrink-0 sm:size-40 md:size-44 lg:size-48"
             />
           )}
           
-          <div className="flex flex-col">
+          <div className="flex flex-col justify-center flex-1">
             <div className="flex items-baseline">
               {prefix && (
-                <span className={`text-lg font-medium mr-1 ${
+                <span className={`text-base sm:text-lg md:text-xl font-medium mr-0.5 ${
                   isDark ? "text-zinc-300" : "text-gray-700"
                 }`}>
                   {prefix}
                 </span>
               )}
-              <span className={`text-2xl font-bold ${
+              <span className={`text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold ${
                 isDark ? "text-zinc-100" : "text-gray-900"
               }`}>
                 {typeof value === 'number' ? value.toLocaleString() : value}
               </span>
               {suffix && (
-                <span className={`ml-1 text-lg font-medium ${
+                <span className={`ml-0.5 text-base sm:text-lg md:text-xl font-medium ${
                   isDark ? "text-zinc-300" : "text-gray-700"
                 }`}>
                   {suffix}
@@ -89,28 +87,29 @@ export function MetricCard({
               )}
             </div>
             
-            {changePercentage !== undefined && (
-              <div className="mt-1 flex items-center">
-                <span className={`flex items-center text-xs font-medium ${changeColor}`}>
+            <div className="flex items-center mt-1 sm:mt-2">
+              {changePercentage !== undefined && (
+                <span className={`flex items-center text-[10px] sm:text-xs md:text-sm font-medium ${changeColor}`}>
                   {isPositiveChange ? (
-                    <ArrowUp className="mr-1 h-3 w-3" />
+                    <ArrowUp className="mr-0.5 h-2.5 w-2.5 sm:h-3 sm:w-3 md:h-4 md:w-4" />
                   ) : (
-                    <ArrowDown className="mr-1 h-3 w-3" />
+                    <ArrowDown className="mr-0.5 h-2.5 w-2.5 sm:h-3 sm:w-3 md:h-4 md:w-4" />
                   )}
                   {Math.abs(changePercentage)}%
                 </span>
-                {changeValue !== undefined && (
-                  <span className={`ml-1 text-xs ${
-                    isDark ? "text-zinc-400" : "text-gray-500"
-                  }`}>
-                    ({isPositiveChange ? "+" : ""}{changeValue})
-                  </span>
-                )}
-              </div>
-            )}
+              )}
+              
+              {changeValue !== undefined && (
+                <span className={`ml-1 text-[10px] sm:text-xs md:text-sm ${
+                  isDark ? "text-zinc-400" : "text-gray-500"
+                }`}>
+                  ({isPositiveChange ? "+" : ""}{changeValue})
+                </span>
+              )}
+            </div>
             
             {changeLabel && (changePercentage !== undefined || changeValue !== undefined) && (
-              <div className={`mt-1 text-xs ${
+              <div className={`text-[8px] sm:text-[10px] md:text-xs ${
                 isDark ? "text-zinc-500" : "text-gray-500"
               }`}>
                 {changeLabel}
@@ -118,13 +117,13 @@ export function MetricCard({
             )}
             
             {secondaryLabel && secondaryValue && (
-              <div className="mt-2 pt-2 border-t border-gray-200 dark:border-zinc-700">
-                <div className={`text-xs ${
+              <div className="mt-1 sm:mt-2 pt-1 sm:pt-2 border-t border-gray-200 dark:border-zinc-700">
+                <div className={`text-[9px] sm:text-[10px] md:text-xs ${
                   isDark ? "text-zinc-400" : "text-gray-500"
                 }`}>
                   {secondaryLabel}
                 </div>
-                <div className={`mt-1 text-sm font-semibold ${
+                <div className={`text-xs sm:text-sm md:text-base font-semibold ${
                   isDark ? "text-zinc-200" : "text-gray-800"
                 }`}>
                   {secondaryValue}
