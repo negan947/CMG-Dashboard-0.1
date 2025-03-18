@@ -9,16 +9,126 @@ import { CHART_COLORS } from '@/components/ui/charts/pie-chart';
 import { 
   User, ArrowUp, Search, Filter, Check, Phone, Clock, ArrowUpRight, 
   Plus, Target, BarChart, LightbulbIcon, XCircle, ChevronRight, Info, 
-  Facebook, Twitter
+  Facebook, Twitter, TrendingUp
 } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { LineChart } from '@/components/ui/charts/line-chart';
+
+// Define types for our data
+interface Objective {
+  name: string;
+  progress: number;
+}
+
+interface Platform {
+  name: string;
+  stats: string;
+}
+
+interface DataPoint {
+  name: string;
+  value: number;
+}
+
+interface Client {
+  id: string;
+  name: string;
+  status: string;
+  initials: string;
+  progress: number;
+  platforms: Platform[];
+  objectives?: Objective[];
+  aovData?: DataPoint[];
+}
+
+// Simple chart component to replace LineChart
+const SimpleAOVChart = ({ 
+  data, 
+  isDark 
+}: { 
+  data: DataPoint[]; 
+  isDark: boolean;
+}): React.ReactNode => {
+  if (!data || !data.length) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <p className={isDark ? "text-zinc-400" : "text-gray-500"}>No chart data available</p>
+      </div>
+    );
+  }
+
+  // Find max value for scaling
+  const maxValue = Math.max(...data.map(item => item.value));
+  
+  return (
+    <div className="h-full w-full flex flex-col">
+      {/* Y-axis labels */}
+      <div className="flex justify-between text-xs mb-2">
+        <span className={isDark ? "text-zinc-400" : "text-gray-500"}>$0</span>
+        <span className={isDark ? "text-zinc-400" : "text-gray-500"}>${Math.round(maxValue / 2)}</span>
+        <span className={isDark ? "text-zinc-400" : "text-gray-500"}>${maxValue}</span>
+      </div>
+      
+      {/* Chart area */}
+      <div className="flex-1 relative">
+        {/* Horizontal grid lines */}
+        <div className={`absolute inset-0 border-t border-b ${isDark ? "border-zinc-700" : "border-gray-200"}`}>
+          <div className={`absolute top-1/2 left-0 right-0 border-t ${isDark ? "border-zinc-700" : "border-gray-200"}`}></div>
+        </div>
+        
+        {/* Data points and line */}
+        <div className="absolute inset-0 flex items-end">
+          {data.map((point, index) => {
+            const height = (point.value / maxValue) * 100;
+            const isLast = index === data.length - 1;
+            
+            return (
+              <div key={index} className="flex-1 flex flex-col items-center justify-end">
+                {/* Line to next point */}
+                {index < data.length - 1 && (
+                  <div 
+                    className="absolute h-0.5 bg-green-500 z-10" 
+                    style={{
+                      width: `${100 / data.length}%`,
+                      bottom: `${(point.value / maxValue) * 100}%`,
+                      left: `${(index + 0.5) * (100 / data.length)}%`,
+                      transform: `rotate(${Math.atan2(
+                        (data[index + 1].value - point.value) / maxValue * 100,
+                        100 / data.length
+                      ) * (180 / Math.PI)}deg)`,
+                      transformOrigin: 'left bottom'
+                    }}
+                  ></div>
+                )}
+                
+                {/* Data point */}
+                <div className="relative" style={{ height: `${height}%` }}>
+                  <div className={`h-3 w-3 rounded-full bg-green-500 ${isLast ? "ring-2 ring-green-300" : ""} absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2`}></div>
+                  {isLast && (
+                    <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-10 bg-green-500 text-white text-xs rounded px-1 py-0.5">
+                      ${point.value}
+                    </div>
+                  )}
+                </div>
+                
+                {/* X-axis label */}
+                <div className={`mt-4 text-xs ${isDark ? "text-zinc-400" : "text-gray-500"}`}>
+                  {point.name}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default function ClientsPage() {
   const { theme } = useTheme();
   const isDark = theme !== 'light';
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedClient, setSelectedClient] = useState(null);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [isModalVisible, setIsModalVisible] = useState(false);
   
   // Mock data based on the screenshot
   const metrics = {
@@ -159,48 +269,101 @@ export default function ClientsPage() {
   );
 
   // Handle client click
-  const handleClientClick = (client) => {
+  const handleClientClick = (client: Client) => {
     setSelectedClient(client);
+    // Show modal with a slight delay for better UX
+    setTimeout(() => setIsModalVisible(true), 50);
   };
 
   // Handle close client detail view
   const handleCloseDetail = () => {
-    setSelectedClient(null);
+    setIsModalVisible(false);
+    // Remove selected client after animation completes
+    setTimeout(() => setSelectedClient(null), 300);
   };
 
   // Client detail view based on the screenshot
   const renderClientDetail = () => {
     if (!selectedClient) return null;
-  
-  return (
+
+    return (
       <div 
         className={cn(
           "fixed inset-0 z-50 flex items-center justify-center p-4",
-          "bg-black/50 backdrop-blur-sm"
+          "bg-black/50 backdrop-blur-sm transition-all duration-300 ease-in-out",
+          isModalVisible ? "opacity-100" : "opacity-0 pointer-events-none"
         )}
         onClick={handleCloseDetail}
       >
         <div 
           className={cn(
             "w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-xl",
+            "transition-all duration-300 ease-in-out",
             isDark 
-              ? "bg-zinc-900 text-zinc-100" 
-              : "bg-white text-gray-800",
-            "shadow-2xl"
+              ? "bg-gradient-to-br from-[#0F0F12] via-[#171720] to-[#1C1C25] text-zinc-100" 
+              : "bg-gradient-to-br from-[#E8EDFF] via-[#F0F5FF] to-[#F5F9FF] text-gray-800",
+            "border",
+            isDark ? "border-zinc-700/40" : "border-white/40",
+            "shadow-2xl",
+            isModalVisible ? "transform-none" : "translate-y-8 scale-95"
           )}
           onClick={(e) => e.stopPropagation()}
         >
+          {/* Background patterns and effects - same as in main page */}
+          <div className={cn(
+            "absolute inset-0 -z-1 rounded-xl overflow-hidden",
+          )}>
+            {/* Dot pattern */}
+            <div className="absolute inset-0 opacity-10 pointer-events-none">
+              <div className="absolute inset-0" style={{
+                backgroundImage: isDark 
+                  ? "radial-gradient(" + CHART_COLORS[0] + "60 1px, transparent 1px), " + 
+                    "radial-gradient(" + CHART_COLORS[1] + "60 1px, transparent 1px), " +
+                    "radial-gradient(" + CHART_COLORS[2] + "40 1px, transparent 1px)"
+                  : "radial-gradient(" + CHART_COLORS[0] + "40 1px, transparent 1px), " +
+                    "radial-gradient(" + CHART_COLORS[1] + "40 1px, transparent 1px), " +
+                    "radial-gradient(" + CHART_COLORS[2] + "30 1px, transparent 1px)",
+                backgroundSize: '60px 60px, 80px 80px, 70px 70px',
+                backgroundPosition: '0 0, 30px 30px, 15px 15px',
+              }} />
+            </div>
+            
+            {/* Texture overlay for dark mode */}
+            {isDark && (
+              <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{
+                backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'600\' height=\'600\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.65\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\' opacity=\'0.4\'/%3E%3C/svg%3E")',
+                backgroundRepeat: 'repeat',
+              }} />
+            )}
+            
+            {/* Inner shadow */}
+            <div className={cn(
+              "absolute inset-0 pointer-events-none rounded-xl",
+              isDark 
+                ? "shadow-[inset_0_0_20px_rgba(0,0,0,0.12)]" 
+                : "shadow-[inset_0_0_15px_rgba(0,0,0,0.03)]"
+            )} />
+            
+            {/* Top border glow */}
+            <div className={cn(
+              "absolute top-0 left-[10%] right-[10%] h-[1px]",
+              isDark ? "bg-zinc-500/20" : "bg-white/80"
+            )} />
+          </div>
+
           {/* Client Header */}
-        <div className={cn(
-            "p-6 border-b",
-            isDark ? "border-zinc-700" : "border-gray-200"
+          <div className={cn(
+            "p-6 border-b relative z-10",
+            isDark ? "border-zinc-700/40" : "border-gray-200/40"
           )}>
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <Avatar className="h-16 w-16 mr-5">
+                <Avatar className="h-16 w-16 mr-5 shadow-lg">
                   <AvatarFallback className={cn(
-                    isDark ? "bg-zinc-800" : "bg-blue-100",
-                    isDark ? "text-zinc-200" : "text-blue-700"
+                    isDark 
+                      ? "bg-zinc-800/70 text-zinc-200" 
+                      : "bg-blue-100/70 text-blue-700",
+                    "backdrop-blur-sm"
                   )}>
                     {selectedClient.initials}
                   </AvatarFallback>
@@ -218,8 +381,8 @@ export default function ClientsPage() {
               <div>
                 <button 
                   className={cn(
-                    "flex items-center gap-2 px-4 py-2 rounded-md",
-                    "bg-green-600 hover:bg-green-700 text-white"
+                    "flex items-center gap-2 px-4 py-2 rounded-md transition-colors",
+                    "bg-green-600/90 hover:bg-green-700 text-white backdrop-blur-sm"
                   )}
                 >
                   <Phone className="h-4 w-4" />
@@ -230,11 +393,17 @@ export default function ClientsPage() {
           </div>
 
           {/* Client Content */}
-          <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6 relative z-10">
             {/* Left Column */}
             <div className="space-y-6">
               {/* Objectives */}
-              <div>
+              <div className={cn(
+                "p-5 rounded-xl",
+                isDark 
+                  ? "bg-zinc-800/40 border border-zinc-700/30" 
+                  : "bg-white/40 border border-gray-200/40",
+                "backdrop-blur-sm"
+              )}>
                 <div className="flex items-center mb-4">
                   <Target className="h-5 w-5 mr-2" />
                   <h3 className="text-lg font-semibold">Objectives</h3>
@@ -247,10 +416,10 @@ export default function ClientsPage() {
                       </div>
                       <div className={cn(
                         "w-full h-2 rounded-full overflow-hidden",
-                        isDark ? "bg-zinc-700" : "bg-gray-200"
+                        isDark ? "bg-zinc-700/70" : "bg-gray-200/70"
                       )}>
                         <div 
-                          className="h-full rounded-full bg-green-500"
+                          className="h-full rounded-full bg-green-500 transition-all duration-1000"
                           style={{ width: `${objective.progress}%` }}
                         ></div>
                       </div>
@@ -261,8 +430,11 @@ export default function ClientsPage() {
 
               {/* No Requests Panel */}
               <div className={cn(
-                "p-4 rounded-lg flex items-center gap-3",
-                isDark ? "bg-zinc-800" : "bg-gray-100"
+                "p-4 rounded-xl flex items-center gap-3",
+                isDark 
+                  ? "bg-zinc-800/40 border border-zinc-700/30" 
+                  : "bg-white/40 border border-gray-200/40",
+                "backdrop-blur-sm"
               )}>
                 <LightbulbIcon className={cn(
                   "h-5 w-5",
@@ -272,7 +444,13 @@ export default function ClientsPage() {
               </div>
 
               {/* Platforms */}
-              <div>
+              <div className={cn(
+                "p-5 rounded-xl",
+                isDark 
+                  ? "bg-zinc-800/40 border border-zinc-700/30" 
+                  : "bg-white/40 border border-gray-200/40",
+                "backdrop-blur-sm"
+              )}>
                 <div className="flex items-center mb-4">
                   <BarChart className="h-5 w-5 mr-2" />
                   <h3 className="text-lg font-semibold">Platforms</h3>
@@ -280,13 +458,19 @@ export default function ClientsPage() {
                 <div className="grid grid-cols-3 gap-3">
                   <div className={cn(
                     "p-4 rounded-lg flex items-center justify-center",
-                    isDark ? "bg-zinc-800" : "bg-gray-100"
+                    isDark 
+                      ? "bg-zinc-900/60 border border-zinc-800/60" 
+                      : "bg-white/60 border border-gray-200/40",
+                    "hover:shadow-md transition-all duration-200"
                   )}>
                     <Facebook className="h-8 w-8 text-blue-500" />
                   </div>
                   <div className={cn(
                     "p-4 rounded-lg flex items-center justify-center",
-                    isDark ? "bg-zinc-800" : "bg-gray-100"
+                    isDark 
+                      ? "bg-zinc-900/60 border border-zinc-800/60" 
+                      : "bg-white/60 border border-gray-200/40",
+                    "hover:shadow-md transition-all duration-200"
                   )}>
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-8 w-8 text-red-500">
                       <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5.46 8.12l-1.97 9.03c-.14.65-.76 1.09-1.43.99-.28-.04-.52-.17-.71-.37l-3.36-3.36-1.99 1.99c-.56.56-1.5.16-1.5-.64V12.8c0-.29.12-.57.33-.78l5.67-5.67c.29-.29.77-.12.89.28.03.11.05.23.05.34v2.04c0 .39-.16.77-.44 1.04l-3.33 3.33 2.71 2.71 3.77-5.13c.22-.3.58-.45.94-.39.81.13 1.09 1.1.58 1.73l-.21.28z" />
@@ -294,7 +478,10 @@ export default function ClientsPage() {
                   </div>
                   <div className={cn(
                     "p-4 rounded-lg flex items-center justify-center",
-                    isDark ? "bg-zinc-800" : "bg-gray-100"
+                    isDark 
+                      ? "bg-zinc-900/60 border border-zinc-800/60" 
+                      : "bg-white/60 border border-gray-200/40",
+                    "hover:shadow-md transition-all duration-200"
                   )}>
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-8 w-8">
                       <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM9.09 7.06c.39-.39 1.02-.39 1.41 0 .39.39.39 1.02 0 1.41s-1.02.39-1.41 0-.39-1.02 0-1.41zm7.82 9.88c-1.17 1.17-2.73 1.81-4.39 1.81s-3.22-.64-4.39-1.81c-.39-.39-.39-1.02 0-1.41.39-.39 1.02-.39 1.41 0 .79.79 1.85 1.23 2.98 1.23s2.18-.44 2.98-1.23c.39-.39 1.02-.39 1.41 0 .39.39.39 1.02 0 1.41zm-1.41-8.47c-.39.39-1.02.39-1.41 0s-.39-1.02 0-1.41 1.02-.39 1.41 0c.39.39.39 1.02 0 1.41z" />
@@ -307,7 +494,13 @@ export default function ClientsPage() {
             {/* Right Column */}
             <div className="space-y-6">
               {/* A.O.V Chart */}
-              <div>
+              <div className={cn(
+                "p-5 rounded-xl",
+                isDark 
+                  ? "bg-zinc-800/40 border border-zinc-700/30" 
+                  : "bg-white/40 border border-gray-200/40",
+                "backdrop-blur-sm"
+              )}>
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold flex items-center">
                     A.O.V
@@ -324,19 +517,9 @@ export default function ClientsPage() {
                 </div>
                 <div className="h-72">
                   {selectedClient.aovData ? (
-                    <LineChart 
+                    <SimpleAOVChart 
                       data={selectedClient.aovData}
-                      xAxisKey="name"
-                      yAxisKey="value"
-                      categories={["value"]}
-                      colors={["#10b981"]}
-                      valueFormatter={(value) => `$${value}`}
-                      showXAxis={true}
-                      showYAxis={true}
-                      showLegend={false}
-                      showTooltip={true}
-                      showGridLines={true}
-                      curve="monotone"
+                      isDark={isDark}
                     />
                   ) : (
                     <div className="flex items-center justify-center h-full">
@@ -352,21 +535,25 @@ export default function ClientsPage() {
               {/* Action Buttons */}
               <div className="space-y-3">
                 <button className={cn(
-                  "w-full p-3 rounded-lg flex items-center gap-2",
-                  "bg-gray-100 hover:bg-gray-200 text-gray-800",
-                  isDark && "bg-zinc-800 hover:bg-zinc-700 text-zinc-100"
+                  "w-full p-3 rounded-lg flex items-center gap-2 transition-colors",
+                  isDark 
+                    ? "bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/30 text-zinc-100" 
+                    : "bg-white/60 hover:bg-gray-100/60 border border-gray-200/40 text-gray-800",
+                  "backdrop-blur-sm"
                 )}>
                   <LightbulbIcon className="h-5 w-5" />
                   <span>Send Follow-up!</span>
                 </button>
                 <button className={cn(
-                  "w-full p-3 rounded-lg flex items-center gap-2",
-                  "bg-gray-100 hover:bg-gray-200 text-gray-800",
-                  isDark && "bg-zinc-800 hover:bg-zinc-700 text-zinc-100"
+                  "w-full p-3 rounded-lg flex items-center gap-2 transition-colors",
+                  isDark 
+                    ? "bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/30 text-zinc-100" 
+                    : "bg-white/60 hover:bg-gray-100/60 border border-gray-200/40 text-gray-800",
+                  "backdrop-blur-sm"
                 )}>
                   <Clock className="h-5 w-5" />
                   <span>Payment due in 48h</span>
-          </button>
+                </button>
               </div>
             </div>
           </div>
