@@ -1,11 +1,13 @@
 import React from "react";
-import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
+import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts";
 import { ChartCard } from "./chart-card";
 import { useTheme } from "next-themes";
+import { cn } from "@/lib/utils";
 
 interface PieChartProps {
   title: string;
   description?: string;
+  subtitle?: string;
   data: Array<{
     name: string;
     value: number;
@@ -18,117 +20,100 @@ interface PieChartProps {
   outerRadius?: string | number;
 }
 
-// Beautiful color palette for charts
+// More contrasting professional color palette
 const COLORS = [
-  "hsl(210, 100%, 65%)", // Bright blue
-  "hsl(280, 90%, 70%)",  // Purple
-  "hsl(150, 80%, 55%)",  // Green
-  "hsl(35, 100%, 65%)",  // Amber
-  "hsl(240, 80%, 70%)",  // Indigo
-  "hsl(0, 90%, 70%)",    // Red
-  "hsl(190, 90%, 65%)",  // Cyan
-  "hsl(330, 90%, 70%)",  // Pink
-  "hsl(45, 100%, 65%)",  // Yellow
-  "hsl(170, 80%, 55%)",  // Teal
+  "#475569", // Slate 700
+  "#64748b", // Slate 600
+  "#94a3b8", // Slate 400
+  "#334155", // Slate 800
+  "#0f172a", // Slate 950 
 ];
 
 export function PieChart({
   title,
   description,
+  subtitle,
   data,
   className,
   showLegend = true,
-  showTooltip = true,
-  innerRadius = 60,
+  innerRadius = 50,
   outerRadius = "80%",
 }: PieChartProps) {
   const { theme } = useTheme();
   const isDark = theme !== "light";
-  
-  // Format data with colors if not provided
-  const formattedData = data.map((item, index) => ({
-    ...item,
-    color: item.color || COLORS[index % COLORS.length],
-  }));
+
+  // Process data to ensure unique values for the chart
+  const processedData = React.useMemo(() => {
+    const uniqueData = Array.from(
+      new Map(data.map(item => [item.name, item])).values()
+    );
+    
+    return uniqueData.map((item, index) => ({
+      ...item,
+      color: item.color || COLORS[index % COLORS.length],
+    }));
+  }, [data]);
+
+  // Custom legend render - simple and clean
+  const renderLegend = (props: any) => {
+    const { payload } = props;
+    
+    return (
+      <ul className="flex flex-wrap justify-center gap-x-4 gap-y-3 px-3 py-3">
+        {payload.map((entry: any, index: number) => (
+          <li key={`item-${index}`} className="flex items-center">
+            <div 
+              className="w-3 h-3 rounded-full mr-2"
+              style={{ backgroundColor: entry.color }}
+            />
+            <span className={cn(
+              "text-xs font-medium",
+              isDark ? "text-zinc-300" : "text-gray-600"
+            )}>
+              {entry.value}
+            </span>
+          </li>
+        ))}
+      </ul>
+    );
+  };
 
   return (
-    <ChartCard title={title} description={description} className={className}>
-      <div className="min-w-[280px] h-full w-full">
+    <ChartCard title={title} description={description} subtitle={subtitle} className={className}>
+      <div className="w-full h-[280px]">
         <ResponsiveContainer width="100%" height="100%">
           <RechartsPieChart>
-            <defs>
-              {/* Glow filter for pie slices */}
-              <filter id="pieGlow" x="-30%" y="-30%" width="160%" height="160%">
-                <feGaussianBlur stdDeviation="6" result="blur" />
-                <feComposite in="SourceGraphic" in2="blur" operator="over" />
-              </filter>
-              
-              {/* Gradient definitions for each slice */}
-              {formattedData.map((entry, index) => (
-                <linearGradient key={`gradient-${index}`} id={`pieGradient-${index}`} x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stopColor={entry.color} stopOpacity={1} />
-                  <stop offset="100%" stopColor={entry.color} stopOpacity={0.7} />
-                </linearGradient>
-              ))}
-            </defs>
-            
             <Pie
-              data={formattedData}
+              data={processedData}
               dataKey="value"
               nameKey="name"
               cx="50%"
               cy="50%"
               innerRadius={innerRadius}
               outerRadius={outerRadius}
-              paddingAngle={4}
+              paddingAngle={2}
               strokeWidth={1}
-              stroke={isDark ? "rgba(255, 255, 255, 0.2)" : "rgba(255, 255, 255, 0.7)"}
-              filter="url(#pieGlow)"
+              stroke={isDark ? "rgba(0, 0, 0, 0.3)" : "rgba(255, 255, 255, 0.5)"}
+              label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`}
+              labelLine={false}
             >
-              {formattedData.map((entry, index) => (
-                <Cell 
-                  key={`cell-${index}`} 
-                  fill={`url(#pieGradient-${index})`}
+              {processedData.map((entry, index) => (
+                <Cell
+                  key={`cell-${index}`}
+                  fill={entry.color}
                   style={{
-                    filter: "brightness(1.2)",
-                    transition: "all 0.3s ease" // For hover effects
+                    filter: isDark 
+                      ? "brightness(1.15)" 
+                      : "brightness(0.95)",
                   }}
                 />
               ))}
             </Pie>
-            
-            {showTooltip && (
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: isDark ? "rgba(30, 35, 60, 0.85)" : "rgba(255, 255, 255, 0.85)",
-                  backdropFilter: "blur(10px)",
-                  borderColor: isDark ? "rgba(255, 255, 255, 0.2)" : "rgba(0, 0, 0, 0.1)",
-                  borderRadius: "0.75rem",
-                  boxShadow: "0 10px 30px rgba(0, 0, 0, 0.25)",
-                  padding: "10px 14px",
-                  color: isDark ? "white" : "rgba(0, 0, 0, 0.8)",
-                }}
-                itemStyle={{ color: isDark ? "rgba(255, 255, 255, 0.9)" : "rgba(0, 0, 0, 0.75)" }}
-                labelStyle={{ 
-                  fontWeight: "bold", 
-                  marginBottom: "6px", 
-                  color: isDark ? "rgba(255, 255, 255, 0.9)" : "rgba(0, 0, 0, 0.8)" 
-                }}
-              />
-            )}
-            
             {showLegend && (
-              <Legend
-                layout="vertical"
-                verticalAlign="middle"
-                align="right"
-                wrapperStyle={{ 
-                  paddingLeft: "2rem",
-                  fontWeight: 500,
-                  color: isDark ? "rgba(255, 255, 255, 0.9)" : "rgba(0, 0, 0, 0.75)"
-                }}
-                iconType="circle"
-                iconSize={10}
+              <Legend 
+                content={renderLegend}
+                verticalAlign="bottom"
+                align="center"
               />
             )}
           </RechartsPieChart>
@@ -136,4 +121,4 @@ export function PieChart({
       </div>
     </ChartCard>
   );
-} 
+}

@@ -6,6 +6,7 @@ import { useTheme } from "next-themes";
 interface ChartCardProps {
   title: string;
   description?: string;
+  subtitle?: string;
   className?: string;
   children: React.ReactNode;
   color?: string;
@@ -14,6 +15,7 @@ interface ChartCardProps {
 export function ChartCard({
   title,
   description,
+  subtitle,
   className,
   children,
   color = "blue"
@@ -36,6 +38,26 @@ export function ChartCard({
       )}
       headerClassName="px-6 pb-0"
       variant="default"
+      headerContent={
+        subtitle ? (
+          <div className="flex items-center justify-between">
+            <h3 className={cn(
+              "text-base font-semibold md:text-lg",
+              isDark ? "text-zinc-100" : "text-gray-800"
+            )}>
+              {title}
+            </h3>
+            <div className="flex items-center">
+              <span className={cn(
+                "ml-2 text-xs font-medium rounded-full px-2 py-1",
+                isDark ? "bg-zinc-800 text-zinc-300" : "bg-green-50/70 text-green-700"
+              )}>
+                ▼ {subtitle}
+              </span>
+            </div>
+          </div>
+        ) : null
+      }
     >
       {children}
     </GlassCard>

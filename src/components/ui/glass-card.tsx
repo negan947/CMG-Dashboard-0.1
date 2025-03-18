@@ -13,6 +13,7 @@ interface GlassCardProps {
   contentClassName?: string;
   headerClassName?: string;
   footerContent?: React.ReactNode;
+  headerContent?: React.ReactNode;
 }
 
 // Default colors for accent
@@ -37,6 +38,7 @@ export function GlassCard({
   contentClassName,
   headerClassName,
   footerContent,
+  headerContent,
 }: GlassCardProps) {
   const { theme } = useTheme();
   const isDark = theme !== "light";
@@ -108,9 +110,11 @@ export function GlassCard({
       )} />
       
       {/* Card content */}
-      {(title || description) && (
+      {(title || description || headerContent) && (
         <CardHeader className={cn("relative z-10", headerClassName)}>
-          {title && (
+          {headerContent ? (
+            headerContent
+          ) : title && (
             <CardTitle className={cn(
               "text-base font-semibold md:text-lg",
               isDark ? "text-zinc-100" : "text-gray-800"
@@ -118,7 +122,7 @@ export function GlassCard({
               {title}
             </CardTitle>
           )}
-          {description && (
+          {!headerContent && description && (
             <CardDescription className={isDark ? "text-zinc-300" : "text-gray-600"}>
               {description}
             </CardDescription>

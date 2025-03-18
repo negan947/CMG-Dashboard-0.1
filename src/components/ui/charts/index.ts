@@ -1,6 +1,7 @@
-export * from "./chart-card";
-export * from "./bar-chart";
-export * from "./line-chart";
-export * from "./pie-chart";
-export * from "./donut-chart";
-export * from "./metric-card"; 
+export { BarChart } from './bar-chart';
+export { LineChart } from './line-chart';
+export { PieChart } from './pie-chart';
+export { ClientTrendsChart } from './client-trends-chart';
+export { DonutChart } from './donut-chart';
+export { MetricCard } from './metric-card';
+export { ChartCard } from './chart-card'; 

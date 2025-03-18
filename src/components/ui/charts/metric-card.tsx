@@ -3,6 +3,7 @@ import { DonutChart } from "./donut-chart";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
 import { GlassCard } from "../glass-card";
+import { ArrowUp, ArrowDown } from "lucide-react";
 
 interface MetricCardProps {
   title: string;
@@ -11,6 +12,9 @@ interface MetricCardProps {
   maxValue?: number;
   color?: string;
   className?: string;
+  changePercentage?: number;
+  changeValue?: number;
+  showDonut?: boolean;
 }
 
 const colorMap = {
@@ -29,11 +33,18 @@ export function MetricCard({
   maxValue = 100,
   color = "blue",
   className,
+  changePercentage,
+  changeValue,
+  showDonut = true,
 }: MetricCardProps) {
   const { theme } = useTheme();
   const isDark = theme !== "light";
   
   const chartColor = colorMap[color as keyof typeof colorMap] || color;
+  
+  // Determine if change is positive, negative, or neutral
+  const isPositive = changePercentage !== undefined && changePercentage > 0;
+  const isNegative = changePercentage !== undefined && changePercentage < 0;
   
   return (
     <GlassCard 
@@ -47,22 +58,57 @@ export function MetricCard({
       )}>
         {title}
       </h3>
-      <div className="mt-3 flex items-center">
-        <div className={cn(
-          "text-2xl font-bold md:text-3xl",
-          isDark ? "text-zinc-100" : "text-gray-800"
-        )}>
-          {value}{suffix}
+      <div className="mt-2.5 flex items-center">
+        <div className={showDonut ? "" : "w-full"}>
+          <div className={cn(
+            "text-2xl font-bold md:text-3xl",
+            isDark ? "text-zinc-100" : "text-gray-800"
+          )}>
+            {value}{suffix}
+          </div>
+          
+          {/* Change indicator */}
+          {changePercentage !== undefined && (
+            <div className="mt-1.5 flex items-center">
+              <div className={cn(
+                "flex items-center text-xs font-medium",
+                isPositive ? "text-emerald-500" : 
+                isNegative ? "text-red-500" : 
+                isDark ? "text-zinc-400" : "text-gray-500"
+              )}>
+                {isPositive && (
+                  <ArrowUp className="mr-0.5 h-3 w-3 text-emerald-500" />
+                )}
+                {isNegative && (
+                  <ArrowDown className="mr-0.5 h-3 w-3 text-red-500" />
+                )}
+                <span>
+                  {Math.abs(changePercentage)}%
+                  {changeValue !== undefined && (
+                    <span className={cn(
+                      "ml-1",
+                      isDark ? "text-zinc-400" : "text-gray-500"
+                    )}>
+                      ({changeValue > 0 ? "+" : ""}{changeValue})
+                    </span>
+                  )}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
-        <div className="ml-auto">
-          <DonutChart 
-            value={value} 
-            maxValue={maxValue} 
-            color={chartColor}
-            size={64} 
-            thickness={8}
-          />
-        </div>
+        
+        {showDonut && (
+          <div className="ml-auto">
+            <DonutChart 
+              value={value} 
+              maxValue={maxValue} 
+              color={chartColor}
+              size={58} 
+              thickness={6}
+            />
+          </div>
+        )}
       </div>
     </GlassCard>
   );

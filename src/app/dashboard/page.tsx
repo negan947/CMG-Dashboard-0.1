@@ -5,9 +5,8 @@ import { useDashboardMetrics } from '@/hooks/use-dashboard-metrics';
 import { useCampaignData } from '@/hooks/use-campaign-data';
 import { useTheme } from 'next-themes';
 import {
-  BarChart,
-  LineChart,
   PieChart,
+  ClientTrendsChart,
   MetricCard
 } from '@/components/ui/charts';
 import { GlassCard } from '@/components/ui/glass-card';
@@ -27,46 +26,12 @@ export default function DashboardPage() {
   const userName = user?.email ? user.email.split('@')[0] : 'User';
   const isLoading = metricsLoading || campaignsLoading;
 
-  // Format campaign status data for pie chart
-  const campaignStatusData = statusCounts.map(s => ({
-    name: s.status.charAt(0).toUpperCase() + s.status.slice(1),
-    value: s.count,
-    color: s.status === 'active' ? 'hsl(150, 85%, 60%)' : 
-           s.status === 'completed' ? 'hsl(240, 85%, 75%)' : 
-           s.status === 'planned' ? 'hsl(35, 100%, 65%)' : 'hsl(0, 95%, 75%)',
-  }));
-
-  // Format platform performance data for bar chart
-  const platformPerformanceData = platformPerformance.map(p => ({
-    name: p.platform,
-    impressions: p.impressions / 1000, // Convert to thousands
-    clicks: p.clicks,
-    conversions: p.conversions,
-  }));
-
-  // Format client categories data for pie chart
-  const clientCategoriesData = categories.map(c => ({
-    name: c.name,
-    value: c.count,
-    color: c.color || undefined,
-  }));
-
-  // Format client activity trend data for line chart
-  const clientActivityData = trend.map(t => ({
-    name: t.name,
-    activity: t.value,
-  }));
-
-  // Platform performance chart series
-  const platformSeries = [
-    { name: 'Impressions (x1000)', key: 'impressions', color: 'hsl(220, 100%, 70%)' },
-    { name: 'Clicks', key: 'clicks', color: 'hsl(150, 85%, 60%)' },
-    { name: 'Conversions', key: 'conversions', color: 'hsl(35, 100%, 65%)' },
-  ];
-  
-  // Client activity chart series
-  const activitySeries = [
-    { name: 'Client Activity', key: 'activity', color: 'hsl(220, 100%, 70%)', type: 'monotone' as const },
+  // Sample client trends data (based on the screenshot)
+  const clientTrendsData = [
+    { name: 'Week 1', 'KLINT.RO': 14, 'Rustufuria': 12, 'Nike': 0 },
+    { name: 'Week 2', 'KLINT.RO': 10, 'Rustufuria': 6, 'Nike': 30 },
+    { name: 'Week 3', 'KLINT.RO': 38, 'Rustufuria': 20, 'Nike': 25 },
+    { name: 'Week 4', 'KLINT.RO': 30, 'Rustufuria': 15, 'Nike': 40 },
   ];
 
   // Loading state
@@ -133,59 +98,64 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-4">
           <MetricCard 
             title="Objectives" 
-            value={metrics[0]?.value || 78} 
+            value={53} 
             suffix="%" 
-            color="blue" 
-          />
-          
-          <MetricCard 
-            title="New Leads" 
-            value={metrics[1]?.value || 24} 
-            maxValue={50} 
-            color="purple" 
+            changePercentage={18}
+            changeValue={5}
+            color="blue"
+            showDonut={true}
           />
           
           <MetricCard 
             title="Inquiry Success Rate" 
-            value={metrics[2]?.value || 65} 
-            suffix="%" 
-            color="green" 
+            value={36.2} 
+            suffix="%"
+            changePercentage={-2.5}
+            changeValue={-0.9}
+            color="green"
+            showDonut={true} 
           />
           
           <MetricCard 
-            title="Overview" 
-            value={metrics[3]?.value || 92} 
-            suffix="%" 
-            color="amber" 
+            title="New Leads" 
+            value={134} 
+            changePercentage={18}
+            changeValue={28}
+            color="purple"
+            showDonut={false}
+          />
+          
+          <MetricCard 
+            title="Overdue Tasks" 
+            value={12} 
+            changeValue={7}
+            changePercentage={12}
+            color="green"
+            showDonut={false}
           />
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <PieChart
-            title="Campaign Status"
-            data={campaignStatusData}
+            title="Client Category"
+            subtitle="This Month"
+            data={[
+              { name: 'Fashion', value: 18.4, color: '#475569' },        // Slate 700
+              { name: 'Electronics', value: 29.1, color: '#64748b' },     // Slate 600
+              { name: 'Healthcare', value: 27.5, color: '#94a3b8' },      // Slate 400
+              { name: 'Sporting Goods', value: 25, color: '#334155' }     // Slate 800
+            ]}
             innerRadius={50}
+            outerRadius="80%"
+            showLegend={true}
           />
           
-          <BarChart
-            title="Platform Performance"
-            data={platformPerformanceData}
-            series={platformSeries}
+          <ClientTrendsChart
+            title="Clients Trends"
+            subtitle="This Month"
+            data={clientTrendsData}
           />
         </div>
-        
-        <PieChart
-          title="Client Categories"
-          data={clientCategoriesData}
-          innerRadius={0}
-        />
-        
-        <LineChart
-          title="Client Activity Trend"
-          data={clientActivityData}
-          series={activitySeries}
-          showAreaGradient={true}
-        />
 
         <GlassCard contentClassName="p-6">
           <div className="flex flex-col items-start justify-between md:flex-row md:items-center">
