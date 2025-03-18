@@ -19,11 +19,11 @@ interface SidebarProps {
 
 const navItems: NavItem[] = [
   { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
-  { name: 'Clients', href: '/dashboard/clients', icon: Users },
-  { name: 'Platforms', href: '/dashboard/platforms', icon: Monitor },
-  { name: 'Support', href: '/dashboard/support', icon: LifeBuoy },
-  { name: 'Invoices', href: '/dashboard/invoices', icon: FileText },
-  { name: 'Settings', href: '/dashboard/settings', icon: Settings },
+  { name: 'Clients', href: '/clients', icon: Users },
+  { name: 'Platforms', href: '/platforms', icon: Monitor },
+  { name: 'Support', href: '/support', icon: LifeBuoy },
+  { name: 'Invoices', href: '/invoices', icon: FileText },
+  { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
 export function Sidebar({ isOpen, isMobile, onClose }: SidebarProps = {}) {

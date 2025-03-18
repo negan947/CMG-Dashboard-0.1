@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { GlassCard } from '@/components/ui/glass-card';
 import { MetricCard } from '@/components/ui/charts/metric-card';
 import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
 import { CHART_COLORS } from '@/components/ui/charts/pie-chart';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { 
   User, ArrowUp, Search, Filter, Check, Phone, Clock, ArrowUpRight, 
   Plus, Target, BarChart, LightbulbIcon, XCircle, ChevronRight, Info, 
@@ -38,15 +39,20 @@ interface Client {
   platforms: Platform[];
   objectives?: Objective[];
   aovData?: DataPoint[];
+  cpaData?: DataPoint[];
 }
 
-// Simple chart component to replace LineChart
-const SimpleAOVChart = ({ 
+// Chart component to match client trends chart style
+const ChartComponent = ({ 
   data, 
-  isDark 
+  isDark,
+  prefix = '$',
+  color = '#10b981' // green-500
 }: { 
   data: DataPoint[]; 
   isDark: boolean;
+  prefix?: string;
+  color?: string;
 }): React.ReactNode => {
   if (!data || !data.length) {
     return (
@@ -63,16 +69,16 @@ const SimpleAOVChart = ({
     <div className="h-full w-full flex flex-col">
       {/* Y-axis labels */}
       <div className="flex justify-between text-xs mb-2">
-        <span className={isDark ? "text-zinc-400" : "text-gray-500"}>$0</span>
-        <span className={isDark ? "text-zinc-400" : "text-gray-500"}>${Math.round(maxValue / 2)}</span>
-        <span className={isDark ? "text-zinc-400" : "text-gray-500"}>${maxValue}</span>
+        <span className={isDark ? "text-zinc-400" : "text-gray-500"}>{prefix}0</span>
+        <span className={isDark ? "text-zinc-400" : "text-gray-500"}>{prefix}{Math.round(maxValue / 2)}</span>
+        <span className={isDark ? "text-zinc-400" : "text-gray-500"}>{prefix}{maxValue}</span>
       </div>
       
       {/* Chart area */}
       <div className="flex-1 relative">
         {/* Horizontal grid lines */}
-        <div className={`absolute inset-0 border-t border-b ${isDark ? "border-zinc-700" : "border-gray-200"}`}>
-          <div className={`absolute top-1/2 left-0 right-0 border-t ${isDark ? "border-zinc-700" : "border-gray-200"}`}></div>
+        <div className={`absolute inset-0 border-t border-b ${isDark ? "border-zinc-700/30" : "border-gray-200/50"}`}>
+          <div className={`absolute top-1/2 left-0 right-0 border-t ${isDark ? "border-zinc-700/30" : "border-gray-200/50"}`}></div>
         </div>
         
         {/* Data points and line */}
@@ -86,7 +92,7 @@ const SimpleAOVChart = ({
                 {/* Line to next point */}
                 {index < data.length - 1 && (
                   <div 
-                    className="absolute h-0.5 bg-green-500 z-10" 
+                    className="absolute h-0.5 z-10" 
                     style={{
                       width: `${100 / data.length}%`,
                       bottom: `${(point.value / maxValue) * 100}%`,
@@ -95,17 +101,32 @@ const SimpleAOVChart = ({
                         (data[index + 1].value - point.value) / maxValue * 100,
                         100 / data.length
                       ) * (180 / Math.PI)}deg)`,
-                      transformOrigin: 'left bottom'
+                      transformOrigin: 'left bottom',
+                      backgroundColor: color,
+                      filter: "drop-shadow(0 0 3px rgba(0,0,0,0.1))"
                     }}
                   ></div>
                 )}
                 
                 {/* Data point */}
                 <div className="relative" style={{ height: `${height}%` }}>
-                  <div className={`h-3 w-3 rounded-full bg-green-500 ${isLast ? "ring-2 ring-green-300" : ""} absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2`}></div>
+                  <div 
+                    className="h-3 w-3 rounded-full absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
+                    style={{
+                      backgroundColor: color,
+                      border: `2px solid ${isDark ? '#1a1a2e' : 'white'}`,
+                      boxShadow: `0 0 4px rgba(0,0,0,0.15)`
+                    }}
+                  ></div>
                   {isLast && (
-                    <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-10 bg-green-500 text-white text-xs rounded px-1 py-0.5">
-                      ${point.value}
+                    <div 
+                      className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-10 text-white text-xs rounded px-2 py-1 font-medium backdrop-blur-sm"
+                      style={{ 
+                        backgroundColor: `${color}ee`,
+                        boxShadow: '0 2px 6px rgba(0,0,0,0.2)'
+                      }}
+                    >
+                      {prefix}{point.value}
                     </div>
                   )}
                 </div>
@@ -123,12 +144,13 @@ const SimpleAOVChart = ({
   );
 };
 
-export default function ClientsPage() {
+function ClientsContent() {
   const { theme } = useTheme();
   const isDark = theme !== 'light';
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
   
   // Mock data based on the screenshot
   const metrics = {
@@ -183,6 +205,12 @@ export default function ClientsPage() {
         { name: 'November', value: 180 },
         { name: 'December', value: 200 },
         { name: 'January', value: 250 }
+      ],
+      cpaData: [
+        { name: 'October', value: 18 },
+        { name: 'November', value: 15 },
+        { name: 'December', value: 12 },
+        { name: 'January', value: 11 }
       ]
     },
     {
@@ -206,6 +234,12 @@ export default function ClientsPage() {
         { name: 'November', value: 130 },
         { name: 'December', value: 110 },
         { name: 'January', value: 140 }
+      ],
+      cpaData: [
+        { name: 'October', value: 20 },
+        { name: 'November', value: 19 },
+        { name: 'December', value: 17 },
+        { name: 'January', value: 16 }
       ]
     },
     {
@@ -228,6 +262,12 @@ export default function ClientsPage() {
         { name: 'November', value: 0 },
         { name: 'December', value: 90 },
         { name: 'January', value: 110 }
+      ],
+      cpaData: [
+        { name: 'October', value: 0 },
+        { name: 'November', value: 0 },
+        { name: 'December', value: 25 },
+        { name: 'January', value: 22 }
       ]
     },
     {
@@ -251,6 +291,12 @@ export default function ClientsPage() {
         { name: 'November', value: 150 },
         { name: 'December', value: 160 },
         { name: 'January', value: 170 }
+      ],
+      cpaData: [
+        { name: 'October', value: 16 },
+        { name: 'November', value: 14 },
+        { name: 'December', value: 12 },
+        { name: 'January', value: 13 }
       ]
     }
   ];
@@ -277,288 +323,340 @@ export default function ClientsPage() {
 
   // Handle close client detail view
   const handleCloseDetail = () => {
+    console.log('Closing modal'); // Debug log
     setIsModalVisible(false);
     // Remove selected client after animation completes
-    setTimeout(() => setSelectedClient(null), 300);
+    setTimeout(() => {
+      console.log('Clearing selected client'); // Debug log
+      setSelectedClient(null);
+    }, 300);
   };
 
-  // Client detail view based on the screenshot
-  const renderClientDetail = () => {
-    if (!selectedClient) return null;
+  // Handle clicks globally - close modal when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      // Only process if the modal is visible
+      if (!isModalVisible) return;
+      
+      // Check if click was outside the modal content
+      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+        handleCloseDetail();
+      }
+    }
+    
+    // Add the event listener directly to document
+    document.addEventListener('mousedown', handleClickOutside);
+    
+    // Clean up
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isModalVisible, modalRef]);
 
+  // Fully rewritten modal that will work reliably
+  const ClientDetailModal = ({ isOpen, onClose, client }: { 
+    isOpen: boolean; 
+    onClose: () => void; 
+    client: Client | null;
+  }) => {
+    // Don't render anything if no client or modal not open
+    if (!client || !isOpen) return null;
+    
+    // Prevent scroll on body when modal is open
+    useEffect(() => {
+      if (isOpen) {
+        document.body.style.overflow = 'hidden';
+      } else {
+        document.body.style.overflow = 'unset';
+      }
+      return () => {
+        document.body.style.overflow = 'unset';
+      };
+    }, [isOpen]);
+    
+    // Modal content
     return (
-      <div 
-        className={cn(
-          "fixed inset-0 z-50 flex items-center justify-center p-4",
-          "bg-black/50 backdrop-blur-sm transition-all duration-300 ease-in-out",
-          isModalVisible ? "opacity-100" : "opacity-0 pointer-events-none"
-        )}
-        onClick={handleCloseDetail}
-      >
+      <>
+        {/* Backdrop */}
         <div 
           className={cn(
-            "w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-xl",
-            "transition-all duration-300 ease-in-out",
-            isDark 
-              ? "bg-gradient-to-br from-[#0F0F12] via-[#171720] to-[#1C1C25] text-zinc-100" 
-              : "bg-gradient-to-br from-[#E8EDFF] via-[#F0F5FF] to-[#F5F9FF] text-gray-800",
-            "border",
-            isDark ? "border-zinc-700/40" : "border-white/40",
-            "shadow-2xl",
-            isModalVisible ? "transform-none" : "translate-y-8 scale-95"
+            "fixed inset-0 z-50 bg-black/50 backdrop-blur-sm",
+            "transition-opacity duration-300 cursor-pointer",
+            isOpen ? "opacity-100" : "opacity-0"
           )}
-          onClick={(e) => e.stopPropagation()}
+          onClick={onClose}
+        />
+        
+        {/* Modal content */}
+        <div 
+          className={cn(
+            "fixed z-50 inset-0 overflow-y-auto p-4",
+            "flex items-center justify-center"
+          )}
+          onClick={onClose} // Close when clicking outside
         >
-          {/* Background patterns and effects - same as in main page */}
-          <div className={cn(
-            "absolute inset-0 -z-1 rounded-xl overflow-hidden",
-          )}>
-            {/* Dot pattern */}
-            <div className="absolute inset-0 opacity-10 pointer-events-none">
+          <div 
+            className={cn(
+              "w-full max-w-4xl max-h-[90vh] rounded-xl relative",
+              "transition-all duration-300",
+              isDark 
+                ? "bg-gradient-to-br from-[#0F0F12] via-[#171720] to-[#1C1C25] text-zinc-100" 
+                : "bg-gradient-to-br from-[#E8EDFF] via-[#F0F5FF] to-[#F5F9FF] text-gray-800",
+              "border overflow-y-auto",
+              isDark ? "border-zinc-700/40" : "border-white/40",
+              "shadow-2xl",
+              isOpen ? "opacity-100 transform-none" : "opacity-0 translate-y-8 scale-95"
+            )}
+            onClick={(e) => e.stopPropagation()} // Prevent closing when clicking on content
+          >
+            {/* Close button - removing since we have backdrop click working */}
+            
+            {/* Background patterns - simplified for reliability */}
+            <div className="absolute inset-0 opacity-10 pointer-events-none z-0">
               <div className="absolute inset-0" style={{
                 backgroundImage: isDark 
-                  ? "radial-gradient(" + CHART_COLORS[0] + "60 1px, transparent 1px), " + 
-                    "radial-gradient(" + CHART_COLORS[1] + "60 1px, transparent 1px), " +
-                    "radial-gradient(" + CHART_COLORS[2] + "40 1px, transparent 1px)"
-                  : "radial-gradient(" + CHART_COLORS[0] + "40 1px, transparent 1px), " +
-                    "radial-gradient(" + CHART_COLORS[1] + "40 1px, transparent 1px), " +
-                    "radial-gradient(" + CHART_COLORS[2] + "30 1px, transparent 1px)",
-                backgroundSize: '60px 60px, 80px 80px, 70px 70px',
-                backgroundPosition: '0 0, 30px 30px, 15px 15px',
+                  ? "radial-gradient(#60a5fa60 1px, transparent 1px)" 
+                  : "radial-gradient(#60a5fa40 1px, transparent 1px)",
+                backgroundSize: '60px 60px'
               }} />
             </div>
             
-            {/* Texture overlay for dark mode */}
-            {isDark && (
-              <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{
-                backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'600\' height=\'600\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.65\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\' opacity=\'0.4\'/%3E%3C/svg%3E")',
-                backgroundRepeat: 'repeat',
-              }} />
-            )}
-            
-            {/* Inner shadow */}
+            {/* Client Header */}
             <div className={cn(
-              "absolute inset-0 pointer-events-none rounded-xl",
-              isDark 
-                ? "shadow-[inset_0_0_20px_rgba(0,0,0,0.12)]" 
-                : "shadow-[inset_0_0_15px_rgba(0,0,0,0.03)]"
-            )} />
-            
-            {/* Top border glow */}
-            <div className={cn(
-              "absolute top-0 left-[10%] right-[10%] h-[1px]",
-              isDark ? "bg-zinc-500/20" : "bg-white/80"
-            )} />
-          </div>
-
-          {/* Client Header */}
-          <div className={cn(
-            "p-6 border-b relative z-10",
-            isDark ? "border-zinc-700/40" : "border-gray-200/40"
-          )}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <Avatar className="h-16 w-16 mr-5 shadow-lg">
-                  <AvatarFallback className={cn(
-                    isDark 
-                      ? "bg-zinc-800/70 text-zinc-200" 
-                      : "bg-blue-100/70 text-blue-700",
-                    "backdrop-blur-sm"
-                  )}>
-                    {selectedClient.initials}
-                  </AvatarFallback>
-                </Avatar>
+              "p-6 border-b relative z-10",
+              isDark ? "border-zinc-700/40" : "border-gray-200/40"
+            )}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <Avatar className="h-16 w-16 mr-5 shadow-lg">
+                    <AvatarFallback className={cn(
+                      isDark 
+                        ? "bg-zinc-800/70 text-zinc-200" 
+                        : "bg-blue-100/70 text-blue-700",
+                      "backdrop-blur-sm"
+                    )}>
+                      {client.initials}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <h2 className="text-xl font-bold">{client.name}</h2>
+                    <p className={cn(
+                      "text-sm",
+                      isDark ? "text-zinc-400" : "text-gray-500"
+                    )}>
+                      {client.status}
+                    </p>
+                  </div>
+                </div>
                 <div>
-                  <h2 className="text-xl font-bold">{selectedClient.name}</h2>
-                  <p className={cn(
-                    "text-sm",
-                    isDark ? "text-zinc-400" : "text-gray-500"
-                  )}>
-                    {selectedClient.status}
-                  </p>
-                </div>
-              </div>
-              <div>
-                <button 
-                  className={cn(
-                    "flex items-center gap-2 px-4 py-2 rounded-md transition-colors",
-                    "bg-green-600/90 hover:bg-green-700 text-white backdrop-blur-sm"
-                  )}
-                >
-                  <Phone className="h-4 w-4" />
-                  <span>Contact Details</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Client Content */}
-          <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6 relative z-10">
-            {/* Left Column */}
-            <div className="space-y-6">
-              {/* Objectives */}
-              <div className={cn(
-                "p-5 rounded-xl",
-                isDark 
-                  ? "bg-zinc-800/40 border border-zinc-700/30" 
-                  : "bg-white/40 border border-gray-200/40",
-                "backdrop-blur-sm"
-              )}>
-                <div className="flex items-center mb-4">
-                  <Target className="h-5 w-5 mr-2" />
-                  <h3 className="text-lg font-semibold">Objectives</h3>
-                </div>
-                <div className="space-y-4">
-                  {selectedClient.objectives?.map((objective, idx) => (
-                    <div key={idx} className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium">{objective.name}</span>
-                      </div>
-                      <div className={cn(
-                        "w-full h-2 rounded-full overflow-hidden",
-                        isDark ? "bg-zinc-700/70" : "bg-gray-200/70"
-                      )}>
-                        <div 
-                          className="h-full rounded-full bg-green-500 transition-all duration-1000"
-                          style={{ width: `${objective.progress}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* No Requests Panel */}
-              <div className={cn(
-                "p-4 rounded-xl flex items-center gap-3",
-                isDark 
-                  ? "bg-zinc-800/40 border border-zinc-700/30" 
-                  : "bg-white/40 border border-gray-200/40",
-                "backdrop-blur-sm"
-              )}>
-                <LightbulbIcon className={cn(
-                  "h-5 w-5",
-                  isDark ? "text-zinc-300" : "text-gray-600"
-                )} />
-                <span className="text-sm font-medium">No requests...</span>
-              </div>
-
-              {/* Platforms */}
-              <div className={cn(
-                "p-5 rounded-xl",
-                isDark 
-                  ? "bg-zinc-800/40 border border-zinc-700/30" 
-                  : "bg-white/40 border border-gray-200/40",
-                "backdrop-blur-sm"
-              )}>
-                <div className="flex items-center mb-4">
-                  <BarChart className="h-5 w-5 mr-2" />
-                  <h3 className="text-lg font-semibold">Platforms</h3>
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                  <div className={cn(
-                    "p-4 rounded-lg flex items-center justify-center",
-                    isDark 
-                      ? "bg-zinc-900/60 border border-zinc-800/60" 
-                      : "bg-white/60 border border-gray-200/40",
-                    "hover:shadow-md transition-all duration-200"
-                  )}>
-                    <Facebook className="h-8 w-8 text-blue-500" />
-                  </div>
-                  <div className={cn(
-                    "p-4 rounded-lg flex items-center justify-center",
-                    isDark 
-                      ? "bg-zinc-900/60 border border-zinc-800/60" 
-                      : "bg-white/60 border border-gray-200/40",
-                    "hover:shadow-md transition-all duration-200"
-                  )}>
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-8 w-8 text-red-500">
-                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5.46 8.12l-1.97 9.03c-.14.65-.76 1.09-1.43.99-.28-.04-.52-.17-.71-.37l-3.36-3.36-1.99 1.99c-.56.56-1.5.16-1.5-.64V12.8c0-.29.12-.57.33-.78l5.67-5.67c.29-.29.77-.12.89.28.03.11.05.23.05.34v2.04c0 .39-.16.77-.44 1.04l-3.33 3.33 2.71 2.71 3.77-5.13c.22-.3.58-.45.94-.39.81.13 1.09 1.1.58 1.73l-.21.28z" />
-                    </svg>
-                  </div>
-                  <div className={cn(
-                    "p-4 rounded-lg flex items-center justify-center",
-                    isDark 
-                      ? "bg-zinc-900/60 border border-zinc-800/60" 
-                      : "bg-white/60 border border-gray-200/40",
-                    "hover:shadow-md transition-all duration-200"
-                  )}>
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-8 w-8">
-                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM9.09 7.06c.39-.39 1.02-.39 1.41 0 .39.39.39 1.02 0 1.41s-1.02.39-1.41 0-.39-1.02 0-1.41zm7.82 9.88c-1.17 1.17-2.73 1.81-4.39 1.81s-3.22-.64-4.39-1.81c-.39-.39-.39-1.02 0-1.41.39-.39 1.02-.39 1.41 0 .79.79 1.85 1.23 2.98 1.23s2.18-.44 2.98-1.23c.39-.39 1.02-.39 1.41 0 .39.39.39 1.02 0 1.41zm-1.41-8.47c-.39.39-1.02.39-1.41 0s-.39-1.02 0-1.41 1.02-.39 1.41 0c.39.39.39 1.02 0 1.41z" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Column */}
-            <div className="space-y-6">
-              {/* A.O.V Chart */}
-              <div className={cn(
-                "p-5 rounded-xl",
-                isDark 
-                  ? "bg-zinc-800/40 border border-zinc-700/30" 
-                  : "bg-white/40 border border-gray-200/40",
-                "backdrop-blur-sm"
-              )}>
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold flex items-center">
-                    A.O.V
-                    <Info className="h-4 w-4 ml-2 text-gray-400" />
-                  </h3>
-                  <button className="text-gray-400"
-                    aria-label="More options">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="1" />
-                      <circle cx="19" cy="12" r="1" />
-                      <circle cx="5" cy="12" r="1" />
-                    </svg>
+                  <button 
+                    className={cn(
+                      "flex items-center gap-2 px-4 py-2 rounded-md transition-colors",
+                      "bg-green-600/90 hover:bg-green-700 text-white backdrop-blur-sm"
+                    )}
+                  >
+                    <Phone className="h-4 w-4" />
+                    <span>Contact Details</span>
                   </button>
                 </div>
-                <div className="h-72">
-                  {selectedClient.aovData ? (
-                    <SimpleAOVChart 
-                      data={selectedClient.aovData}
-                      isDark={isDark}
-                    />
-                  ) : (
-                    <div className="flex items-center justify-center h-full">
-                      <p className={cn(
-                        "text-sm",
-                        isDark ? "text-zinc-400" : "text-gray-500"
-                      )}>No chart data available</p>
+              </div>
+            </div>
+
+            {/* Client Content - using Grid layout */}
+            <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6 relative z-10">
+              {/* Left Column */}
+              <div className="space-y-6">
+                {/* Objectives */}
+                <div className={cn(
+                  "p-5 rounded-xl",
+                  isDark 
+                    ? "bg-zinc-800/40 border border-zinc-700/30" 
+                    : "bg-white/40 border border-gray-200/40",
+                  "backdrop-blur-sm"
+                )}>
+                  <div className="flex items-center mb-4">
+                    <Target className="h-5 w-5 mr-2" />
+                    <h3 className="text-lg font-semibold">Objectives</h3>
+                  </div>
+                  <div className="space-y-4">
+                    {client.objectives?.map((objective, idx) => (
+                      <div key={idx} className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium">{objective.name}</span>
+                        </div>
+                        <div className={cn(
+                          "w-full h-2 rounded-full overflow-hidden",
+                          isDark ? "bg-zinc-700/70" : "bg-gray-200/70"
+                        )}>
+                          <div 
+                            className="h-full rounded-full bg-green-500 transition-all duration-1000"
+                            style={{ width: `${objective.progress}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Platforms */}
+                <div className={cn(
+                  "p-5 rounded-xl",
+                  isDark 
+                    ? "bg-zinc-800/40 border border-zinc-700/30" 
+                    : "bg-white/40 border border-gray-200/40",
+                  "backdrop-blur-sm"
+                )}>
+                  <div className="flex items-center mb-4">
+                    <BarChart className="h-5 w-5 mr-2" />
+                    <h3 className="text-lg font-semibold">Platforms</h3>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className={cn(
+                      "p-4 rounded-lg flex items-center justify-center",
+                      isDark 
+                        ? "bg-zinc-900/60 border border-zinc-800/60" 
+                        : "bg-white/60 border border-gray-200/40",
+                      "hover:shadow-md transition-all duration-200"
+                    )}>
+                      <Facebook className="h-8 w-8 text-blue-500" />
                     </div>
-                  )}
+                    <div className={cn(
+                      "p-4 rounded-lg flex items-center justify-center",
+                      isDark 
+                        ? "bg-zinc-900/60 border border-zinc-800/60" 
+                        : "bg-white/60 border border-gray-200/40",
+                      "hover:shadow-md transition-all duration-200"
+                    )}>
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="h-8 w-8">
+                        <path d="M22.18 10.382c-.39-.285-.806-.523-1.239-.719v-.031c.03-.377-.135-8.016-4.182-7.632-3.713.347-5.284 3.03-5.714 4.115-.43-1.086-2-3.768-5.714-4.115-4.049-.384-4.212 7.255-4.183 7.631v.034a7.734 7.734 0 0 0-1.225.718C-3.318 13.96 1.267 23.56 11.992 24h.02c10.725-.439 15.313-10.042 10.169-13.618zm-10.17 5.555l-.002-.005c-.9 1.296-2.222 2.155-3.75 2.155-2.573 0-4.661-2.344-4.661-5.24 0-2.894 2.088-5.24 4.66-5.24 1.675 0 3.122 1.04 3.964 2.58h-.008c.209.38.391.79.537 1.22H9.225a4.613 4.613 0 0 0-.474-1.012l.008-.004A3.307 3.307 0 0 0 8 9.444a3.153 3.153 0 0 0-2.08-.784c-1.861 0-3.369 1.683-3.369 3.757 0 2.073 1.508 3.756 3.369 3.756.832 0 1.588-.32 2.164-.845.476-.433.857-1.013 1.085-1.674h-3.25v-1.783h5.12c.061.362.097.73.097 1.114a6.58 6.58 0 0 1-.162 1.459c.109.321.19.618.19.618l-.006-.019c-.012-.03-.019-.063-.028-.095v-.002zm9.222-.446c-.24.995-.584 1.777-1.05 2.384a4.415 4.415 0 0 1-1.57 1.372c-.594.333-1.283.56-2.06.68v1.375h-1.716v-1.35c-1.124-.079-2.094-.376-2.92-.887l.874-2.023c.335.193.915.455 1.428.627.513.17 1.26.322 1.777.322.517 0 .915-.073 1.191-.218.276-.146.415-.403.415-.77 0-.207-.068-.395-.205-.564a1.69 1.69 0 0 0-.542-.406 9.714 9.714 0 0 0-.757-.3c-.275-.098-.549-.2-.83-.322a8.632 8.632 0 0 1-.859-.398 3.164 3.164 0 0 1-.715-.535 2.443 2.443 0 0 1-.487-.733 2.433 2.433 0 0 1-.175-.972c0-.636.15-1.17.45-1.604.301-.434.702-.784 1.207-1.05a5.446 5.446 0 0 1 1.67-.561V3.5h1.716v1.334c.549.048 1.033.146 1.448.293.415.146.778.307 1.085.48.308.17.547.333.72.486l-.997 1.902a7.91 7.91 0 0 0-.874-.418 6.286 6.286 0 0 0-1.671-.429c-.523-.037-.919.017-1.191.164-.272.146-.408.39-.408.733 0 .185.041.34.123.465.081.125.21.24.384.342.175.101.394.195.659.28l.801.305c.277.11.562.23.856.361.294.13.568.29.82.474.252.186.457.41.616.674.158.266.236.584.236.954.002.65-.138 1.203-.375 1.674v.003z" fill="#4285F4"/>
+                      </svg>
+                    </div>
+                    <div className={cn(
+                      "p-4 rounded-lg flex items-center justify-center",
+                      isDark 
+                        ? "bg-zinc-900/60 border border-zinc-800/60" 
+                        : "bg-white/60 border border-gray-200/40",
+                      "hover:shadow-md transition-all duration-200"
+                    )}>
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-8 w-8 text-black">
+                        <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+                      </svg>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="space-y-3">
-                <button className={cn(
-                  "w-full p-3 rounded-lg flex items-center gap-2 transition-colors",
+              {/* Right Column */}
+              <div className="space-y-6">
+                {/* Charts and action buttons */}
+                {/* A.O.V Chart */}
+                <div className={cn(
+                  "p-5 rounded-xl",
                   isDark 
-                    ? "bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/30 text-zinc-100" 
-                    : "bg-white/60 hover:bg-gray-100/60 border border-gray-200/40 text-gray-800",
+                    ? "bg-zinc-800/40 border border-zinc-700/30" 
+                    : "bg-white/40 border border-gray-200/40",
                   "backdrop-blur-sm"
                 )}>
-                  <LightbulbIcon className="h-5 w-5" />
-                  <span>Send Follow-up!</span>
-                </button>
-                <button className={cn(
-                  "w-full p-3 rounded-lg flex items-center gap-2 transition-colors",
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold flex items-center">
+                      A.O.V
+                      <Info className="h-4 w-4 ml-2 text-gray-400" />
+                    </h3>
+                    <button className="text-gray-400"
+                      aria-label="More options">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="1" />
+                        <circle cx="19" cy="12" r="1" />
+                        <circle cx="5" cy="12" r="1" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div className="h-72">
+                    {client.aovData ? (
+                      <ChartComponent 
+                        data={client.aovData}
+                        isDark={isDark}
+                        color="#10b981" // green-500
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center h-full">
+                        <p className={cn(
+                          "text-sm",
+                          isDark ? "text-zinc-400" : "text-gray-500"
+                        )}>No chart data available</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* CPA Chart */}
+                <div className={cn(
+                  "p-5 rounded-xl",
                   isDark 
-                    ? "bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/30 text-zinc-100" 
-                    : "bg-white/60 hover:bg-gray-100/60 border border-gray-200/40 text-gray-800",
+                    ? "bg-zinc-800/40 border border-zinc-700/30" 
+                    : "bg-white/40 border border-gray-200/40",
                   "backdrop-blur-sm"
                 )}>
-                  <Clock className="h-5 w-5" />
-                  <span>Payment due in 48h</span>
-                </button>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold flex items-center">
+                      Cost Per Acquisition
+                      <Info className="h-4 w-4 ml-2 text-gray-400" />
+                    </h3>
+                    <button className="text-gray-400"
+                      aria-label="More options">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="1" />
+                        <circle cx="19" cy="12" r="1" />
+                        <circle cx="5" cy="12" r="1" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div className="h-72">
+                    {client.cpaData ? (
+                      <ChartComponent 
+                        data={client.cpaData}
+                        isDark={isDark}
+                        color="#f97316" // orange-500
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center h-full">
+                        <p className={cn(
+                          "text-sm",
+                          isDark ? "text-zinc-400" : "text-gray-500"
+                        )}>No chart data available</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Action Buttons */}
+                <div className="space-y-3 mt-6">
+                  <button className={cn(
+                    "w-full p-3 rounded-lg flex items-center gap-2 transition-colors",
+                    isDark 
+                      ? "bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/30 text-zinc-100" 
+                      : "bg-white/60 hover:bg-gray-100/60 border border-gray-200/40 text-gray-800",
+                    "backdrop-blur-sm"
+                  )}>
+                    <LightbulbIcon className="h-5 w-5" />
+                    <span>Send Follow-up!</span>
+                  </button>
+                  <button className={cn(
+                    "w-full p-3 rounded-lg flex items-center gap-2 transition-colors",
+                    isDark 
+                      ? "bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/30 text-zinc-100" 
+                      : "bg-white/60 hover:bg-gray-100/60 border border-gray-200/40 text-gray-800",
+                    "backdrop-blur-sm"
+                  )}>
+                    <Clock className="h-5 w-5" />
+                    <span>Payment due in 48h</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </>
     );
   };
 
@@ -640,15 +738,15 @@ export default function ClientsPage() {
           {/* Left Side: Delays & Follow-ups and Quick Actions */}
           <div className="space-y-6">
             {/* Delays & Follow-ups Card */}
-      <GlassCard
+            <GlassCard
               title="Delays & Follow-ups"
               contentClassName="p-4"
-      >
+            >
               <div className="space-y-3">
                 {delaysAndFollowups.map((item) => (
-            <div 
+                  <div 
                     key={item.id} 
-              className={cn(
+                    className={cn(
                       "flex items-center p-3 rounded-lg transition-colors",
                       isDark ? "hover:bg-zinc-800/50" : "hover:bg-gray-50"
                     )}
@@ -774,17 +872,17 @@ export default function ClientsPage() {
                             {client.initials}
                           </AvatarFallback>
                         </Avatar>
-              <div>
-                <h3 className={cn(
+                        <div>
+                          <h3 className={cn(
                             "font-semibold text-base",
-                  isDark ? "text-zinc-100" : "text-gray-800"
-                )}>
+                            isDark ? "text-zinc-100" : "text-gray-800"
+                          )}>
                             {client.name}
-                </h3>
-                <p className={cn(
-                  "text-sm",
-                  isDark ? "text-zinc-400" : "text-gray-500"
-                )}>
+                          </h3>
+                          <p className={cn(
+                            "text-sm",
+                            isDark ? "text-zinc-400" : "text-gray-500"
+                          )}>
                             {client.status}
                           </p>
                         </div>
@@ -832,17 +930,42 @@ export default function ClientsPage() {
                           </span>
                         </div>
                       ))}
+                    </div>
+                  </div>
+                ))}
               </div>
-            </div>
-          ))}
-        </div>
-      </GlassCard>
+            </GlassCard>
           </div>
         </div>
       </div>
 
-      {/* Client Detail Modal */}
-      {renderClientDetail()}
+      {/* Client Detail Modal - using our new component */}
+      <ClientDetailModal 
+        isOpen={isModalVisible}
+        onClose={handleCloseDetail}
+        client={selectedClient}
+      />
     </div>
+  );
+}
+
+// Default export with DashboardLayout
+export default function ClientsPage() {
+  // Use client-side only rendering
+  const [isMounted, setIsMounted] = useState(false);
+  
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+  
+  if (!isMounted) {
+    return null; // Return nothing during SSR to avoid hydration issues
+  }
+  
+  // When mounted, render with DashboardLayout
+  return (
+    <DashboardLayout>
+      <ClientsContent />
+    </DashboardLayout>
   );
 } 
