@@ -7,10 +7,19 @@ import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
 import { CHART_COLORS } from '@/components/ui/charts/pie-chart';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts';
 import { 
   User, ArrowUp, Search, Filter, Check, Phone, Clock, ArrowUpRight, 
   Plus, Target, BarChart, LightbulbIcon, XCircle, ChevronRight, Info, 
-  Facebook, Twitter, TrendingUp
+  Facebook, Twitter, TrendingUp, Instagram
 } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
@@ -42,12 +51,12 @@ interface Client {
   cpaData?: DataPoint[];
 }
 
-// Chart component to match client trends chart style
+// Modern chart component using recharts to match the client trends chart exactly
 const ChartComponent = ({ 
   data, 
   isDark,
   prefix = '$',
-  color = '#10b981' // green-500
+  color = CHART_COLORS[0] // Default to first chart color
 }: { 
   data: DataPoint[]; 
   isDark: boolean;
@@ -62,84 +71,114 @@ const ChartComponent = ({
     );
   }
 
-  // Find max value for scaling
-  const maxValue = Math.max(...data.map(item => item.value));
+  // Convert data to format needed by recharts
+  const formattedData = data.map(point => ({
+    name: point.name,
+    value: point.value
+  }));
+  
+  // Create custom tooltip
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className={cn(
+          "px-3 py-2 rounded-md text-sm",
+          isDark 
+            ? "bg-[rgba(30,35,60,0.85)] text-white border border-white/20" 
+            : "bg-white/85 text-gray-800 border border-gray-200/50",
+          "backdrop-blur-md shadow-lg"
+        )}>
+          <p className="font-medium mb-1">{label}</p>
+          <p className="text-sm">
+            <span className="font-medium">{prefix}{payload[0].value}</span>
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  // Create a unique ID for the gradient
+  const gradientId = `colorGradient-${color.replace('#', '')}`;
+  const glowFilterId = `glow-${color.replace('#', '')}`;
   
   return (
-    <div className="h-full w-full flex flex-col">
-      {/* Y-axis labels */}
-      <div className="flex justify-between text-xs mb-2">
-        <span className={isDark ? "text-zinc-400" : "text-gray-500"}>{prefix}0</span>
-        <span className={isDark ? "text-zinc-400" : "text-gray-500"}>{prefix}{Math.round(maxValue / 2)}</span>
-        <span className={isDark ? "text-zinc-400" : "text-gray-500"}>{prefix}{maxValue}</span>
-      </div>
-      
-      {/* Chart area */}
-      <div className="flex-1 relative">
-        {/* Horizontal grid lines */}
-        <div className={`absolute inset-0 border-t border-b ${isDark ? "border-zinc-700/30" : "border-gray-200/50"}`}>
-          <div className={`absolute top-1/2 left-0 right-0 border-t ${isDark ? "border-zinc-700/30" : "border-gray-200/50"}`}></div>
-        </div>
-        
-        {/* Data points and line */}
-        <div className="absolute inset-0 flex items-end">
-          {data.map((point, index) => {
-            const height = (point.value / maxValue) * 100;
-            const isLast = index === data.length - 1;
-            
-            return (
-              <div key={index} className="flex-1 flex flex-col items-center justify-end">
-                {/* Line to next point */}
-                {index < data.length - 1 && (
-                  <div 
-                    className="absolute h-0.5 z-10" 
-                    style={{
-                      width: `${100 / data.length}%`,
-                      bottom: `${(point.value / maxValue) * 100}%`,
-                      left: `${(index + 0.5) * (100 / data.length)}%`,
-                      transform: `rotate(${Math.atan2(
-                        (data[index + 1].value - point.value) / maxValue * 100,
-                        100 / data.length
-                      ) * (180 / Math.PI)}deg)`,
-                      transformOrigin: 'left bottom',
-                      backgroundColor: color,
-                      filter: "drop-shadow(0 0 3px rgba(0,0,0,0.1))"
-                    }}
-                  ></div>
-                )}
-                
-                {/* Data point */}
-                <div className="relative" style={{ height: `${height}%` }}>
-                  <div 
-                    className="h-3 w-3 rounded-full absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
-                    style={{
-                      backgroundColor: color,
-                      border: `2px solid ${isDark ? '#1a1a2e' : 'white'}`,
-                      boxShadow: `0 0 4px rgba(0,0,0,0.15)`
-                    }}
-                  ></div>
-                  {isLast && (
-                    <div 
-                      className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-10 text-white text-xs rounded px-2 py-1 font-medium backdrop-blur-sm"
-                      style={{ 
-                        backgroundColor: `${color}ee`,
-                        boxShadow: '0 2px 6px rgba(0,0,0,0.2)'
-                      }}
-                    >
-                      {prefix}{point.value}
-                    </div>
-                  )}
-                </div>
-                
-                {/* X-axis label */}
-                <div className={`mt-4 text-xs ${isDark ? "text-zinc-400" : "text-gray-500"}`}>
-                  {point.name}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+    <div className="h-full w-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart
+          data={formattedData}
+          margin={{ top: 10, right: 10, left: 0, bottom: 10 }}
+        >
+          <CartesianGrid 
+            strokeDasharray="3 3" 
+            horizontal={true}
+            vertical={false}
+            stroke={isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)"} 
+          />
+          
+          <XAxis
+            dataKey="name"
+            stroke={isDark ? "rgba(255, 255, 255, 0.6)" : "rgba(0, 0, 0, 0.6)"}
+            fontSize={12}
+            tickLine={false}
+            axisLine={false}
+            dy={10}
+            tickMargin={5}
+          />
+          
+          <YAxis
+            stroke={isDark ? "rgba(255, 255, 255, 0.6)" : "rgba(0, 0, 0, 0.6)"}
+            fontSize={12}
+            tickLine={false}
+            axisLine={false}
+            width={30}
+            tickMargin={5}
+            tickFormatter={(value) => `${prefix}${value}`}
+          />
+          
+          <Tooltip 
+            content={<CustomTooltip />}
+            cursor={{stroke: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)', strokeDasharray: '3 3'}}
+          />
+          
+          <defs>
+            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor={color} stopOpacity={0.8}/>
+              <stop offset="95%" stopColor={color} stopOpacity={0.1}/>
+            </linearGradient>
+            <filter id={glowFilterId} x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="3" result="blur" />
+              <feComposite in="SourceGraphic" in2="blur" operator="over" />
+            </filter>
+          </defs>
+          
+          <Line
+            type="monotone"
+            dataKey="value"
+            name="Value"
+            stroke={color}
+            strokeWidth={2.5}
+            fill={`url(#${gradientId})`} // Fill area under the line
+            fillOpacity={0.2}
+            dot={{
+              r: 4,
+              fill: isDark ? "#1e1e2d" : "#ffffff",
+              stroke: color,
+              strokeWidth: 2,
+            }}
+            activeDot={{
+              r: 6,
+              stroke: isDark ? "rgba(255, 255, 255, 0.8)" : "#ffffff",
+              strokeWidth: 2,
+              fill: color,
+              filter: `url(#${glowFilterId})`
+            }}
+            isAnimationActive={true}
+            animationDuration={1000}
+            animationEasing="ease-in-out"
+          />
+        </LineChart>
+      </ResponsiveContainer>
     </div>
   );
 };
@@ -452,8 +491,15 @@ function ClientsContent() {
                   <button 
                     className={cn(
                       "flex items-center gap-2 px-4 py-2 rounded-md transition-colors",
-                      "bg-green-600/90 hover:bg-green-700 text-white backdrop-blur-sm"
+                      isDark 
+                        ? "bg-zinc-800/70 hover:bg-zinc-700/70 border border-zinc-700/30 text-zinc-100" 
+                        : "bg-white/70 hover:bg-white/90 border border-gray-200/40 text-gray-800",
+                      "backdrop-blur-sm"
                     )}
+                    style={{
+                      color: CHART_COLORS[0],
+                      borderColor: `${CHART_COLORS[0]}40`
+                    }}
                   >
                     <Phone className="h-4 w-4" />
                     <span>Contact Details</span>
@@ -489,8 +535,11 @@ function ClientsContent() {
                           isDark ? "bg-zinc-700/70" : "bg-gray-200/70"
                         )}>
                           <div 
-                            className="h-full rounded-full bg-green-500 transition-all duration-1000"
-                            style={{ width: `${objective.progress}%` }}
+                            className="h-full rounded-full transition-all duration-1000"
+                            style={{ 
+                              width: `${objective.progress}%`,
+                              backgroundColor: CHART_COLORS[idx % CHART_COLORS.length]
+                            }}
                           ></div>
                         </div>
                       </div>
@@ -527,8 +576,10 @@ function ClientsContent() {
                         : "bg-white/60 border border-gray-200/40",
                       "hover:shadow-md transition-all duration-200"
                     )}>
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="h-8 w-8">
-                        <path d="M22.18 10.382c-.39-.285-.806-.523-1.239-.719v-.031c.03-.377-.135-8.016-4.182-7.632-3.713.347-5.284 3.03-5.714 4.115-.43-1.086-2-3.768-5.714-4.115-4.049-.384-4.212 7.255-4.183 7.631v.034a7.734 7.734 0 0 0-1.225.718C-3.318 13.96 1.267 23.56 11.992 24h.02c10.725-.439 15.313-10.042 10.169-13.618zm-10.17 5.555l-.002-.005c-.9 1.296-2.222 2.155-3.75 2.155-2.573 0-4.661-2.344-4.661-5.24 0-2.894 2.088-5.24 4.66-5.24 1.675 0 3.122 1.04 3.964 2.58h-.008c.209.38.391.79.537 1.22H9.225a4.613 4.613 0 0 0-.474-1.012l.008-.004A3.307 3.307 0 0 0 8 9.444a3.153 3.153 0 0 0-2.08-.784c-1.861 0-3.369 1.683-3.369 3.757 0 2.073 1.508 3.756 3.369 3.756.832 0 1.588-.32 2.164-.845.476-.433.857-1.013 1.085-1.674h-3.25v-1.783h5.12c.061.362.097.73.097 1.114a6.58 6.58 0 0 1-.162 1.459c.109.321.19.618.19.618l-.006-.019c-.012-.03-.019-.063-.028-.095v-.002zm9.222-.446c-.24.995-.584 1.777-1.05 2.384a4.415 4.415 0 0 1-1.57 1.372c-.594.333-1.283.56-2.06.68v1.375h-1.716v-1.35c-1.124-.079-2.094-.376-2.92-.887l.874-2.023c.335.193.915.455 1.428.627.513.17 1.26.322 1.777.322.517 0 .915-.073 1.191-.218.276-.146.415-.403.415-.77 0-.207-.068-.395-.205-.564a1.69 1.69 0 0 0-.542-.406 9.714 9.714 0 0 0-.757-.3c-.275-.098-.549-.2-.83-.322a8.632 8.632 0 0 1-.859-.398 3.164 3.164 0 0 1-.715-.535 2.443 2.443 0 0 1-.487-.733 2.433 2.433 0 0 1-.175-.972c0-.636.15-1.17.45-1.604.301-.434.702-.784 1.207-1.05a5.446 5.446 0 0 1 1.67-.561V3.5h1.716v1.334c.549.048 1.033.146 1.448.293.415.146.778.307 1.085.48.308.17.547.333.72.486l-.997 1.902a7.91 7.91 0 0 0-.874-.418 6.286 6.286 0 0 0-1.671-.429c-.523-.037-.919.017-1.191.164-.272.146-.408.39-.408.733 0 .185.041.34.123.465.081.125.21.24.384.342.175.101.394.195.659.28l.801.305c.277.11.562.23.856.361.294.13.568.29.82.474.252.186.457.41.616.674.158.266.236.584.236.954.002.65-.138 1.203-.375 1.674v.003z" fill="#4285F4"/>
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="h-8 w-8" style={{ color: '#E1306C' }}>
+                        <rect x="2" y="2" width="20" height="20" rx="5" strokeWidth="2" />
+                        <circle cx="12" cy="12" r="4" strokeWidth="2" />
+                        <circle cx="18" cy="6" r="1.5" fill="currentColor" stroke="none" />
                       </svg>
                     </div>
                     <div className={cn(
@@ -576,7 +627,7 @@ function ClientsContent() {
                       <ChartComponent 
                         data={client.aovData}
                         isDark={isDark}
-                        color="#10b981" // green-500
+                        color={CHART_COLORS[0]}
                       />
                     ) : (
                       <div className="flex items-center justify-center h-full">
@@ -616,7 +667,7 @@ function ClientsContent() {
                       <ChartComponent 
                         data={client.cpaData}
                         isDark={isDark}
-                        color="#f97316" // orange-500
+                        color={CHART_COLORS[1]}
                       />
                     ) : (
                       <div className="flex items-center justify-center h-full">
