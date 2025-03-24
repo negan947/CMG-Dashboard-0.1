@@ -67,15 +67,15 @@ export default function SettingsPage() {
         if (!hasSettings) {
           // Initialize with default general settings
           const defaultGeneralSettings = {
-            agencyName: user.email?.split('@')[0] || 'My Agency',
-            email: user.email || '',
-            logoUrl: '',
-            website: '',
-            phone: '',
-            currency: 'USD',
+            agency_name: user.email?.split('@')[0] || 'My Agency',
+            agency_email: user.email || '',
+            agency_logo_url: '',
+            agency_website: '',
+            agency_phone: '',
+            default_currency: 'USD' as const,
             timezone: 'UTC',
-            dateFormat: 'MM/DD/YYYY',
-            timeFormat: '12h'
+            date_format: 'MM/DD/YYYY' as const,
+            time_format: '12h' as const
           };
           
           await updateGeneralSettings(defaultGeneralSettings);

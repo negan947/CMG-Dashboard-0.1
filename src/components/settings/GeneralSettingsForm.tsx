@@ -130,7 +130,7 @@ export function GeneralSettingsForm({ initialData = {}, onSubmit }: GeneralSetti
                     Agency Website
                   </FormLabel>
                   <FormControl>
-                    <Input placeholder="https://youragency.com" {...field} />
+                    <Input placeholder="https://youragency.com" {...field} value={field.value || ''} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -147,7 +147,7 @@ export function GeneralSettingsForm({ initialData = {}, onSubmit }: GeneralSetti
                     Agency Phone
                   </FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter your agency phone number" {...field} />
+                    <Input placeholder="Enter your agency phone number" {...field} value={field.value || ''} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -165,7 +165,7 @@ export function GeneralSettingsForm({ initialData = {}, onSubmit }: GeneralSetti
                   Agency Logo URL
                 </FormLabel>
                 <FormControl>
-                  <Input placeholder="https://youragency.com/logo.png" {...field} />
+                  <Input placeholder="https://youragency.com/logo.png" {...field} value={field.value || ''} />
                 </FormControl>
                 <FormDescription>
                   URL to your agency logo image (will be displayed in the dashboard)

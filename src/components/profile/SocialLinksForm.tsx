@@ -73,7 +73,7 @@ export function SocialLinksForm({ initialData = {}, onSubmit }: SocialLinksFormP
                   LinkedIn
                 </FormLabel>
                 <FormControl>
-                  <Input placeholder="https://linkedin.com/in/username" {...field} />
+                  <Input placeholder="https://linkedin.com/in/username" {...field} value={field.value || ''} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -90,7 +90,7 @@ export function SocialLinksForm({ initialData = {}, onSubmit }: SocialLinksFormP
                   Twitter
                 </FormLabel>
                 <FormControl>
-                  <Input placeholder="https://twitter.com/username" {...field} />
+                  <Input placeholder="https://twitter.com/username" {...field} value={field.value || ''} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -109,7 +109,7 @@ export function SocialLinksForm({ initialData = {}, onSubmit }: SocialLinksFormP
                   Facebook
                 </FormLabel>
                 <FormControl>
-                  <Input placeholder="https://facebook.com/username" {...field} />
+                  <Input placeholder="https://facebook.com/username" {...field} value={field.value || ''} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -126,7 +126,7 @@ export function SocialLinksForm({ initialData = {}, onSubmit }: SocialLinksFormP
                   Instagram
                 </FormLabel>
                 <FormControl>
-                  <Input placeholder="https://instagram.com/username" {...field} />
+                  <Input placeholder="https://instagram.com/username" {...field} value={field.value || ''} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -145,7 +145,7 @@ export function SocialLinksForm({ initialData = {}, onSubmit }: SocialLinksFormP
                   GitHub
                 </FormLabel>
                 <FormControl>
-                  <Input placeholder="https://github.com/username" {...field} />
+                  <Input placeholder="https://github.com/username" {...field} value={field.value || ''} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -162,7 +162,7 @@ export function SocialLinksForm({ initialData = {}, onSubmit }: SocialLinksFormP
                   Website
                 </FormLabel>
                 <FormControl>
-                  <Input placeholder="https://yourwebsite.com" {...field} />
+                  <Input placeholder="https://yourwebsite.com" {...field} value={field.value || ''} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

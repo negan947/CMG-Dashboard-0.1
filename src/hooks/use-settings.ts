@@ -63,7 +63,10 @@ export function useSettings() {
         console.error('Error checking if tables exist:', tableCheckError);
         
         // Check if this is a permission issue
-        if (tableCheckError.code === 'PGRST403' || tableCheckError.status === 403 || tableCheckError.status === 500) {
+        if (typeof tableCheckError === 'object' && tableCheckError !== null &&
+            ((tableCheckError as any).code === 'PGRST403' || 
+             (tableCheckError as any).status === 403 || 
+             (tableCheckError as any).status === 500)) {
           console.log('Permission issue detected when checking tables.');
           setPermissionIssue(true);
           setError('You do not have permission to access these settings.');
@@ -80,13 +83,15 @@ export function useSettings() {
       const { settings: general, error: generalError } = 
         await SettingsService.getGeneralSettings(agencyId);
       
-      if (generalError && generalError.code !== 'PGRST116') {
+      if (generalError && typeof generalError === 'object' && generalError !== null && (generalError as any).code !== 'PGRST116') {
         console.error('Error loading general settings:', generalError);
         
         // Check if this is a permission issue
-        if (generalError.code === 'PGRST403' || generalError.status === 403 || generalError.status === 500) {
+        if ((generalError as any).code === 'PGRST403' || (generalError as any).status === 403 || (generalError as any).status === 500) {
           console.log('Permission issue detected when loading general settings.');
           setPermissionIssue(true);
+          setError('You do not have permission to access these settings.');
+          return;
         }
       }
       
@@ -98,11 +103,11 @@ export function useSettings() {
         const { settings: billing, error: billingError } = 
           await SettingsService.getBillingSettings(agencyId);
         
-        if (billingError && billingError.code !== 'PGRST116') {
+        if (billingError && typeof billingError === 'object' && billingError !== null && (billingError as any).code !== 'PGRST116') {
           console.error('Error loading billing settings:', billingError);
           
           // Check if this is a permission issue
-          if (billingError.code === 'PGRST403' || billingError.status === 403 || billingError.status === 500) {
+          if ((billingError as any).code === 'PGRST403' || (billingError as any).status === 403 || (billingError as any).status === 500) {
             console.log('Permission issue detected when loading billing settings.');
             setPermissionIssue(true);
           }
@@ -114,11 +119,11 @@ export function useSettings() {
         const { settings: notification, error: notificationError } = 
           await SettingsService.getNotificationSettings(agencyId);
         
-        if (notificationError && notificationError.code !== 'PGRST116') {
+        if (notificationError && typeof notificationError === 'object' && notificationError !== null && (notificationError as any).code !== 'PGRST116') {
           console.error('Error loading notification settings:', notificationError);
           
           // Check if this is a permission issue
-          if (notificationError.code === 'PGRST403' || notificationError.status === 403 || notificationError.status === 500) {
+          if ((notificationError as any).code === 'PGRST403' || (notificationError as any).status === 403 || (notificationError as any).status === 500) {
             console.log('Permission issue detected when loading notification settings.');
             setPermissionIssue(true);
           }
@@ -130,11 +135,11 @@ export function useSettings() {
         const { settings: team, error: teamError } = 
           await SettingsService.getTeamSettings(agencyId);
         
-        if (teamError && teamError.code !== 'PGRST116') {
+        if (teamError && typeof teamError === 'object' && teamError !== null && (teamError as any).code !== 'PGRST116') {
           console.error('Error loading team settings:', teamError);
           
           // Check if this is a permission issue
-          if (teamError.code === 'PGRST403' || teamError.status === 403 || teamError.status === 500) {
+          if ((teamError as any).code === 'PGRST403' || (teamError as any).status === 403 || (teamError as any).status === 500) {
             console.log('Permission issue detected when loading team settings.');
             setPermissionIssue(true);
           }
@@ -146,11 +151,11 @@ export function useSettings() {
         const { settings: security, error: securityError } = 
           await SettingsService.getSecuritySettings(agencyId);
         
-        if (securityError && securityError.code !== 'PGRST116') {
+        if (securityError && typeof securityError === 'object' && securityError !== null && (securityError as any).code !== 'PGRST116') {
           console.error('Error loading security settings:', securityError);
           
           // Check if this is a permission issue
-          if (securityError.code === 'PGRST403' || securityError.status === 403 || securityError.status === 500) {
+          if ((securityError as any).code === 'PGRST403' || (securityError as any).status === 403 || (securityError as any).status === 500) {
             console.log('Permission issue detected when loading security settings.');
             setPermissionIssue(true);
           }
@@ -162,11 +167,11 @@ export function useSettings() {
         const { settings: integration, error: integrationError } = 
           await SettingsService.getIntegrationSettings(agencyId);
         
-        if (integrationError && integrationError.code !== 'PGRST116') {
+        if (integrationError && typeof integrationError === 'object' && integrationError !== null && (integrationError as any).code !== 'PGRST116') {
           console.error('Error loading integration settings:', integrationError);
           
           // Check if this is a permission issue
-          if (integrationError.code === 'PGRST403' || integrationError.status === 403 || integrationError.status === 500) {
+          if ((integrationError as any).code === 'PGRST403' || (integrationError as any).status === 403 || (integrationError as any).status === 500) {
             console.log('Permission issue detected when loading integration settings.');
             setPermissionIssue(true);
           }
@@ -178,11 +183,11 @@ export function useSettings() {
         const { members, error: membersError } = 
           await SettingsService.getTeamMembers(agencyId);
         
-        if (membersError) {
+        if (membersError && typeof membersError === 'object' && membersError !== null && (membersError as any).code !== 'PGRST116') {
           console.error('Error loading team members:', membersError);
           
           // Check if this is a permission issue
-          if (membersError.code === 'PGRST403' || membersError.status === 403 || membersError.status === 500) {
+          if ((membersError as any).code === 'PGRST403' || (membersError as any).status === 403 || (membersError as any).status === 500) {
             console.log('Permission issue detected when loading team members.');
             setPermissionIssue(true);
           }
@@ -257,14 +262,16 @@ export function useSettings() {
       const { success, error } = await SettingsService.updateGeneralSettings(agencyId, data);
       
       if (error) {
-        if (error.statusCode === 404) {
+        if (typeof error === 'object' && error !== null && 'statusCode' in error && (error as any).statusCode === 404) {
           toast.error('Settings database tables do not exist yet. Please contact an administrator.');
           setTablesExist(false);
-        } else if (error.statusCode === 403 || error.statusCode === 500) {
+        } else if (typeof error === 'object' && error !== null && 'statusCode' in error && 
+                 ((error as any).statusCode === 403 || (error as any).statusCode === 500)) {
           toast.error('You do not have permission to update these settings.');
           setPermissionIssue(true);
         } else {
-          toast.error(error.message || 'Failed to update general settings');
+          toast.error((typeof error === 'object' && error !== null && 'message' in error) ? 
+                     (error as any).message : 'Failed to update general settings');
         }
         return { success: false, error };
       }

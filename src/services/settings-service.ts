@@ -35,11 +35,10 @@ export class SettingsService {
         .from('agency_settings')
         .select('*', { count: 'exact', head: true });
       
-      // If we get a 404, tables don't exist
       if (error) {
         console.error('Error checking if settings tables exist:', error);
         
-        if (error.code === '404' || error.status === 404) {
+        if (error.code === '404' || error.code === 'PGRST404') {
           return { tablesExist: false, error: null };
         }
         
@@ -54,7 +53,7 @@ export class SettingsService {
       console.error('Unexpected error checking tables:', error);
       
       // Special handling for 404 (table doesn't exist) responses
-      if (error.code === '404' || error.status === 404) {
+      if (error.code === '404' || error.code === 'PGRST404') {
         return { tablesExist: false, error: null };
       }
       
@@ -104,7 +103,7 @@ export class SettingsService {
       console.error('Unexpected error getting general settings:', error);
       
       // Special handling for 404 (table doesn't exist) responses
-      if (error.code === '404' || error.status === 404) {
+      if (error.code === '404' || error.code === 'PGRST404') {
         return { settings: {}, error: null };
       }
       
@@ -152,7 +151,7 @@ export class SettingsService {
       console.error('Unexpected error getting billing settings:', error);
       
       // Special handling for 404 (table doesn't exist) responses
-      if (error.code === '404' || error.status === 404) {
+      if (error.code === '404' || error.code === 'PGRST404') {
         return { settings: {}, error: null };
       }
       
@@ -206,7 +205,7 @@ export class SettingsService {
       console.error('Unexpected error getting notification settings:', error);
       
       // Special handling for 404 (table doesn't exist) responses
-      if (error.code === '404' || error.status === 404) {
+      if (error.code === '404' || error.code === 'PGRST404') {
         return { settings: {}, error: null };
       }
       
@@ -260,7 +259,7 @@ export class SettingsService {
       console.error('Unexpected error getting team settings:', error);
       
       // Special handling for 404 (table doesn't exist) responses
-      if (error.code === '404' || error.status === 404) {
+      if (error.code === '404' || error.code === 'PGRST404') {
         return { settings: {}, error: null };
       }
       
@@ -314,7 +313,7 @@ export class SettingsService {
       console.error('Unexpected error getting security settings:', error);
       
       // Special handling for 404 (table doesn't exist) responses
-      if (error.code === '404' || error.status === 404) {
+      if (error.code === '404' || error.code === 'PGRST404') {
         return { settings: {}, error: null };
       }
       
@@ -368,7 +367,7 @@ export class SettingsService {
       console.error('Unexpected error getting integration settings:', error);
       
       // Special handling for 404 (table doesn't exist) responses
-      if (error.code === '404' || error.status === 404) {
+      if (error.code === '404' || error.code === 'PGRST404') {
         return { settings: {}, error: null };
       }
       
@@ -433,7 +432,7 @@ export class SettingsService {
         console.error('Error checking existing settings:', checkError);
         
         // For 500 errors (likely RLS policy issues)
-        if (checkError.status === 500) {
+        if (checkError.code === 'PGRST500') {
           return { 
             success: false, 
             error: { 
@@ -469,7 +468,7 @@ export class SettingsService {
         console.error('Error updating general settings:', result.error);
         
         // For permission errors, show a more user-friendly message
-        if (result.error.code === 'PGRST403' || result.error.status === 403) {
+        if (result.error.code === 'PGRST403') {
           return { 
             success: false, 
             error: { 
@@ -480,7 +479,7 @@ export class SettingsService {
         }
         
         // For 500 errors (likely RLS policy issues)
-        if (result.error.status === 500) {
+        if (result.error.code === 'PGRST500') {
           return { 
             success: false, 
             error: { 
@@ -498,7 +497,7 @@ export class SettingsService {
       console.error('Unexpected error updating general settings:', error);
       
       // Special handling for 404 (table doesn't exist) responses
-      if (error.code === '404' || error.status === 404) {
+      if (error.code === '404' || error.code === 'PGRST404') {
         return { 
           success: false, 
           error: { 
@@ -509,7 +508,7 @@ export class SettingsService {
       }
       
       // For permission errors, show a more user-friendly message
-      if (error.code === 'PGRST403' || error.status === 403) {
+      if (error.code === 'PGRST403') {
         return { 
           success: false, 
           error: { 
@@ -520,7 +519,7 @@ export class SettingsService {
       }
       
       // For 500 errors (likely RLS policy issues)
-      if (error.status === 500) {
+      if (error.code === 'PGRST500') {
         return { 
           success: false, 
           error: { 
@@ -869,7 +868,7 @@ export class SettingsService {
       console.error('Unexpected error getting team members:', error);
       
       // Special handling for 404 (table doesn't exist) responses
-      if (error.code === '404' || error.status === 404) {
+      if (error.code === '404' || error.code === 'PGRST404') {
         return { members: [], error: null };
       }
       
