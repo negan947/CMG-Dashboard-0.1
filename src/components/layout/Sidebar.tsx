@@ -24,7 +24,7 @@ const navItems: NavItem[] = [
   { name: 'Platforms', href: '/platforms', icon: Monitor },
   { name: 'Support', href: '/support', icon: LifeBuoy },
   { name: 'Invoices', href: '/invoices', icon: FileText },
-  { name: 'Settings', href: '/settings', icon: Settings },
+  { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
 
 export function Sidebar({ isOpen, isMobile, onClose }: SidebarProps = {}) {

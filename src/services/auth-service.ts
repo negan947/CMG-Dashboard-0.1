@@ -37,7 +37,15 @@ export class AuthService {
   static async getSession() {
     try {
       console.log('Getting session...');
-      const supabase = createClientComponentClient();
+      const supabase = createClientComponentClient({
+        options: {
+          global: {
+            headers: {
+              'Accept': '*/*',
+            },
+          },
+        },
+      });
       const { data, error } = await supabase.auth.getSession();
       
       if (error) {
@@ -66,7 +74,15 @@ export class AuthService {
    */
   static async getUser() {
     try {
-      const supabase = createClientComponentClient();
+      const supabase = createClientComponentClient({
+        options: {
+          global: {
+            headers: {
+              'Accept': '*/*',
+            },
+          },
+        },
+      });
       const { data } = await supabase.auth.getUser();
       
       if (!data?.user) {
@@ -85,7 +101,15 @@ export class AuthService {
    */
   static async signIn(credentials: LoginFormValues) {
     try {
-      const supabase = createClientComponentClient();
+      const supabase = createClientComponentClient({
+        options: {
+          global: {
+            headers: {
+              'Accept': '*/*',
+            },
+          },
+        },
+      });
       const { data, error } = await supabase.auth.signInWithPassword({
         email: credentials.email,
         password: credentials.password
@@ -116,7 +140,15 @@ export class AuthService {
    */
   static async signUp(credentials: RegisterFormValues) {
     try {
-      const supabase = createClientComponentClient();
+      const supabase = createClientComponentClient({
+        options: {
+          global: {
+            headers: {
+              'Accept': '*/*',
+            },
+          },
+        },
+      });
       
       // Check if a user with this email already exists
       const { data: existingUsers, error: checkError } = await supabase
@@ -180,7 +212,15 @@ export class AuthService {
    */
   static async signOut() {
     try {
-      const supabase = createClientComponentClient();
+      const supabase = createClientComponentClient({
+        options: {
+          global: {
+            headers: {
+              'Accept': '*/*',
+            },
+          },
+        },
+      });
       const { error } = await supabase.auth.signOut();
       
       if (error) {
@@ -199,7 +239,15 @@ export class AuthService {
    */
   static async resetPassword(data: ResetPasswordFormValues) {
     try {
-      const supabase = createClientComponentClient();
+      const supabase = createClientComponentClient({
+        options: {
+          global: {
+            headers: {
+              'Accept': '*/*',
+            },
+          },
+        },
+      });
       const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
         redirectTo: `${window.location.origin}/auth/update-password`
       });
@@ -220,7 +268,15 @@ export class AuthService {
    */
   static async updatePassword(data: UpdatePasswordFormValues) {
     try {
-      const supabase = createClientComponentClient();
+      const supabase = createClientComponentClient({
+        options: {
+          global: {
+            headers: {
+              'Accept': '*/*',
+            },
+          },
+        },
+      });
       const { error } = await supabase.auth.updateUser({
         password: data.password
       });
