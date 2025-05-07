@@ -1,0 +1,100 @@
+---
+# Specify the following for Cursor rules
+description: Guidelines for writing Postgres SQL
+globs: '**/*.sql'
+---
+# CMG Dashboard - PostgreSQL SQL Style Guide
+
+This guide applies to all PostgreSQL SQL written for the CMG Dashboard project, including migration files (`supabase/migrations/`) and queries intended for the MCP system (see `[src/lib/mcp.ts](mdc:src/lib/mcp.ts)`).
+
+## General Formatting
+
+-   **Keyword Casing:** Use **lowercase** for all SQL reserved words (e.g., `select`, `from`, `where`, `create table`).
+-   **Readability:** Employ consistent white space and indentation to enhance readability. Format longer queries across multiple lines.
+-   **Comments:** Use `--` for single-line comments. Use `/* ... */` for multi-line block comments. Include comments for complex logic or non-obvious decisions.
+-   **Schema Qualification:** Always qualify table names with their schema (e.g., `public.clients`, `auth.users`) unless the `search_path` is explicitly and safely set within a function.
+
+## Naming Conventions
+
+-   **General:** Avoid SQL reserved words for identifiers. Ensure names are unique and descriptive. PostgreSQL identifiers are case-insensitive unless double-quoted (avoid double-quoting identifiers if possible).
+-   **Tables:** Use `snake_case` and prefer **plural** names (e.g., `client_invoices`, `agency_team_members`).
+-   **Columns:** Use `snake_case` and prefer **singular** names (e.g., `full_name`, `due_date`).
+-   **Foreign Keys:** For columns referencing foreign tables, use the singular name of the referenced table with an `_id` suffix (e.g., `client_id` referencing `public.clients(id)`).
+-   **Functions/Procedures:** Use `snake_case` (e.g., `calculate_total_amount`, `execute_sql`).
+-   **Indexes & Constraints:** Use descriptive `snake_case` names, often including table and column names (e.g., `idx_projects_client_id`, `chk_invoice_amount_positive`, `fk_projects_client_id`).
+
+## Data Definition Language (DDL) - Table Creation & Alteration
+
+(Primarily for migration files in `supabase/migrations/` - see also `[create-migration.mdc](mdc:.cursor/rules/create-migration.mdc)`)
+
+-   **Schema:** Create all project-specific tables in the `public` schema unless explicitly directed otherwise.
+-   **Primary Keys:**
+    -   Most tables should have a single-column primary key named `id`.
+    -   Use `BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY` for auto-incrementing primary keys.
+        ```sql
+        CREATE TABLE public.example_entities (
+          id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+          name TEXT NOT NULL
+          -- ... other columns
+        );
+        ```
+    -   For UUID primary keys (e.g., for tables linked to `auth.users.id`), use `UUID PRIMARY KEY DEFAULT gen_random_uuid()` (ensure `pgcrypto` extension is enabled, or use `uuid_generate_v4()` if `uuid-ossp` is preferred and enabled).
+-   **Foreign Keys:** Explicitly define foreign key constraints with `REFERENCES`. Specify `ON DELETE` and `ON UPDATE` actions where appropriate (e.g., `ON DELETE SET NULL`, `ON DELETE CASCADE`).
+    ```sql
+    ALTER TABLE public.projects
+    ADD CONSTRAINT fk_projects_client_id FOREIGN KEY (client_id) REFERENCES public.clients(id) ON DELETE CASCADE;
+    ```
+-   **NOT NULL:** Be explicit about `NOT NULL` constraints for required columns.
+-   **Data Types:** Use appropriate PostgreSQL data types (e.g., `TEXT` for variable-length strings, `VARCHAR(n)` if a strict limit is needed, `TIMESTAMP WITH TIME ZONE` (or `TIMESTAMPTZ`) for timestamps, `NUMERIC` for exact financials, `BOOLEAN`, `JSONB` for unstructured JSON data).
+    -   Store dates/timestamps in UTC. The `TIMESTAMPTZ` type handles timezone conversions appropriately.
+-   **Defaults:** Use `DEFAULT` for columns that should have a default value (e.g., `created_at TIMESTAMPTZ DEFAULT now()`).
+-   **Indexes:** Create indexes on columns frequently used in `WHERE` clauses, `JOIN` conditions, or `ORDER BY` clauses to optimize query performance. See also RLS performance guidelines in `[supabase.mdc](mdc:.cursor/rules/supabase.mdc)`.
+-   **Table and Column Comments:** Add comments to tables and columns to describe their purpose, especially if not obvious from the name.
+    ```sql
+    COMMENT ON TABLE public.clients IS 'Stores information about agency clients.';
+    COMMENT ON COLUMN public.clients.status IS 'Current status of the client (e.g., active, lead, inactive).';
+    ```
+
+## Data Manipulation Language (DML) - Queries
+
+-   **Readability:**
+    -   For short queries, keep them on a few lines.
+    -   For longer queries, use newlines and indentation for clauses (`SELECT`, `FROM`, `WHERE`, `GROUP BY`, `ORDER BY`, `JOIN`).
+    ```sql
+    -- Shorter query
+    SELECT id, name FROM public.users WHERE email = $1;
+
+    -- Longer query
+    SELECT
+      p.id,
+      p.name AS project_name,
+      c.name AS client_name,
+      p.status
+    FROM
+      public.projects p
+    JOIN
+      public.clients c ON p.client_id = c.id
+    WHERE
+      p.agency_id = $1 AND p.status = 'active'
+    ORDER BY
+      p.created_at DESC;
+    ```
+-   **Column Selection:** Avoid `SELECT *` in production code, especially for services. Explicitly list the columns needed. This improves clarity and can prevent issues if table structures change.
+-   **Aliases:** Use meaningful aliases for tables and columns when it improves readability or when dealing with self-joins or complex expressions. Always use the `AS` keyword for column aliases.
+-   **Joins:** Use explicit `JOIN` syntax (e.g., `INNER JOIN`, `LEFT JOIN`) instead of implicit joins in the `WHERE` clause. Clearly state join conditions using `ON`.
+-   **CTEs (Common Table Expressions):** For complex queries, use CTEs (`WITH ... AS (...)`) to break down the logic into readable steps.
+    ```sql
+    WITH
+      active_client_projects AS (
+        -- Select active projects for a specific client
+        SELECT id, name, budget
+        FROM public.projects
+        WHERE client_id = $1 AND status = 'active'
+      )
+    SELECT
+      acp.name,
+      acp.budget
+    FROM active_client_projects acp
+    WHERE acp.budget > 5000;
+    ```
+-   **Parameterized Queries:** When using these styles for the MCP system, remember that queries will be parameterized. Use placeholders like `$1`, `$2` for dynamic values.

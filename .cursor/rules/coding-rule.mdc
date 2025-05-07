@@ -41,31 +41,52 @@ The build command is exclusively for production preparation, not for development
 
 ## MCP Integration
 
-- Always use the MCP server defined in `.cursor/mcp.json` for database access
-- Connection string format: `postgresql://postgres.mkmvxrgfjzogxhbzvgxk:PacoHera94747@aws-0-eu-central-1.pooler.supabase.com:5432/postgres`
-- When generating database queries, use Supabase client with proper error handling
-- Prefer server-side Supabase client for protected routes and client-side for user interactions
+The project uses a custom mechanism for some raw SQL queries, referred to as MCP (Model Context Protocol).
+- The client-side implementation is in `[src/lib/mcp.ts](mdc:src/lib/mcp.ts)`. Services like `ClientService`, `ProjectService`, and `AgencyService` use `MCP.supabase.query()` to send SQL queries.
+- These queries are routed to a Next.js API endpoint: `[src/app/api/mcp/supabase/route.ts](mdc:src/app/api/mcp/supabase/route.ts)`.
+- This API route then calls a PostgreSQL function (RPC) in Supabase named `execute_sql`, passing the SQL query string and parameters.
+- **Security Note**: The `/api/mcp/supabase/route.ts` API handler currently uses the hardcoded public Supabase anonymous key for its Supabase client when invoking the `execute_sql` RPC. The security of this setup relies heavily on the robustness and security measures implemented within the `execute_sql` PostgreSQL function itself (e.g., if it's `SECURITY DEFINER` and properly sanitizes/handles inputs).
+- The `.cursor/mcp.json` file contains a full database connection string. For enhanced security (especially if `execute_sql` is not `SECURITY DEFINER` or requires specific privileges), this connection string (or its credentials) should ideally be used by the `/api/mcp/supabase/route.ts` backend when creating its Supabase client, instead of relying on the anonymous key.
 
 ## Database Schema
 
-- Main tables: clients, invoices, agencies, users, projects
-- Authentication handled through Supabase Auth (auth schema)
-- Use Row Level Security (RLS) policies for data protection
-- Agency-client relationship is many-to-many through agency_clients table
+- Main tables from `auth` schema (e.g., `auth.users`). The application's public schema includes:
+    - `users`: (Often a view or table mirroring `auth.users` but in public schema, includes `agency_id` foreign key in this application's context).
+    - `profiles`: Stores user-specific details like full name, avatar URL, job title, social links. Linked one-to-one with `auth.users`.
+    - `agencies`: Information about marketing agencies.
+    - `agency_team_members`: Manages users within an agency, their roles, and permissions.
+    - `agency_settings`: Stores various agency-level configurations (general, billing, notifications, team, security, integrations), often in JSONB columns within a single row per agency.
+    - `clients`: Client information.
+    - `projects`: Projects for clients.
+    - `invoices`: Invoices for projects/clients.
+    - `invoice_items`: Line items for invoices.
+    - `notifications`: User notifications.
+    - `user_preferences`: User-specific application preferences (theme, language, etc.).
+    - `security_logs`: Audit trail for important user actions.
+    - `metrics`, `client_categories`, `client_activity`: Tables supporting the dashboard views, often populated by aggregated data or specific tracking.
+- Authentication handled through Supabase Auth (auth schema).
+- Use Row Level Security (RLS) policies for data protection, especially critical given the MCP integration pattern.
+- Agency-client relationship is managed (details may be in `agency_clients` table or derived).
 
 ## Technology Stack
 
 - React 18.3.1
-- Next.js 15.2.2
+- Next.js 15.2.2 (App Router)
 - TypeScript
-- Supabase for authentication and database
-- Tailwind CSS for styling
-- Radix UI for component primitives
-- React Hook Form for form handling
-- Zod for schema validation
-- Zustand for state management
-- date-fns for date manipulation
-- Sonner for toast notifications
+- Supabase for authentication and database.
+    - Client Libraries: The project currently uses helper functions from `@supabase/auth-helpers-nextjs` (e.g., `createClientComponentClient`, `createServerComponentClient`, `createMiddlewareClient`, `createRouteHandlerClient`) for Supabase client interaction. While this rule previously mentioned `@supabase/ssr` as preferred, ensure consistency with existing helpers or plan a clear migration strategy if a switch to `@supabase/ssr`'s `createBrowserClient`/`createServerClient` is intended.
+- Tailwind CSS for styling.
+    - Utilities: `clsx` and `tailwind-merge` (via the `cn` function in `[src/lib/utils.ts](mdc:src/lib/utils.ts)`).
+- Radix UI for component primitives.
+- Icons: `lucide-react`.
+- Charting: `chart.js`, `react-chartjs-2`, `recharts`.
+- Forms: React Hook Form with Zod for schema validation.
+- Schema Validation: Zod (schemas typically in `[src/lib/schemas/](mdc:src/lib/schemas)`).
+- State Management:
+    - Global Client-Side: Zustand (e.g., `[src/lib/stores/auth-store.ts](mdc:src/lib/stores/auth-store.ts)`).
+    - Server State: Currently managed via custom React hooks that call service classes (see AI Assistant Guidelines).
+- Date Handling: `date-fns`.
+- Toast Notifications: `sonner`.
 
 ## Code Style and Structure
 
@@ -73,56 +94,46 @@ The build command is exclusively for production preparation, not for development
 
 ```
 src/
-├── __tests__/
-    └── auth/ # Authentication pages
-├── app/ # Next.js app router pages
-    ├── (dashboard)/
-    ├── api/
-    │   └── mcp/
-    │   │   └── supabase/
+├── app/ # Next.js app router (pages and layouts)
+    ├── api/ # API route handlers (e.g., for MCP, test notifications)
+    │   ├── mcp/supabase/route.ts
+    │   └── ...
     ├── auth/ # Authentication pages
-    │   ├── callback/ # Auth callback handling
-    │   ├── login/ # Login page
-    │   ├── magic-link/
-    │   ├── register/ # Registration page
-    │   ├── reset-password/ # Password reset
-    │   └── update-password/ # Password update
-    ├── auth-check/
-    ├── auth-test/
-    │   ├── api-test/
-    │   ├── comprehensive/
-    │   └── supabase-config/
-    └── dashboard/ # Dashboard pages
-    │   └── clients/ # Client management
+    ├── dashboard/ # Dashboard pages and sections
+    │   ├── clients/
+    │   ├── profile/
+    │   └── settings/
+    └── ...
 ├── components/ # Reusable UI components
-    ├── auth/ # Authentication pages
-    ├── dashboard/ # Dashboard pages
-    ├── layout/
-    └── ui/ # UI component library (Radix UI)
-    │   └── charts/
-├── config/ # Configuration files
-├── context/ # React context providers
-├── db/
-├── features/ # Feature-specific code
-├── hooks/ # Custom React hooks
-    └── __tests__/
-├── layouts/ # Layout components
+    ├── auth/
+    ├── dashboard/
+    ├── layout/ # Includes DashboardLayout and potentially unconventional utilities like create-test-notifications.ts
+    ├── profile/
+    ├── settings/
+    └── ui/ # UI component library (Radix UI based, charts, etc.)
+├── context/ # React context providers (e.g., AuthProvider)
+├── db/ # Potentially for migrations or DB related scripts
+├── docs/
+├── hooks/ # Custom React hooks (e.g., useAuth, useProfile, useSettings)
 ├── lib/ # Utility functions and shared code
-    ├── __tests__/
-    ├── schemas/
-    │   └── __tests__/
-    └── stores/
-    │   └── __tests__/
-├── services/ # Service layer for API calls
-    └── __tests__/
-├── styles/ # Global styles
-└── types/
+    ├── schemas/ # Zod validation schemas
+    ├── stores/  # Zustand store definitions
+    ├── mcp.ts   # MCP client for raw SQL
+    ├── data-mapper.ts # snake_case <-> camelCase conversion
+    ├── error-handling.ts # Centralized error handling utilities
+    ├── supabase-client.ts # Examples: supabase.ts, supabase-browser.ts, supabase-server.ts
+    └── utils.ts # General utilities like cn()
+├── services/ # Service layer for API calls and business logic
+└── types/ # TypeScript type definitions
+    ├── auth.types.ts
+    ├── models.types.ts
+    └── supabase.ts # IMPORTANT: This is often a placeholder. Run `supabase gen types typescript --project-id <project-ref> --schema public > src/types/supabase.ts` to populate with actual DB types.
 ```
 
 ### Naming Conventions
 
 - Use lowercase with dashes for directory names (e.g., `components/auth-wizard`)
-- Use PascalCase for component files and camelCase for utility files
+- Use PascalCase for component files and camelCase for utility/hook/service files
 - Use descriptive names that indicate purpose (e.g., `ClientDetailsForm.tsx`)
 - Prefix boolean variables with auxiliary verbs (is, has, should)
 
@@ -130,162 +141,164 @@ src/
 
 ### TypeScript Best Practices
 
-- Use TypeScript for all code; prefer interfaces over types for object shapes
-- Use explicit return types for functions, especially for complex return values
-- Avoid `any` type; use proper typing or `unknown` with type guards
+- Use TypeScript for all code; prefer interfaces over types for object shapes where appropriate.
+- Use explicit return types for functions, especially for complex return values.
+- Avoid `any` type; use proper typing or `unknown` with type guards.
+- **Action Required**: Populate `[src/types/supabase.ts](mdc:src/types/supabase.ts)` by running the Supabase CLI command `supabase gen types typescript --project-id <YOUR_PROJECT_ID> --schema public > src/types/supabase.ts` to enable full type safety for Supabase client interactions. Replace `<YOUR_PROJECT_ID>` with your actual Supabase project ID.
 
 ### Zod Implementation
 
-- Utilize Zod for schema validation and type inference
-- Define schemas in separate files for reusability
-- Infer TypeScript types from Zod schemas when possible
+- Utilize Zod for schema validation and type inference (schemas in `[src/lib/schemas/](mdc:src/lib/schemas)`).
+- Define schemas in separate files for reusability.
+- Infer TypeScript types from Zod schemas when possible.
 
 ## Supabase Integration
 
 ### Authentication
 
-- Use Supabase Auth for user authentication
-- Use the `@supabase/ssr` package for server-side and client-side authentication
-- Use `createServerClient` for server components and middleware
-- Use `createBrowserClient` for client components
-- Implement proper session management with cookies
-- Handle auth state changes consistently
-- Use Next.js middleware for route protection
+- Use Supabase Auth for user authentication.
+- Client Creation: Primarily uses helpers from `@supabase/auth-helpers-nextjs`.
+    - `createClientComponentClient` (or wrappers around it like in `[src/lib/supabase.ts](mdc:src/lib/supabase.ts)`) for client components and client-side services.
+    - `createMiddlewareClient` in `[src/middleware.ts](mdc:src/middleware.ts)`.
+    - `createRouteHandlerClient` in `[src/app/auth/callback/route.ts](mdc:src/app/auth/callback/route.ts)`.
+    - `createServerComponentClient` (example in `[src/lib/supabase-server.ts](mdc:src/lib/supabase-server.ts)`) for server components.
+- Session Management: Handled via cookies, facilitated by the auth helpers.
+- Route Protection: Implemented in `[src/middleware.ts](mdc:src/middleware.ts)` and `[src/app/dashboard/layout.tsx](mdc:src/app/dashboard/layout.tsx)`.
 
 ### Authentication Flow
 
-- Login: Use `supabase.auth.signInWithPassword()` and then redirect to home page using Next.js router
-- Registration: Use `supabase.auth.signUp()` with email confirmation
-- Password Reset: Use `supabase.auth.resetPasswordForEmail()` with redirect
-- Logout: Use `supabase.auth.signOut()` and redirect to login page
-- Auth Callback: Use `supabase.auth.exchangeCodeForSession()` to complete OAuth or email confirmation
+- Login: Use `AuthService.signIn()` (which wraps `supabase.auth.signInWithPassword()`) then redirect.
+- Registration: Use `AuthService.signUp()` (which wraps `supabase.auth.signUp()`). Includes pre-check for existing email.
+- Password Reset: Uses `AuthService.resetPassword()` and `AuthService.updatePassword()`.
+- Logout: Use `AuthService.signOut()` then redirect.
+- Auth Callback (`[src/app/auth/callback/route.ts](mdc:src/app/auth/callback/route.ts)`): Uses `supabase.auth.exchangeCodeForSession()`.
 
 ### Database Operations
 
-- Use typed Supabase queries with proper error handling
-- Implement RLS (Row Level Security) for data protection
-- Use transactions for operations that modify multiple tables
+Two main patterns are observed for database interactions:
+
+1.  **Supabase JS Client ORM-like Methods & RPCs**:
+    *   Used by services like `ProfileService`, `SettingsService`, `DashboardService`.
+    *   Typically involves `supabase.from('table_name').select()/.insert()/etc.` or `supabase.rpc('function_name', ...)`.
+    *   These services often handle "not found" errors gracefully by returning empty default data to ensure UI resilience.
+    *   Leverages Supabase's built-in RLS capabilities directly.
+
+2.  **Raw SQL via MCP (Model Context Protocol)**:
+    *   Used by services like `ClientService`, `ProjectService`, `AgencyService` for core CRUD operations.
+    *   Involves constructing SQL query strings.
+    *   Queries are sent via `MCP.supabase.query()` (defined in `[src/lib/mcp.ts](mdc:src/lib/mcp.ts)`) to the `/api/mcp/supabase` Next.js API route.
+    *   This API route then calls a PostgreSQL function `execute_sql(...)` in Supabase.
+    *   Data mapping between camelCase (application) and snake_case (database) is handled by utilities in `[src/lib/data-mapper.ts](mdc:src/lib/data-mapper.ts)`.
+    *   These services typically re-throw errors to be handled by the caller.
+    *   **Security for Raw SQL**: RLS policies and the implementation of the `execute_sql` RPC are critical for securing these operations.
+
+- Implement RLS (Row Level Security) for data protection across all tables.
+- Use transactions for operations that modify multiple tables when appropriate.
 
 ### Real-time Subscriptions
 
-- Use Supabase real-time features for collaborative features
-- Implement proper subscription cleanup
-- Handle subscription events efficiently
+- Use Supabase real-time features for collaborative features if needed.
+- Implement proper subscription cleanup.
+- Handle subscription events efficiently.
 
 ## CRM-Specific Guidelines
 
 ### Client Management
 
-- Clients belong to agencies
-- Client data includes: name, email, phone, address, status, notes
-- Clients can have multiple projects and invoices
+- Clients belong to agencies (relationship managed via `agency_id` on `clients` or through `agency_clients` table).
+- Client data includes: name, email, phone, address, status, notes, etc. (see `[src/types/models.types.ts](mdc:src/types/models.types.ts)` for `ClientModel`).
+- Clients can have multiple projects and invoices.
 
 ### Invoice Management
 
-- Invoices belong to clients
-- Invoice statuses: draft, sent, paid, overdue
-- Invoice items include: description, quantity, price, tax
+- Invoices belong to clients.
+- Invoice statuses: draft, sent, paid, overdue (see `InvoiceStatus` enum in `[src/types/models.types.ts](mdc:src/types/models.types.ts)`).
+- Invoice items include: description, quantity, price, tax.
 
 ### Agency Management
 
-- Agencies have multiple users with different roles
-- Agency settings include: name, logo, address, billing details
-- Agency users have roles: owner, admin, member
+- Agencies have multiple users (`agency_team_members`) with different roles (owner, admin, member - see `AgencyUserRole` enum).
+- Agency settings (`agency_settings` table) include: name, logo, address, billing details, notification preferences, team settings, security configurations, and integrations.
 
 ## Theming Implementation Guidelines
 
 ### When implementing or modifying themes:
 
-- Always check current theme with `const { theme } = useTheme()` and `const isDark = theme === 'dark'` or `theme !== 'light'`
-- Use conditional classes with template literals or the cn() utility
-- For dark mode UI elements, use zinc/charcoal color palette (#121212, #1C1C1E, zinc-800, etc.)
-- For light mode UI elements, maintain the existing white/blue color scheme
-- Implement proper theme hydration handling with mounted state checks
-- Use frosted glass effect with backdrop-blur and semi-transparent backgrounds
-- Add subtle texture effects only to dark mode with SVG noise patterns
+- Always check current theme with `const { theme } = useTheme()` and `const isDark = theme === 'dark'` or `theme !== 'light'`.
+- Use conditional classes with the `cn()` utility from `[src/lib/utils.ts](mdc:src/lib/utils.ts)`.
+- For dark mode UI elements, use zinc/charcoal color palette (#121212, #1C1C1E, zinc-800, etc.).
+- For light mode UI elements, maintain the existing white/blue color scheme.
+- Implement proper theme hydration handling with mounted state checks if necessary.
+- Use frosted glass effect with `backdrop-blur` and semi-transparent backgrounds.
+- Add subtle texture effects (e.g., SVG noise patterns) primarily to dark mode, as seen in dashboard and settings pages.
 
 ### When creating new UI components:
 
-- Make sure all components are theme-aware from the start
-- Check existing components like ChartCard, MetricCard for reference implementation
-- Use layered effects (gradients, shadows, textures) for depth
-- Implement proper transitions between theme states
-- Use z-index correctly to maintain proper layer order
-- Test components in both light and dark modes
+- Make sure all components are theme-aware from the start.
+- Check existing components like `ChartCard`, `MetricCard`, `GlassCard` for reference implementation.
+- Use layered effects (gradients, shadows, textures) for depth.
+- Implement proper transitions between theme states.
+- Use z-index correctly to maintain proper layer order.
+- Test components in both light and dark modes.
 
 ## AI Assistant Guidelines
 
 ### When Generating Code
 
-- Always use TypeScript with proper typing
-- Follow the project's file structure and naming conventions
-- Use Supabase client for database operations
-- Implement proper error handling and validation
-- Use Zod for data validation
-- Follow React best practices (hooks, functional components)
-- Ensure all UI components support both light and dark themes
+- Always use TypeScript with proper typing. Ensure `[src/types/supabase.ts](mdc:src/types/supabase.ts)` is populated for Supabase client type safety.
+- Follow the project's file structure and naming conventions.
+- **Database Interaction**:
+    - Be mindful of the two established patterns (Supabase JS client vs. Raw SQL via MCP/API).
+    - For complex queries, JSONB manipulation, or auth-related tables, prefer using the Supabase JS client methods (Pattern 1).
+    - For straightforward CRUD on core tables like `clients`, `projects`, `agencies`, follow the existing pattern of using raw SQL via the MCP client and `[src/lib/data-mapper.ts](mdc:src/lib/data-mapper.ts)` (Pattern 2).
+    - When in doubt, emulate the existing service for the relevant data entity.
+- Implement proper error handling and validation.
+- Use Zod for data validation (schemas in `[src/lib/schemas/](mdc:src/lib/schemas)`).
+- Follow React best practices (hooks, functional components).
+- Ensure all UI components support both light and dark themes.
 
 ### UI Components
 
-- Use Tailwind CSS for styling
-- Follow accessibility best practices
-- Implement responsive design
-- Use semantic HTML elements
-- Ensure all components handle theme changes gracefully
-- Implement proper frosted glass effects following project conventions
-- Match existing style patterns for consistency
+- Use Tailwind CSS for styling, leveraging the `cn()` utility.
+- Follow accessibility best practices.
+- Implement responsive design (can use `useMediaQuery` hook from `[src/hooks/use-media-query.ts](mdc:src/hooks/use-media-query.ts)`).
+- Use semantic HTML elements.
+- Ensure all components handle theme changes gracefully.
+- Implement proper frosted glass effects and other established styling patterns.
 
 ### State Management
 
-- Use Zustand for global state management
-- Use React Query for server state management
-- Minimize the use of useState and useEffect
-- Implement proper caching and invalidation strategies
+- **Global Client-Side State**: Use Zustand (e.g., `[src/lib/stores/auth-store.ts](mdc:src/lib/stores/auth-store.ts)`).
+- **Server State**: The project currently uses a pattern of custom React hooks (`useProfile`, `useSettings`, `useDashboardMetrics`, etc.) that call methods from service classes. These services encapsulate data fetching logic. **This differs from previous mentions of React Query.** When managing server state, follow this established custom hook/service pattern unless a migration to React Query is explicitly decided and implemented.
+- Minimize the direct use of `useState` and `useEffect` for server state; encapsulate in hooks.
 
 ### Error Handling
 
-- Handle errors and edge cases at the beginning of functions
-- Implement proper error logging and user-friendly error messages
-- Use custom error types or factories for consistent error handling
-- Handle empty states gracefully (empty lists, no results)
+- Utilize the centralized error handling utilities in `[src/lib/error-handling.ts](mdc:src/lib/error-handling.ts)`.
+    - Use `AppError` for custom application errors.
+    - Use `handleSupabaseError` to process errors from Supabase database operations.
+    - Use `handleAuthError` to generate user-friendly messages from Supabase authentication errors.
+- Handle errors and edge cases at the beginning of functions.
+- Implement proper error logging and user-friendly error messages via toast notifications (`sonner`) or dedicated UI.
+- Handle empty states gracefully (empty lists, no results), often by services returning default empty data.
 
 ### Performance
 
-- Use React.memo for expensive components
-- Implement useMemo and useCallback for derived values and callbacks
-- Use virtualization for long lists
-- Implement proper caching strategies with React Query
+- Use `React.memo` for expensive components.
+- Implement `useMemo` and `useCallback` for derived values and callbacks.
+- Use virtualization for long lists if performance issues arise.
+- Be mindful of data fetching strategies; ensure hooks fetch data efficiently.
 
 ### Security
 
-- Validate all user inputs with Zod
-- Implement proper authorization checks
-- Never store sensitive information in local storage
-- Use HTTPS for all API calls
+- Validate all user inputs with Zod.
+- Implement proper authorization checks (RLS in Supabase, checks in API routes and services).
+- Never store sensitive information in local storage directly (Zustand persist middleware handles auth tokens securely if configured correctly with appropriate storage).
+- Use HTTPS for all API calls (default with Vercel/Supabase).
+- For raw SQL via MCP, ensure the `execute_sql` PostgreSQL function is secure against SQL injection and runs with appropriate privileges.
 
 ## Dynamic Project Structure
 
 To ensure this rule file always reflects the latest project structure, run the following command periodically to update it:
 
-```bash
-npm run update-rules
 ```
-
-This will update the rule file with the latest project structure, technology stack, and UI components.
-
-## AI Assistant Instructions for Rule Updates
-
-As an AI assistant, you should suggest running the update scripts in the following scenarios:
-
-1. When the user adds new UI components to `src/components/ui/`
-2. When the user adds new dependencies to the project
-3. When the user makes significant changes to the project structure
-4. When the user asks about the project structure or technology stack and the information might be outdated
-
-To update the rules, suggest running:
-
-```bash
-npm run update-rules
-```
-
-This script will automatically update the rule file with the latest project information, ensuring that you always have accurate context about the project.

@@ -1,0 +1,76 @@
+---
+# Specify the following for Cursor rules
+description: Guidelines for writing Postgres migrations
+globs: 'supabase/migrations/**/*.sql'
+---
+# CMG Dashboard: Create Database Migration
+
+You are a Postgres Expert who loves creating secure and well-documented database schemas for the **CMG Dashboard project**.
+This project uses the migrations provided by the Supabase CLI. Generated migration files should be placed inside the `supabase/migrations/` folder.
+
+## Migration File Naming Convention
+
+The file MUST be named in the format `YYYYMMDDHHmmss_short_description.sql`. Use UTC time.
+
+1.  `YYYY` - Four digits for the year (e.g., `2024`).
+2.  `MM` - Two digits for the month (01 to 12).
+3.  `DD` - Two digits for the day of the month (01 to 31).
+4.  `HH` - Two digits for the hour in 24-hour format (00 to 23).
+5.  `mm` - Two digits for the minute (00 to 59).
+6.  `ss` - Two digits for the second (00 to 59).
+7.  The description should be concise, in `snake_case`, and reflect the migration's purpose (e.g., `create_clients_table`, `add_status_to_projects`).
+
+Example: `20240906123045_create_profiles_table.sql`
+
+## SQL Content Guidelines
+
+Write Postgres-compatible SQL for migration files. Adhere to the styles and conventions defined in `[postgres-sql-style-guide.mdc](mdc:.cursor/rules/postgres-sql-style-guide.mdc)`.
+
+-   **Header Comment:** Include a comment at the top of the file with metadata: purpose, affected tables/columns, and any special considerations or dependencies.
+    ```sql
+    -- Migration: Add status column to projects table
+    -- Purpose: To track the current status of projects (e.g., active, completed).
+    -- Affected Table: public.projects
+    -- Depends on: projects table existing.
+    ```
+-   **Step Comments:** Include comments explaining the purpose and expected behavior of each distinct migration step (e.g., each `CREATE TABLE`, `ALTER TABLE`, `CREATE POLICY`).
+-   **Destructive Commands:** Add detailed comments BEFORE any destructive commands (e.g., `DROP TABLE`, `TRUNCATE TABLE`, `ALTER TABLE ... DROP COLUMN`, `ALTER TABLE ... ALTER COLUMN TYPE`). Explain the reason, impact, and any prerequisite checks (like backups).
+    ```sql
+    -- ==== DESTRUCTIVE CHANGE: Dropping old_feature_table ==== 
+    -- Reason: This feature is deprecated and all data has been migrated to new_feature_table.
+    -- Backup: Ensure database backup 'backup_YYYYMMDD_pre_drop_old_feature' exists.
+    -- Impact: All data in public.old_feature_table will be PERMANENTLY LOST.
+    DROP TABLE IF EXISTS public.old_feature_table;
+    ```
+-   **Idempotency:** Write DDL statements to be idempotent where practical (e.g., `CREATE TABLE IF NOT EXISTS ...;`, `ALTER TABLE ... ADD COLUMN IF NOT EXISTS ...;`, `DROP TABLE IF EXISTS ...;`). This helps prevent errors if a migration is accidentally partially run or re-run.
+-   **Transaction Control:** Typically, Supabase CLI wraps migrations in a transaction. However, for very complex migrations, or if you need finer-grained control, be mindful of transactional behavior. Some DDL commands (like `CREATE DATABASE`, `ALTER TYPE` under certain conditions) cannot run inside a transaction block.
+
+## Row Level Security (RLS)
+
+-   **Enable RLS on New Tables:** When creating a new table, you **MUST** enable Row Level Security:
+    ```sql
+    ALTER TABLE public.your_new_table ENABLE ROW LEVEL SECURITY;
+    ```
+-   **Create RLS Policies:** Immediately after enabling RLS, define appropriate policies.
+    -   Follow the detailed guidelines in `[create-rls-policies.mdc](mdc:.cursor/rules/create-rls-policies.mdc)` for policy structure, naming, `USING`/`WITH CHECK` clauses, and `PERMISSIVE` vs. `RESTRICTIVE` logic.
+    -   Ensure policies cover all relevant access scenarios (SELECT, INSERT, UPDATE, DELETE) for `authenticated` and `anon` roles as needed.
+    -   For tables intended for public read access by anonymous users, a simple `SELECT` policy can be:
+        ```sql
+        CREATE POLICY "Allow public read access to public_data" 
+        ON public.public_data FOR SELECT
+        TO anon, authenticated
+        USING (true);
+        ```
+    -   For CMG Dashboard, common RLS patterns involve `user_id` and `agency_id` checks. Refer to `[create-rls-policies.mdc](mdc:.cursor/rules/create-rls-policies.mdc)` for project-specific examples.
+
+## Down Migrations (Optional)
+
+-   While Supabase CLI doesn't enforce separate down migration files, consider the reversibility of your changes.
+-   For critical or complex DDL changes, you MAY include commented-out SQL at the end of the migration file that would reverse the changes, as a reference.
+    ```sql
+    -- DOWN MIGRATION (for reference only):
+    -- ALTER TABLE public.projects DROP COLUMN IF EXISTS new_status_column;
+    -- DROP TABLE IF EXISTS public.newly_created_table;
+    ```
+
+Ensure generated SQL is production-ready, well-documented, and aligned with Supabase & CMG Dashboard best practices.

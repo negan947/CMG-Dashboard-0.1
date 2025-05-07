@@ -1,0 +1,122 @@
+---
+description: Guidelines for writing Supabase database functions
+globs: '**/*.sql'
+alwaysApply: false
+---
+# CMG Dashboard: Create Database Functions
+
+You're a Supabase Postgres expert in writing database functions for the **CMG Dashboard project**. Generate **high-quality PostgreSQL functions** that adhere to the following best practices and the general SQL style outlined in `[postgres-sql-style-guide.mdc](mdc:.cursor/rules/postgres-sql-style-guide.mdc)`.
+
+## General Function Creation Guidelines
+
+1.  **`SECURITY INVOKER` by Default:**
+    *   Functions should run with the permissions of the user invoking them. This is generally safer.
+    *   Use `SECURITY DEFINER` **only when explicitly required** (e.g., to allow a restricted operation with elevated privileges for a specific, controlled purpose). Clearly document the rationale if `SECURITY DEFINER` is used.
+
+2.  **Set `search_path`:**
+    *   **Crucial for Security:** Always include `SET search_path = ''` (or `SET search_path = pg_catalog, public` if you need to access built-in functions without schema-qualifying them but still want to limit to `public` for your objects).
+    *   This prevents unexpected behavior and security risks from resolving object names in unintended schemas.
+    *   **Always use fully qualified names** (e.g., `public.table_name`, `auth.users`) for all database objects referenced within the function body when `search_path` is restricted.
+
+3.  **SQL Standards & Validation:** Ensure all SQL within the function is valid PostgreSQL and compatible with Supabase.
+
+4.  **Explicit Typing:** Clearly specify input parameter types and the function's `RETURNS` type. Avoid ambiguous types like `anyelement` unless truly generic behavior is intended and safe.
+
+5.  **Function Volatility & Performance:**
+    *   Declare functions with the correct volatility characteristic for query optimization:
+        *   `IMMUTABLE`: Use if the function always returns the same result for the same arguments and makes no database changes and contains no SQL. (e.g., pure string manipulation, simple math not dependent on DB state).
+        *   `STABLE`: Use if the function's results (for the same arguments) do not change *within a single table scan* and it makes no database changes (e.g., reads from tables but doesn't modify them, `now()`).
+        *   `VOLATILE` (default): Use if the function modifies the database (INSERT, UPDATE, DELETE), has side effects, or its results can change even within a single scan (e.g., `random()`, or a function that calls another `VOLATILE` function).
+    *   Correct volatility helps PostgreSQL optimize queries that use the function.
+
+6.  **Minimize Side Effects:** Prefer functions that return results over those that modify data directly, unless the function's explicit purpose is a DML operation or a trigger action.
+
+7.  **Error Handling:** Use `RAISE EXCEPTION` (or `RAISE WARNING/NOTICE` if appropriate) for error conditions or important messages. Provide clear error messages.
+
+8.  **Schema:** Unless specified otherwise, create new utility functions in the `public` schema. Critical, shared functions might reside in a dedicated schema if the project evolves that way.
+
+## The `execute_sql` RPC Function (for MCP)
+
+The `execute_sql(query_text TEXT, query_params JSONB)` function is central to the MCP pattern (`[src/lib/mcp.ts](mdc:src/lib/mcp.ts)`). Adhere to these specific guidelines if modifying or referencing it:
+
+1.  **Security Focus (CRITICAL):**
+    *   This function is called by an API route (`[src/app/api/mcp/supabase/route.ts](mdc:src/app/api/mcp/supabase/route.ts)`) that uses the `anon` key. Therefore, the security of all raw SQL execution via MCP hinges on this function.
+    *   **If `SECURITY DEFINER`:** The definer user must have the *least privilege necessary*. This is a high-risk approach if `query_text` is not severely restricted.
+    *   **If `SECURITY INVOKER` (preferred if `anon` role has sufficient, limited RLS/permissions):** RLS policies on target tables must correctly control what the `anon` (or calling) role can do via the passed `query_text`.
+    *   **SQL Injection Prevention (PARAMOUNT):**
+        *   The function **MUST NOT** directly concatenate `query_text` with dynamic values from `query_params` or the `query_text` itself if parts of `query_text` are user-influenced beyond known safe SQL commands.
+        *   **SAFE METHOD:** Use `EXECUTE format(query_text_template, ...identifiers) USING ...query_params_values;` where `query_text_template` contains placeholders like `%I` for identifiers (table/column names, validated from a known safe list) and `$1, $2` for values. `query_params_values` are then passed to `USING`.
+        *   **DANGEROUS (AVOID):** `EXECUTE query_text;` if `query_text` contains concatenated user input.
+    *   **Restrictive `query_text`:** Ideally, `query_text` should not be arbitrary SQL. If it must be flexible, the function should parse/validate `query_text` to allow only specific commands (SELECT, INSERT, UPDATE, DELETE) on specific, whitelisted tables/schemas. Deny utility commands, DDL, etc.
+
+2.  **Parameter Handling:** Ensure `query_params` (expected as JSONB array) are correctly unpacked and passed to the `EXECUTE ... USING ...` statement.
+
+3.  **Return Value:** Should return data in a format expected by the API route (e.g., `SETOF record` or a custom type that can be easily converted to JSON array of objects).
+
+## Example Templates
+
+(Refer to `[postgres-sql-style-guide.mdc](mdc:.cursor/rules/postgres-sql-style-guide.mdc)` for SQL formatting)
+
+### Simple Function with `SECURITY INVOKER`
+
+```sql
+CREATE OR REPLACE FUNCTION public.get_user_full_name(user_id_input uuid)
+RETURNS text
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = '' -- Or SET search_path = pg_catalog, public
+AS $$
+DECLARE
+  full_name_result text;
+BEGIN
+  SELECT p.full_name INTO full_name_result
+  FROM public.profiles p
+  WHERE p.user_id = user_id_input;
+  RETURN full_name_result;
+END;
+$$;
+```
+
+### Function as a Trigger (e.g., for `updated_at`)
+
+```sql
+CREATE OR REPLACE FUNCTION public.update_timestamp_on_change()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY INVOKER -- Usually appropriate for triggers
+SET search_path = ''
+AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$;
+
+-- Example Trigger (ensure this is in a migration, not just function definition)
+-- CREATE TRIGGER set_public_your_table_updated_at
+-- BEFORE UPDATE ON public.your_table
+-- FOR EACH ROW
+-- EXECUTE FUNCTION public.update_timestamp_on_change();
+```
+
+### `STABLE` Function Example
+
+```sql
+-- Assuming get_user_full_name only reads data and its result is stable within a scan
+CREATE OR REPLACE FUNCTION public.get_user_full_name_stable(user_id_input uuid)
+RETURNS text
+LANGUAGE plpgsql
+STABLE -- Can be STABLE if public.profiles doesn't change during the calling query's scan
+SECURITY INVOKER
+SET search_path = ''
+AS $$
+DECLARE
+  full_name_result text;
+BEGIN
+  SELECT p.full_name INTO full_name_result
+  FROM public.profiles p
+  WHERE p.user_id = user_id_input;
+  RETURN full_name_result;
+END;
+$$;
+```
