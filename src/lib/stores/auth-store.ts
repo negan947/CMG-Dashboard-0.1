@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 import { AuthState, AuthUser, AuthSession, AuthError } from '@/types/auth.types';
 import { AuthService } from '@/services/auth-service';
 import { LoginFormValues, RegisterFormValues, ResetPasswordFormValues, UpdatePasswordFormValues } from '@/lib/schemas/auth-schemas';
+import { handleAuthError } from '@/lib/error-handling';
 
 /**
  * Extended auth state with actions
@@ -45,16 +46,18 @@ export const useAuthStore = create<AuthStore>()(
           const { isLoading } = get();
           if (isLoading) {
             console.warn('Auth initialization timeout after ' + MAX_INIT_TIME + 'ms');
-            set({ isLoading: false, error: 'Authentication timed out. Please try again.' });
+            const friendlyError = handleAuthError(new Error('Authentication timed out. Please try again.'));
+            set({ isLoading: false, error: friendlyError.message });
           }
         }, MAX_INIT_TIME);
 
         try {
           set({ isLoading: true, error: null });
-          const { session, error } = await AuthService.getSession();
+          const { session, error: supabaseError } = await AuthService.getSession();
           
-          if (error) {
-            set({ error: error.message, isLoading: false });
+          if (supabaseError) {
+            const friendlyError = handleAuthError(supabaseError);
+            set({ error: friendlyError.message, isLoading: false });
             clearTimeout(timeoutId);
             return;
           }
@@ -71,16 +74,18 @@ export const useAuthStore = create<AuthStore>()(
             try {
               const { user } = await AuthService.getUser();
               set({ user });
-            } catch (userError) {
+            } catch (userError: any) {
               console.error('Failed to get user details:', userError);
               // Continue even without user details, just log error
+              // Optionally, you could set a non-critical error message here using handleAuthError if appropriate
             }
           }
           
           set({ session, isLoading: false });
-        } catch (error) {
+        } catch (error: any) {
           console.error('Failed to initialize auth store:', error);
-          set({ error: 'Authentication initialization failed', isLoading: false });
+          const friendlyError = handleAuthError(error);
+          set({ error: friendlyError.message, isLoading: false });
         } finally {
           clearTimeout(timeoutId);
         }
@@ -92,11 +97,12 @@ export const useAuthStore = create<AuthStore>()(
       signIn: async (credentials) => {
         try {
           set({ isLoading: true, error: null });
-          const { data, error } = await AuthService.signIn(credentials);
+          const { data, error: supabaseError } = await AuthService.signIn(credentials);
           
-          if (error) {
-            set({ error: error.message, isLoading: false });
-            return { error };
+          if (supabaseError) {
+            const friendlyError = handleAuthError(supabaseError);
+            set({ error: friendlyError.message, isLoading: false });
+            return { error: friendlyError };
           }
           
           set({ 
@@ -106,10 +112,11 @@ export const useAuthStore = create<AuthStore>()(
           });
           
           return { error: null };
-        } catch (error) {
-          console.error('Sign in error:', error);
-          set({ error: 'Sign in failed', isLoading: false });
-          return { error: { message: 'Sign in failed', statusCode: 500 } };
+        } catch (error: any) {
+          console.error('Sign in error in store:', error);
+          const friendlyError = handleAuthError(error);
+          set({ error: friendlyError.message, isLoading: false });
+          return { error: friendlyError };
         }
       },
 
@@ -119,11 +126,12 @@ export const useAuthStore = create<AuthStore>()(
       signUp: async (credentials) => {
         try {
           set({ isLoading: true, error: null });
-          const { data, error, isEmailConfirmationRequired, isExistingUser } = await AuthService.signUp(credentials);
+          const { data, error: supabaseError, isEmailConfirmationRequired, isExistingUser } = await AuthService.signUp(credentials);
           
-          if (error) {
-            set({ error: error.message, isLoading: false });
-            return { error, isEmailConfirmationRequired: false, isExistingUser: false };
+          if (supabaseError) {
+            const friendlyError = handleAuthError(supabaseError);
+            set({ error: friendlyError.message, isLoading: false });
+            return { error: friendlyError, isEmailConfirmationRequired: false, isExistingUser: !!isExistingUser };
           }
           
           // If direct sign-in is allowed (no email confirmation), set the session and user
@@ -142,11 +150,12 @@ export const useAuthStore = create<AuthStore>()(
             isEmailConfirmationRequired: isEmailConfirmationRequired || false,
             isExistingUser: isExistingUser || false
           };
-        } catch (error) {
-          console.error('Sign up error:', error);
-          set({ error: 'Sign up failed', isLoading: false });
+        } catch (error: any) {
+          console.error('Sign up error in store:', error);
+          const friendlyError = handleAuthError(error);
+          set({ error: friendlyError.message, isLoading: false });
           return { 
-            error: { message: 'Sign up failed', statusCode: 500 },
+            error: friendlyError,
             isEmailConfirmationRequired: false,
             isExistingUser: false
           };
@@ -158,21 +167,23 @@ export const useAuthStore = create<AuthStore>()(
        */
       signOut: async () => {
         try {
-          set({ isLoading: true });
-          const { error } = await AuthService.signOut();
+          set({ isLoading: true }); // Don't clear error here, let AuthService handle it
+          const { error: supabaseError } = await AuthService.signOut();
           
-          if (error) {
-            set({ error: error.message, isLoading: false });
-            return { error };
+          if (supabaseError) {
+            const friendlyError = handleAuthError(supabaseError);
+            set({ error: friendlyError.message, isLoading: false });
+            return { error: friendlyError };
           }
           
           // Clear auth state on successful sign out
-          get().clearState();
+          get().clearState(); // This will also clear any previous errors
           return { error: null };
-        } catch (error) {
-          console.error('Sign out error:', error);
-          set({ error: 'Sign out failed', isLoading: false });
-          return { error: { message: 'Sign out failed', statusCode: 500 } };
+        } catch (error: any) {
+          console.error('Sign out error in store:', error);
+          const friendlyError = handleAuthError(error);
+          set({ error: friendlyError.message, isLoading: false });
+          return { error: friendlyError };
         }
       },
 
@@ -182,20 +193,22 @@ export const useAuthStore = create<AuthStore>()(
       resetPassword: async (data) => {
         try {
           set({ isLoading: true, error: null });
-          const { error } = await AuthService.resetPassword(data);
+          const { error: supabaseError } = await AuthService.resetPassword(data);
           
-          set({ isLoading: false });
+          set({ isLoading: false }); // Clear loading regardless of error
           
-          if (error) {
-            set({ error: error.message });
-            return { error };
+          if (supabaseError) {
+            const friendlyError = handleAuthError(supabaseError);
+            set({ error: friendlyError.message }); // Set error message
+            return { error: friendlyError };
           }
           
           return { error: null };
-        } catch (error) {
-          console.error('Password reset error:', error);
-          set({ error: 'Password reset failed', isLoading: false });
-          return { error: { message: 'Password reset failed', statusCode: 500 } };
+        } catch (error: any) {
+          console.error('Password reset error in store:', error);
+          const friendlyError = handleAuthError(error);
+          set({ error: friendlyError.message, isLoading: false });
+          return { error: friendlyError };
         }
       },
 
@@ -205,20 +218,22 @@ export const useAuthStore = create<AuthStore>()(
       updatePassword: async (data) => {
         try {
           set({ isLoading: true, error: null });
-          const { error } = await AuthService.updatePassword(data);
+          const { error: supabaseError } = await AuthService.updatePassword(data);
           
-          set({ isLoading: false });
+          set({ isLoading: false }); // Clear loading regardless of error
           
-          if (error) {
-            set({ error: error.message });
-            return { error };
+          if (supabaseError) {
+            const friendlyError = handleAuthError(supabaseError);
+            set({ error: friendlyError.message }); // Set error message
+            return { error: friendlyError };
           }
           
           return { error: null };
-        } catch (error) {
-          console.error('Password update error:', error);
-          set({ error: 'Password update failed', isLoading: false });
-          return { error: { message: 'Password update failed', statusCode: 500 } };
+        } catch (error: any) {
+          console.error('Password update error in store:', error);
+          const friendlyError = handleAuthError(error);
+          set({ error: friendlyError.message, isLoading: false });
+          return { error: friendlyError };
         }
       },
 

@@ -29,6 +29,17 @@ export const AuthCard: React.FC<AuthCardProps> = ({
   
   const isDark = mounted && theme === 'dark';
   
+  // State for animation trigger
+  const [isContentVisible, setIsContentVisible] = useState(false);
+
+  useEffect(() => {
+    // Ensure this runs after mount to allow CSS transition
+    if (mounted) {
+      const timer = setTimeout(() => setIsContentVisible(true), 50); // Small delay to ensure mounted state is picked up for transition
+      return () => clearTimeout(timer);
+    }
+  }, [mounted]);
+  
   // Generate appropriate icon and bg color based on error type
   const getErrorStyles = () => {
     switch (errorType) {
@@ -86,6 +97,8 @@ export const AuthCard: React.FC<AuthCardProps> = ({
     )}>
       <div className={cn(
         "w-full max-w-md space-y-6 rounded-lg p-6 shadow-md",
+        "transition-all duration-500 ease-out", // Base transition classes
+        isContentVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5", // Animation states
         isDark 
           ? "border border-zinc-800/40 bg-zinc-900/70 backdrop-blur-md shadow-[0_15px_40px_rgba(0,0,0,0.2)]" 
           : "border border-gray-200 bg-white/90 backdrop-blur-sm shadow-[0_10px_25px_rgba(0,0,0,0.08)]"

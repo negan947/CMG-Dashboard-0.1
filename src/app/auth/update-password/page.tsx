@@ -4,8 +4,15 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useTheme } from 'next-themes';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { cn } from '@/lib/utils';
 import { AuthService } from '@/services/auth-service';
+import PasswordStrengthIndicator from '@/components/auth/PasswordStrengthIndicator';
+import { APP_ROUTES } from '@/lib/constants/routes';
+import { FormInput } from '@/components/auth';
+import { updatePasswordSchema, UpdatePasswordFormValues } from '@/lib/schemas/auth-schemas';
+import { Lock } from 'lucide-react';
 
 // Loading fallback component
 function UpdatePasswordFallback() {
@@ -32,58 +39,53 @@ function UpdatePasswordFallback() {
 
 // Main component wrapped with suspense
 function UpdatePasswordContent() {
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [serverError, setServerError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
-  // Check if we have the necessary tokens in the URL
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors },
+  } = useForm<UpdatePasswordFormValues>({
+    resolver: zodResolver(updatePasswordSchema),
+    defaultValues: {
+      password: '',
+      confirmPassword: '',
+    },
+  });
+
+  const newPasswordValue = watch('password');
+
   useEffect(() => {
-    // This is just a basic check - the actual token validation happens on the server
     if (!searchParams?.has('code')) {
-      setError('Invalid or missing password reset link. Please request a new password reset link.');
+      setServerError('Invalid or missing password reset link. Please request a new password reset link.');
     }
   }, [searchParams]);
 
-  const handleUpdatePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Basic validation
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters long');
-      return;
-    }
-    
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-    
+  const onSubmit = async (formData: UpdatePasswordFormValues) => {
     setLoading(true);
-    setError(null);
+    setServerError(null);
+    setSuccessMessage(null);
     
     try {
-      const { error } = await AuthService.updatePassword({ 
-        password, 
-        confirmPassword 
-      });
+      const { error: authServiceError } = await AuthService.updatePassword(formData);
       
-      if (error) {
-        setError(error.message);
+      if (authServiceError) {
+        setServerError(authServiceError.message || 'Failed to update password.');
       } else {
         setSuccessMessage('Your password has been updated successfully.');
-        // Give the user a moment to see the success message before redirecting
         setTimeout(() => {
-          router.push('/auth/login');
+          router.push(APP_ROUTES.LOGIN);
         }, 3000);
       }
     } catch (err: any) {
-      setError('An unexpected error occurred. Please try again.');
+      setServerError('An unexpected error occurred. Please try again.');
       console.error('Update password error:', err);
     } finally {
       setLoading(false);
@@ -108,12 +110,12 @@ function UpdatePasswordContent() {
           </p>
         </div>
 
-        {error && (
+        {serverError && (
           <div className={cn(
             "rounded-md p-4 text-sm", 
             isDark ? "bg-red-950/30 text-red-400 border border-red-800/50" : "bg-red-50 text-red-700"
           )}>
-            {error}
+            {serverError}
           </div>
         )}
 
@@ -126,49 +128,30 @@ function UpdatePasswordContent() {
           </div>
         )}
 
-        <form onSubmit={handleUpdatePassword} className="mt-8 space-y-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-6">
           <div className="space-y-4">
-            <div>
-              <label htmlFor="password" className={cn("block text-sm font-medium", isDark ? "text-zinc-300" : "text-gray-700")}>
-                New Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="new-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className={cn(
-                  "mt-1 block w-full rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2",
-                  isDark 
-                    ? "border-zinc-700 bg-zinc-800/70 text-zinc-200 focus:border-blue-600 focus:ring-blue-600/30" 
-                    : "border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
-                )}
-              />
-            </div>
+            <FormInput
+              id="password"
+              label="New Password"
+              type="password"
+              autoComplete="new-password"
+              canTogglePassword={true}
+              error={errors.password}
+              {...register('password')}
+              leadingIcon={<Lock />}
+            />
+            <PasswordStrengthIndicator password={newPasswordValue} />
 
-            <div>
-              <label htmlFor="confirmPassword" className={cn("block text-sm font-medium", isDark ? "text-zinc-300" : "text-gray-700")}>
-                Confirm New Password
-              </label>
-              <input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                autoComplete="new-password"
-                required
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className={cn(
-                  "mt-1 block w-full rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2",
-                  isDark 
-                    ? "border-zinc-700 bg-zinc-800/70 text-zinc-200 focus:border-blue-600 focus:ring-blue-600/30" 
-                    : "border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
-                )}
-              />
-            </div>
+            <FormInput
+              id="confirmPassword"
+              label="Confirm New Password"
+              type="password"
+              autoComplete="new-password"
+              canTogglePassword={true}
+              error={errors.confirmPassword}
+              {...register('confirmPassword')}
+              leadingIcon={<Lock />}
+            />
           </div>
 
           <div>
@@ -188,8 +171,8 @@ function UpdatePasswordContent() {
         </form>
         
         <div className="text-center mt-4">
-          <Link href="/auth/login" className={cn(
-            "text-sm hover:underline",
+          <Link href={APP_ROUTES.LOGIN} className={cn(
+            "text-sm hover:underline hover:opacity-80 transition-opacity duration-150",
             isDark ? "text-blue-400" : "text-blue-600"
           )}>
             Back to login

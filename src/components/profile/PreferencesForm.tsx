@@ -33,7 +33,8 @@ import {
   Users, 
   ShieldCheck, 
   LayoutGrid,
-  FileText
+  FileText,
+  Loader2
 } from 'lucide-react';
 
 interface PreferencesFormProps {
@@ -450,18 +451,19 @@ export function PreferencesForm({ initialData = {}, onSubmit }: PreferencesFormP
           />
         </div>
         
-        <div className="flex justify-end">
+        <div className="flex justify-end pt-4">
           <Button 
             type="submit" 
             disabled={isSubmitting}
             className={cn(
-              "min-w-[120px]",
+              "min-w-[180px] flex items-center justify-center",
               isDark 
-                ? "bg-green-600 hover:bg-green-700" 
-                : "bg-green-500 hover:bg-green-600"
+                ? "bg-emerald-600 hover:bg-emerald-700" 
+                : "bg-emerald-500 hover:bg-emerald-600"
             )}
           >
-            {isSubmitting ? 'Saving...' : 'Save Preferences'}
+            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isSubmitting ? 'Saving Preferences...' : 'Save Preferences'}
           </Button>
         </div>
       </form>

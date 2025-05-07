@@ -25,33 +25,48 @@ export function useProfile() {
     setError(null);
     
     try {
-      // Get profile data
-      const { profile, error: profileError } = await ProfileService.getProfile(user.id);
-      
+      // Fetch all data in parallel
+      const [profileResult, preferencesResult, logsResult] = await Promise.all([
+        ProfileService.getProfile(user.id),
+        ProfileService.getUserPreferences(user.id),
+        ProfileService.getSecurityLogs(user.id)
+      ]);
+
+      // Destructure results and handle errors individually
+      const { profile, error: profileError } = profileResult;
+      const { preferences, error: preferencesError } = preferencesResult;
+      const { logs, error: logsError } = logsResult;
+
       if (profileError) {
         console.error('Error loading profile:', profileError);
+        // Set a general error or specific ones if needed
         setError(profileError.message || 'Failed to load profile data');
       } else {
         setProfile(profile || {}); // Use empty object if profile is null
       }
       
-      // Get user preferences
-      const { preferences, error: preferencesError } = await ProfileService.getUserPreferences(user.id);
-      
       if (preferencesError) {
         console.error('Error loading preferences:', preferencesError);
+        // Optionally set error or handle silently
       } else {
         setPreferences(preferences || {}); // Use empty object if preferences is null
       }
       
-      // Get security logs
-      const { logs, error: logsError } = await ProfileService.getSecurityLogs(user.id);
-      
       if (logsError) {
         console.error('Error loading security logs:', logsError);
+        // Optionally set error or handle silently
       } else {
         setSecurityLogs(logs || []); // Use empty array if logs is null
       }
+
+      // Consolidate error reporting if any of the fetches failed but others succeeded
+      if (profileError || preferencesError || logsError) {
+        // If a general error isn't already set by profileError, set one.
+        if (!error) { // Check if 'error' state is still null
+             setError('Failed to load some profile components. Please try again.');
+        }
+      }
+
     } catch (err: any) {
       console.error('Unexpected error loading profile data:', err);
       setError(err?.message || 'Failed to load profile data');

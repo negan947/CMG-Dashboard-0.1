@@ -7,6 +7,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { AuthCard, FormInput, FormCheckbox, SubmitButton } from '@/components/auth';
 import { loginSchema, LoginFormValues } from '@/lib/schemas/auth-schemas';
 import { useAuth } from '@/hooks/use-auth';
+import { APP_ROUTES } from '@/lib/constants/routes';
+import { Mail, Lock } from 'lucide-react';
 
 export default function Login() {
   const [serverError, setServerError] = useState<string | null>(null);
@@ -59,7 +61,7 @@ export default function Login() {
       subtitle={
         <>
           Or{' '}
-          <Link href="/auth/register" className="text-blue-600 hover:underline">
+          <Link href={APP_ROUTES.REGISTER} className="text-blue-600 hover:underline hover:opacity-80 transition-opacity duration-150">
             create a new account
           </Link>
         </>
@@ -77,6 +79,7 @@ export default function Login() {
             error={errors.email}
             {...register('email')}
             showValidState={true}
+            leadingIcon={<Mail />}
           />
 
           <FormInput
@@ -86,6 +89,8 @@ export default function Login() {
             autoComplete="current-password"
             error={errors.password}
             {...register('password')}
+            canTogglePassword={true}
+            leadingIcon={<Lock />}
           />
         </div>
 
@@ -97,7 +102,7 @@ export default function Login() {
           />
 
           <div className="text-sm">
-            <Link href="/auth/reset-password" className="text-blue-600 hover:underline">
+            <Link href={APP_ROUTES.RESET_PASSWORD} className="text-blue-600 hover:underline hover:opacity-80 transition-opacity duration-150">
               Forgot your password?
             </Link>
           </div>

@@ -20,7 +20,8 @@ import {
   Github, 
   Globe, 
   Facebook, 
-  Instagram 
+  Instagram, 
+  Loader2 
 } from 'lucide-react';
 
 interface SocialLinksFormProps {
@@ -175,12 +176,13 @@ export function SocialLinksForm({ initialData = {}, onSubmit }: SocialLinksFormP
             type="submit" 
             disabled={isSubmitting}
             className={cn(
-              "min-w-[120px]",
+              "min-w-[150px] flex items-center justify-center",
               isDark 
                 ? "bg-indigo-600 hover:bg-indigo-700" 
                 : "bg-indigo-500 hover:bg-indigo-600"
             )}
           >
+            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isSubmitting ? 'Saving...' : 'Save Links'}
           </Button>
         </div>

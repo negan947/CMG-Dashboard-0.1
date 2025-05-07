@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Lock, Eye, EyeOff } from 'lucide-react';
+import { Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
 
 interface PasswordFormProps {
   onSubmit: (data: PasswordChangeFormValues) => Promise<{ success: boolean }>;
@@ -175,12 +175,13 @@ export function PasswordForm({ onSubmit }: PasswordFormProps) {
             type="submit" 
             disabled={isSubmitting}
             className={cn(
-              "min-w-[120px]",
+              "min-w-[160px] flex items-center justify-center",
               isDark 
                 ? "bg-red-600 hover:bg-red-700" 
                 : "bg-red-500 hover:bg-red-600"
             )}
           >
+            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} 
             {isSubmitting ? 'Changing...' : 'Change Password'}
           </Button>
         </div>

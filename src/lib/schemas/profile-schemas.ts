@@ -49,7 +49,12 @@ export const userPreferencesSchema = z.object({
  */
 export const passwordChangeSchema = z.object({
   current_password: z.string().min(8, { message: 'Password must be at least 8 characters' }),
-  new_password: z.string().min(8, { message: 'Password must be at least 8 characters' }),
+  new_password: z.string()
+    .min(8, { message: 'Password must be at least 8 characters' })
+    .regex(/[a-z]/, { message: 'Password must contain at least one lowercase letter' })
+    .regex(/[A-Z]/, { message: 'Password must contain at least one uppercase letter' })
+    .regex(/[0-9]/, { message: 'Password must contain at least one number' })
+    .regex(/[^a-zA-Z0-9]/, { message: 'Password must contain at least one special character' }),
   confirm_password: z.string().min(8, { message: 'Password must be at least 8 characters' }),
 }).refine((data) => data.new_password === data.confirm_password, {
   message: "Passwords don't match",

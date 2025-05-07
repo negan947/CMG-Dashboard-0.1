@@ -1,6 +1,7 @@
-import React, { InputHTMLAttributes, forwardRef, useState, useEffect } from 'react';
+import React, { InputHTMLAttributes, forwardRef, useState, useEffect, ReactNode } from 'react';
 import { FieldError } from 'react-hook-form';
 import { useTheme } from 'next-themes';
+import { Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface FormInputProps extends InputHTMLAttributes<HTMLInputElement> {
@@ -8,39 +9,49 @@ interface FormInputProps extends InputHTMLAttributes<HTMLInputElement> {
   error?: FieldError;
   description?: string;
   showValidState?: boolean;
+  canTogglePassword?: boolean;
+  leadingIcon?: ReactNode;
 }
 
 export const FormInput = forwardRef<HTMLInputElement, FormInputProps>(
-  ({ label, error, description, id, className = "", showValidState = false, ...props }, ref) => {
+  ({ label, error, description, id, className = "", showValidState = false, type, canTogglePassword = false, leadingIcon, ...props }, ref) => {
     const { theme } = useTheme();
     const [mounted, setMounted] = useState(false);
     const [isFocused, setIsFocused] = useState(false);
-    const [hasValue, setHasValue] = useState(!!props.value);
+    const [hasValue, setHasValue] = useState(!!props.value || !!props.defaultValue);
+    const [isPasswordVisible, setIsPasswordVisible] = useState(false);
     
-    // After mounting, we can safely check the theme
     useEffect(() => {
       setMounted(true);
-    }, []);
+      if (props.defaultValue) {
+        setHasValue(true);
+      }
+    }, [props.defaultValue]);
     
     const isDark = mounted && theme === 'dark';
     
-    // Create the input props object
+    const currentType = type === 'password' && isPasswordVisible ? 'text' : type;
+
     const inputProps: Record<string, any> = {
       ref,
       id,
+      type: currentType,
       className: cn(
         "mt-1 block w-full rounded-md px-3 py-2 shadow-sm focus:outline-none",
+        "transition-all duration-200 ease-in-out",
+        leadingIcon ? 'pl-10' : 'pl-3',
+        (error || (hasValue && !isFocused && showValidState) || (type === 'password' && canTogglePassword)) ? 'pr-10' : 'pr-3',
         error 
           ? isDark
-            ? 'border-red-700 ring-1 ring-red-700 focus:border-red-700 focus:ring-red-700 bg-red-950/20'
-            : 'border-red-500 ring-1 ring-red-500 focus:border-red-500 focus:ring-red-500' 
+            ? 'border-red-700 ring-1 ring-red-700 focus:border-red-700 focus:ring-red-700 focus:scale-[1.01] bg-red-950/20'
+            : 'border-red-500 ring-1 ring-red-500 focus:border-red-500 focus:ring-red-500 focus:scale-[1.01]' 
           : hasValue && !isFocused && showValidState 
             ? isDark
               ? 'border-green-700 ring-1 ring-green-700 focus:border-green-700 focus:ring-green-700 bg-green-950/10'
               : 'border-green-500 ring-1 ring-green-500 focus:border-green-500 focus:ring-green-500' 
             : isDark
-              ? 'border-zinc-700 focus:border-blue-600 focus:ring-blue-600 bg-zinc-800/70'
-              : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500',
+              ? 'border-zinc-700 focus:border-blue-600 focus:ring-blue-600 focus:scale-[1.01] focus:shadow-md focus:shadow-blue-700/30 bg-zinc-800/70'
+              : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500 focus:scale-[1.01] focus:shadow-md focus:shadow-blue-500/30',
         className
       ),
       onFocus: (e: React.FocusEvent<HTMLInputElement>) => {
@@ -59,7 +70,6 @@ export const FormInput = forwardRef<HTMLInputElement, FormInputProps>(
       ...props
     };
     
-    // Add aria attributes for accessibility
     if (error) {
       inputProps['aria-invalid'] = true;
       inputProps['aria-describedby'] = `${id}-error`;
@@ -67,14 +77,25 @@ export const FormInput = forwardRef<HTMLInputElement, FormInputProps>(
       inputProps['aria-describedby'] = `${id}-description`;
     }
 
-    // Add focus outline for keyboard navigation
     const focusClasses = "focus:outline-none focus:ring-2 focus:ring-offset-0";
     if (inputProps.className && !inputProps.className.includes('focus:ring-')) {
       inputProps.className += ` ${focusClasses}`;
     }
 
-    // Status icons for validation states
-    const renderIcon = () => {
+    const renderLeadingIcon = () => {
+      if (leadingIcon) {
+        return (
+          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+            {React.cloneElement(leadingIcon as React.ReactElement, { 
+              className: cn("h-5 w-5", error ? (isDark ? 'text-red-600' : 'text-red-500') : (isDark ? 'text-zinc-400' : 'text-gray-400')) 
+            })}
+          </div>
+        );
+      }
+      return null;
+    };
+
+    const renderValidationIcon = () => {
       if (error) {
         return (
           <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
@@ -83,7 +104,7 @@ export const FormInput = forwardRef<HTMLInputElement, FormInputProps>(
             </svg>
           </div>
         );
-      } else if (hasValue && !isFocused && showValidState) {
+      } else if (hasValue && !isFocused && showValidState && !(type === 'password' && canTogglePassword)) {
         return (
           <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
             <svg className={cn("h-5 w-5", isDark ? "text-green-600" : "text-green-500")} viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -95,14 +116,40 @@ export const FormInput = forwardRef<HTMLInputElement, FormInputProps>(
       return null;
     };
 
+    const renderPasswordToggle = () => {
+      if (type === 'password' && canTogglePassword) {
+        const Icon = isPasswordVisible ? EyeOff : Eye;
+        return (
+          <button 
+            type="button"
+            onClick={() => setIsPasswordVisible(!isPasswordVisible)}
+            className={cn(
+              "absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 focus:outline-none",
+              error ? 'pr-9' : 'pr-3'
+            )}
+            aria-label={isPasswordVisible ? "Hide password" : "Show password"}
+          >
+            <Icon className="h-5 w-5" />
+          </button>
+        );
+      }
+      return null;
+    };
+
     return (
       <div className="space-y-1">
         <label htmlFor={id} className={cn("block text-sm font-medium", isDark ? "text-zinc-300" : "text-gray-700")}>
           {label}
         </label>
         <div className="relative">
+          {renderLeadingIcon()}
           <input {...inputProps} />
-          {renderIcon()}
+          {!error && renderPasswordToggle()}
+          {error && <>
+            {renderValidationIcon()}
+            {renderPasswordToggle()}
+          </>}
+          {!error && !(type === 'password' && canTogglePassword) && renderValidationIcon()}
         </div>
         {error && (
           <p className={cn("mt-1 text-sm flex items-center gap-1", isDark ? "text-red-400" : "text-red-600")} id={`${id}-error`} role="alert">
@@ -119,5 +166,4 @@ export const FormInput = forwardRef<HTMLInputElement, FormInputProps>(
   }
 );
 
-// Ensure display name is set for debug purposes
 FormInput.displayName = 'FormInput'; 

@@ -3,6 +3,7 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/stores/auth-store';
 import type { LoginFormValues, RegisterFormValues, ResetPasswordFormValues, UpdatePasswordFormValues } from '@/lib/schemas/auth-schemas';
 import type { AuthUser, AuthSession } from '@/types/auth.types';
+import { APP_ROUTES } from '@/lib/constants/routes';
 
 /**
  * Custom hook for authentication throughout the app.
@@ -51,7 +52,7 @@ export function useAuth() {
     async (credentials: LoginFormValues) => {
       const result = await signIn(credentials);
       if (!result.error) {
-        router.push('/dashboard');
+        router.push(APP_ROUTES.DASHBOARD);
         router.refresh();
       }
       return result;
@@ -77,7 +78,7 @@ export function useAuth() {
     async () => {
       const result = await signOut();
       if (!result.error) {
-        router.push('/auth/login');
+        router.push(APP_ROUTES.LOGIN);
         router.refresh();
       }
       return result;

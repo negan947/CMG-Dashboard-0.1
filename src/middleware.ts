@@ -1,6 +1,7 @@
 import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { APP_ROUTES } from '@/lib/constants/routes';
 
 export async function middleware(request: NextRequest) {
   try {
@@ -16,20 +17,20 @@ export async function middleware(request: NextRequest) {
     // Define public routes that don't require authentication
     const isPublicRoute = 
       request.nextUrl.pathname.startsWith('/auth') || 
-      request.nextUrl.pathname === '/login' ||
-      request.nextUrl.pathname === '/' // Allow the root path to handle redirection
+      request.nextUrl.pathname === APP_ROUTES.LOGIN || // Though /auth/* covers this, explicit can be kept or removed
+      request.nextUrl.pathname === APP_ROUTES.HOME
     
     // If the user is not signed in and trying to access a protected route, redirect to login
     if (!session && !isPublicRoute) {
-      return NextResponse.redirect(new URL('/auth/login', request.url))
+      return NextResponse.redirect(new URL(APP_ROUTES.LOGIN, request.url))
     }
     
     // If the user is signed in and trying to access an auth page, redirect to dashboard
     // Exception: don't redirect from /auth/callback as it's part of the auth flow
     if (session && 
         request.nextUrl.pathname.startsWith('/auth') && 
-        !request.nextUrl.pathname.startsWith('/auth/callback')) {
-      return NextResponse.redirect(new URL('/dashboard', request.url))
+        request.nextUrl.pathname !== APP_ROUTES.AUTH_CALLBACK) { // Check against the specific callback route
+      return NextResponse.redirect(new URL(APP_ROUTES.DASHBOARD, request.url))
     }
     
     return response

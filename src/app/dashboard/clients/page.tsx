@@ -22,6 +22,8 @@ import {
   Facebook, Twitter, TrendingUp, Instagram
 } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { motion } from 'framer-motion';
+import { ClientListItem } from '@/components/clients/ClientListItem';
 
 // Define types for our data
 interface Objective {
@@ -181,6 +183,16 @@ const ChartComponent = ({
       </ResponsiveContainer>
     </div>
   );
+};
+
+// ... At the top of ClientDetailModal or within ClientsContent, define variants ...
+const modalContentVariants = {
+  hidden: { opacity: 0, y: 10 },
+  visible: (delay: number = 0) => ({
+    opacity: 1,
+    y: 0,
+    transition: { delay: delay * 0.1 + 0.2, duration: 0.4, ease: 'easeOut' } // Stagger based on delay, add base delay for modal itself
+  })
 };
 
 function ClientsContent() {
@@ -356,41 +368,30 @@ function ClientsContent() {
   // Handle client click
   const handleClientClick = (client: Client) => {
     setSelectedClient(client);
-    // Show modal with a slight delay for better UX
-    setTimeout(() => setIsModalVisible(true), 50);
+    setIsModalVisible(true);
   };
 
   // Handle close client detail view
   const handleCloseDetail = () => {
-    console.log('Closing modal'); // Debug log
     setIsModalVisible(false);
-    // Remove selected client after animation completes
-    setTimeout(() => {
-      console.log('Clearing selected client'); // Debug log
-      setSelectedClient(null);
-    }, 300);
+    // Small delay to allow animation out before clearing, prevents content flash
+    setTimeout(() => setSelectedClient(null), 300); 
   };
 
   // Handle clicks globally - close modal when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      // Only process if the modal is visible
-      if (!isModalVisible) return;
-      
-      // Check if click was outside the modal content
       if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
         handleCloseDetail();
       }
     }
-    
-    // Add the event listener directly to document
-    document.addEventListener('mousedown', handleClickOutside);
-    
-    // Clean up
+    if (isModalVisible) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isModalVisible, modalRef]);
+  }, [isModalVisible]);
 
   // Fully rewritten modal that will work reliably
   const ClientDetailModal = ({ isOpen, onClose, client }: { 
@@ -398,10 +399,10 @@ function ClientsContent() {
     onClose: () => void; 
     client: Client | null;
   }) => {
-    // Don't render anything if no client or modal not open
-    if (!client || !isOpen) return null;
-    
-    // Prevent scroll on body when modal is open
+    const { theme } = useTheme();
+    const isDark = theme !== 'light';
+    const internalModalRef = useRef<HTMLDivElement>(null);
+
     useEffect(() => {
       if (isOpen) {
         document.body.style.overflow = 'hidden';
@@ -412,614 +413,244 @@ function ClientsContent() {
         document.body.style.overflow = 'unset';
       };
     }, [isOpen]);
-    
-    // Modal content
+
+    if (!isOpen || !client) return null;
+
     return (
-      <>
-        {/* Backdrop */}
-        <div 
+      <motion.div
+        ref={internalModalRef}
+        className={cn(
+          "fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-2 sm:p-4"
+        )}
+        onClick={onClose}
+      >
+        <motion.div
+          ref={internalModalRef}
           className={cn(
-            "fixed inset-0 z-50 bg-black/50 backdrop-blur-sm",
-            "transition-opacity duration-300 cursor-pointer",
-            isOpen ? "opacity-100" : "opacity-0"
+            "w-full bg-white rounded-lg shadow-xl overflow-hidden",
+            "max-h-[90vh] md:max-h-[85vh]",
+            "max-w-sm sm:max-w-md md:max-w-lg lg:max-w-2xl xl:max-w-4xl",
+            isDark ? "bg-zinc-800 border border-zinc-700" : "bg-slate-50 border border-gray-200"
           )}
-          onClick={onClose}
-        />
-        
-        {/* Modal content */}
-        <div 
-          className={cn(
-            "fixed z-50 inset-0 overflow-y-auto p-4",
-            "flex items-center justify-center"
-          )}
-          onClick={onClose} // Close when clicking outside
+          onClick={(e) => e.stopPropagation()}
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 10, transition: { duration: 0.2 } }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
         >
-          <div 
-            className={cn(
-              "w-full max-w-4xl max-h-[90vh] rounded-xl relative",
-              "transition-all duration-300",
-              isDark 
-                ? "bg-gradient-to-br from-[#0F0F12] via-[#171720] to-[#1C1C25] text-zinc-100" 
-                : "bg-gradient-to-br from-[#E8EDFF] via-[#F0F5FF] to-[#F5F9FF] text-gray-800",
-              "border overflow-y-auto",
-              isDark ? "border-zinc-700/40" : "border-white/40",
-              "shadow-2xl",
-              isOpen ? "opacity-100 transform-none" : "opacity-0 translate-y-8 scale-95"
-            )}
-            onClick={(e) => e.stopPropagation()} // Prevent closing when clicking on content
-          >
-            {/* Close button - removing since we have backdrop click working */}
-            
-            {/* Background patterns - simplified for reliability */}
-            <div className="absolute inset-0 opacity-10 pointer-events-none z-0">
-              <div className="absolute inset-0" style={{
-                backgroundImage: isDark 
-                  ? "radial-gradient(#60a5fa60 1px, transparent 1px)" 
-                  : "radial-gradient(#60a5fa40 1px, transparent 1px)",
-                backgroundSize: '60px 60px'
-              }} />
+          <div className={cn(
+            "flex items-center justify-between p-4 sm:p-5 border-b",
+            isDark ? "border-zinc-700" : "border-gray-200"
+          )}>
+            <div className="flex items-center">
+              <Avatar className="h-10 w-10 sm:h-12 sm:w-12 mr-3">
+                <AvatarFallback className={cn(isDark ? "bg-zinc-700 text-zinc-200" : "bg-blue-100 text-blue-600", "text-lg sm:text-xl")}>
+                  {client.initials}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <h2 className={cn("text-lg sm:text-xl font-semibold", isDark ? "text-zinc-100" : "text-gray-900")}>{client.name}</h2>
+                <p className={cn("text-xs sm:text-sm", isDark ? "text-zinc-400" : "text-gray-500")}>{client.status}</p>
+              </div>
             </div>
-            
-            {/* Client Header */}
-            <div className={cn(
-              "p-6 border-b relative z-10",
-              isDark ? "border-zinc-700/40" : "border-gray-200/40"
-            )}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <Avatar className="h-16 w-16 mr-5 shadow-lg">
-                    <AvatarFallback className={cn(
-                      isDark 
-                        ? "bg-zinc-800/70 text-zinc-200" 
-                        : "bg-blue-100/70 text-blue-700",
-                      "backdrop-blur-sm"
-                    )}>
-                      {client.initials}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <h2 className="text-xl font-bold">{client.name}</h2>
-                    <p className={cn(
-                      "text-sm",
-                      isDark ? "text-zinc-400" : "text-gray-500"
-                    )}>
-                      {client.status}
-                    </p>
+            <button 
+              onClick={onClose} 
+              className={cn("p-1.5 rounded-full", isDark ? "hover:bg-zinc-700" : "hover:bg-gray-200")}
+              aria-label="Close modal"
+            >
+              <XCircle className={cn("h-5 w-5 sm:h-6 sm:w-6", isDark ? "text-zinc-400" : "text-gray-500")} />
+            </button>
+          </div>
+
+          <div className="p-4 sm:p-5 overflow-y-auto max-h-[calc(90vh-120px)] md:max-h-[calc(85vh-130px)]">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 sm:gap-6">
+              <div className="md:col-span-2 space-y-4 sm:space-y-5">
+                <div>
+                  <h3 className={cn("text-base sm:text-lg font-semibold mb-2", isDark ? "text-zinc-200" : "text-gray-700")}>Client Details</h3>
+                  <div className={cn("p-3 sm:p-4 rounded-md space-y-2 text-sm", isDark ? "bg-zinc-700/50" : "bg-gray-100")}>
+                    <p><strong>Phone:</strong> {client.platforms?.[0]?.stats || 'N/A'}</p>
+                    <p><strong>Email:</strong> {client.name.toLowerCase().replace(' ', '.')}@example.com</p>
                   </div>
                 </div>
                 <div>
-                  <button 
-                    className={cn(
-                      "flex items-center gap-2 px-4 py-2 rounded-md transition-colors",
-                      isDark 
-                        ? "bg-zinc-800/70 hover:bg-zinc-700/70 border border-zinc-700/30 text-zinc-100" 
-                        : "bg-white/70 hover:bg-white/90 border border-gray-200/40 text-gray-800",
-                      "backdrop-blur-sm"
-                    )}
-                    style={{
-                      color: CHART_COLORS[0],
-                      borderColor: `${CHART_COLORS[0]}40`
-                    }}
-                  >
-                    <Phone className="h-4 w-4" />
-                    <span>Contact Details</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Client Content - using Grid layout */}
-            <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6 relative z-10">
-              {/* Left Column */}
-              <div className="space-y-6">
-                {/* Objectives */}
-                <div className={cn(
-                  "p-5 rounded-xl",
-                  isDark 
-                    ? "bg-zinc-800/40 border border-zinc-700/30" 
-                    : "bg-white/40 border border-gray-200/40",
-                  "backdrop-blur-sm"
-                )}>
-                  <div className="flex items-center mb-4">
-                    <Target className="h-5 w-5 mr-2" />
-                    <h3 className="text-lg font-semibold">Objectives</h3>
-                  </div>
-                  <div className="space-y-4">
-                    {client.objectives?.map((objective, idx) => (
-                      <div key={idx} className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium">{objective.name}</span>
+                  <h3 className={cn("text-base sm:text-lg font-semibold mb-2", isDark ? "text-zinc-200" : "text-gray-700")}>Key Objectives</h3>
+                  <div className={cn("p-3 sm:p-4 rounded-md space-y-3", isDark ? "bg-zinc-700/50" : "bg-gray-100")}>
+                    {client.objectives?.map((obj, i) => (
+                      <div key={i}>
+                        <div className="flex justify-between text-xs sm:text-sm mb-1">
+                          <span>{obj.name}</span>
+                          <span>{obj.progress}%</span>
                         </div>
-                        <div className={cn(
-                          "w-full h-2 rounded-full overflow-hidden",
-                          isDark ? "bg-zinc-700/70" : "bg-gray-200/70"
-                        )}>
-                          <div 
-                            className="h-full rounded-full transition-all duration-1000"
-                            style={{ 
-                              width: `${objective.progress}%`,
-                              backgroundColor: CHART_COLORS[idx % CHART_COLORS.length]
-                            }}
-                          ></div>
+                        <div className={cn("h-2 rounded-full w-full", isDark ? "bg-zinc-600" : "bg-gray-200")}>
+                          <div className="h-2 rounded-full bg-blue-500" style={{ width: `${obj.progress}%` }}></div>
                         </div>
                       </div>
                     ))}
-                  </div>
-                </div>
-
-                {/* Platforms */}
-                <div className={cn(
-                  "p-5 rounded-xl",
-                  isDark 
-                    ? "bg-zinc-800/40 border border-zinc-700/30" 
-                    : "bg-white/40 border border-gray-200/40",
-                  "backdrop-blur-sm"
-                )}>
-                  <div className="flex items-center mb-4">
-                    <BarChart className="h-5 w-5 mr-2" />
-                    <h3 className="text-lg font-semibold">Platforms</h3>
-                  </div>
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className={cn(
-                      "p-4 rounded-lg flex items-center justify-center",
-                      isDark 
-                        ? "bg-zinc-900/60 border border-zinc-800/60" 
-                        : "bg-white/60 border border-gray-200/40",
-                      "hover:shadow-md transition-all duration-200"
-                    )}>
-                      <Facebook className="h-8 w-8 text-blue-500" />
-                    </div>
-                    <div className={cn(
-                      "p-4 rounded-lg flex items-center justify-center",
-                      isDark 
-                        ? "bg-zinc-900/60 border border-zinc-800/60" 
-                        : "bg-white/60 border border-gray-200/40",
-                      "hover:shadow-md transition-all duration-200"
-                    )}>
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="h-8 w-8" style={{ color: '#E1306C' }}>
-                        <rect x="2" y="2" width="20" height="20" rx="5" strokeWidth="2" />
-                        <circle cx="12" cy="12" r="4" strokeWidth="2" />
-                        <circle cx="18" cy="6" r="1.5" fill="currentColor" stroke="none" />
-                      </svg>
-                    </div>
-                    <div className={cn(
-                      "p-4 rounded-lg flex items-center justify-center",
-                      isDark 
-                        ? "bg-zinc-900/60 border border-zinc-800/60" 
-                        : "bg-white/60 border border-gray-200/40",
-                      "hover:shadow-md transition-all duration-200"
-                    )}>
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-8 w-8 text-black">
-                        <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
-                      </svg>
-                    </div>
+                    {!client.objectives?.length && <p className="text-xs text-center text-gray-400">No objectives defined.</p>}
                   </div>
                 </div>
               </div>
 
-              {/* Right Column */}
-              <div className="space-y-6">
-                {/* Charts and action buttons */}
-                {/* A.O.V Chart */}
-                <div className={cn(
-                  "p-5 rounded-xl",
-                  isDark 
-                    ? "bg-zinc-800/40 border border-zinc-700/30" 
-                    : "bg-white/40 border border-gray-200/40",
-                  "backdrop-blur-sm"
-                )}>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold flex items-center">
-                      A.O.V
-                      <Info className="h-4 w-4 ml-2 text-gray-400" />
-                    </h3>
-                    <button className="text-gray-400"
-                      aria-label="More options">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="1" />
-                        <circle cx="19" cy="12" r="1" />
-                        <circle cx="5" cy="12" r="1" />
-                      </svg>
-                    </button>
-                  </div>
-                  <div className="h-72">
-                    {client.aovData ? (
-                      <ChartComponent 
-                        data={client.aovData}
-                        isDark={isDark}
-                        color={CHART_COLORS[0]}
-                      />
-                    ) : (
-                      <div className="flex items-center justify-center h-full">
-                        <p className={cn(
-                          "text-sm",
-                          isDark ? "text-zinc-400" : "text-gray-500"
-                        )}>No chart data available</p>
-                      </div>
-                    )}
+              <div className="md:col-span-3 space-y-4 sm:space-y-5">
+                <div>
+                  <h3 className={cn("text-base sm:text-lg font-semibold mb-2", isDark ? "text-zinc-200" : "text-gray-700")}>Performance Snapshot</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                    <GlassCard isDark={isDark} className="h-48 sm:h-56" contentClassName="p-2 sm:p-3">
+                      <h4 className={cn("text-xs sm:text-sm font-medium mb-1 text-center", isDark ? "text-zinc-300" : "text-gray-600")}>Avg. Order Value</h4>
+                      <ChartComponent data={client.aovData || []} isDark={isDark} prefix="$" />
+                    </GlassCard>
+                    <GlassCard isDark={isDark} className="h-48 sm:h-56" contentClassName="p-2 sm:p-3">
+                      <h4 className={cn("text-xs sm:text-sm font-medium mb-1 text-center", isDark ? "text-zinc-300" : "text-gray-600")}>Cost Per Acquisition</h4>
+                      <ChartComponent data={client.cpaData || []} isDark={isDark} prefix="$" />
+                    </GlassCard>
                   </div>
                 </div>
-
-                {/* CPA Chart */}
-                <div className={cn(
-                  "p-5 rounded-xl",
-                  isDark 
-                    ? "bg-zinc-800/40 border border-zinc-700/30" 
-                    : "bg-white/40 border border-gray-200/40",
-                  "backdrop-blur-sm"
-                )}>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold flex items-center">
-                      Cost Per Acquisition
-                      <Info className="h-4 w-4 ml-2 text-gray-400" />
-                    </h3>
-                    <button className="text-gray-400"
-                      aria-label="More options">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="1" />
-                        <circle cx="19" cy="12" r="1" />
-                        <circle cx="5" cy="12" r="1" />
-                      </svg>
-                    </button>
-                  </div>
-                  <div className="h-72">
-                    {client.cpaData ? (
-                      <ChartComponent 
-                        data={client.cpaData}
-                        isDark={isDark}
-                        color={CHART_COLORS[1]}
-                      />
-                    ) : (
-                      <div className="flex items-center justify-center h-full">
-                        <p className={cn(
-                          "text-sm",
-                          isDark ? "text-zinc-400" : "text-gray-500"
-                        )}>No chart data available</p>
+                <div>
+                  <h3 className={cn("text-base sm:text-lg font-semibold mb-2", isDark ? "text-zinc-200" : "text-gray-700")}>Active Platforms</h3>
+                  <div className={cn("p-3 sm:p-4 rounded-md grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 text-center", isDark ? "bg-zinc-700/50" : "bg-gray-100")}>
+                    {client.platforms?.map((platform, i) => (
+                      <div key={i} className={cn("p-2 rounded", isDark ? "bg-zinc-600" : "bg-gray-200")}>
+                        {platform.name === 'META' && <Facebook className="h-5 w-5 mx-auto mb-1 text-blue-500" />}
+                        {platform.name === 'Google' && <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" className="mx-auto mb-1 text-red-500"><path d="M21.35,11.1H12.18V13.83H18.69C18.36,17.64 15.19,19.27 12.19,19.27C8.36,19.27 5,16.25 5,12C5,7.9 8.2,4.73 12.19,4.73C15.29,4.73 17.1,6.7 17.1,6.7L19,4.72C19,4.72 16.56,2 12.19,2C6.42,2 2.03,6.8 2.03,12C2.03,17.05 6.16,22 12.19,22C17.6,22 21.5,18.33 21.5,12.33C21.5,11.76 21.45,11.43 21.35,11.1Z"></path></svg>}
+                        {platform.name === 'TikTok' && <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5 mx-auto mb-1 text-black dark:text-white"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/></svg>}
+                        <span className="text-xs">{platform.name}</span>
                       </div>
-                    )}
+                    ))}
+                    {!client.platforms?.length && <p className="col-span-full text-xs text-center text-gray-400">No platforms specified.</p>}
                   </div>
-                </div>
-                
-                {/* Action Buttons */}
-                <div className="space-y-3 mt-6">
-                  <button className={cn(
-                    "w-full p-3 rounded-lg flex items-center gap-2 transition-colors",
-                    isDark 
-                      ? "bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/30 text-zinc-100" 
-                      : "bg-white/60 hover:bg-gray-100/60 border border-gray-200/40 text-gray-800",
-                    "backdrop-blur-sm"
-                  )}>
-                    <LightbulbIcon className="h-5 w-5" />
-                    <span>Send Follow-up!</span>
-                  </button>
-                  <button className={cn(
-                    "w-full p-3 rounded-lg flex items-center gap-2 transition-colors",
-                    isDark 
-                      ? "bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/30 text-zinc-100" 
-                      : "bg-white/60 hover:bg-gray-100/60 border border-gray-200/40 text-gray-800",
-                    "backdrop-blur-sm"
-                  )}>
-                    <Clock className="h-5 w-5" />
-                    <span>Payment due in 48h</span>
-                  </button>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </>
+        </motion.div>
+      </motion.div>
     );
   };
 
+  const listContainerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        // staggerChildren is applied by the parent of ClientListItem
+        // No need for staggerChildren here if ClientListItem itself handles its delay via custom prop
+      }
+    }
+  };
+
   return (
-    <div className="relative min-h-screen">
-      {/* Colorful background with gradient - same as dashboard */}
-      <div className={cn(
-        "fixed inset-0 -z-10",
-        isDark 
-          ? "bg-gradient-to-br from-[#0F0F12] via-[#171720] to-[#1C1C25]" 
-          : "bg-gradient-to-br from-[#E8EDFF] via-[#F0F5FF] to-[#F5F9FF]"
-      )} />
-      
-      {/* Crisp dot pattern background */}
-      <div className="fixed inset-0 -z-8 opacity-10 pointer-events-none">
-        <div className="absolute inset-0" style={{
-          backgroundImage: isDark 
-            ? "radial-gradient(" + CHART_COLORS[0] + "60 1px, transparent 1px), " + 
-              "radial-gradient(" + CHART_COLORS[1] + "60 1px, transparent 1px), " +
-              "radial-gradient(" + CHART_COLORS[2] + "40 1px, transparent 1px), " +
-              "radial-gradient(" + CHART_COLORS[3] + "40 1px, transparent 1px)"
-            : "radial-gradient(" + CHART_COLORS[0] + "40 1px, transparent 1px), " +
-              "radial-gradient(" + CHART_COLORS[1] + "40 1px, transparent 1px), " +
-              "radial-gradient(" + CHART_COLORS[2] + "30 1px, transparent 1px), " +
-              "radial-gradient(" + CHART_COLORS[3] + "30 1px, transparent 1px)",
-          backgroundSize: '60px 60px, 80px 80px, 70px 70px, 100px 100px',
-          backgroundPosition: '0 0, 30px 30px, 15px 15px, 45px 45px',
-        }} />
+    <div className={cn(
+      "flex-1 p-4 md:p-6 lg:p-8 space-y-6 md:space-y-8"
+    )}>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-3 sm:space-y-0">
+        <h1 className={cn("text-2xl lg:text-3xl font-bold", isDark ? "text-white" : "text-gray-900")}>
+          Clients
+        </h1>
+        <div className="flex items-center space-x-2">
+          <button 
+            className={cn(
+              "flex items-center px-3 py-2 sm:px-4 text-xs sm:text-sm font-medium rounded-md shadow-sm",
+              isDark ? "bg-blue-600 hover:bg-blue-700 text-white" : "bg-blue-500 hover:bg-blue-600 text-white"
+            )}
+          >
+            <Plus className="mr-1.5 h-4 w-4 sm:h-5 sm:w-5" />
+            Add Client
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+        <MetricCard title="Total Clients" value={metrics.totalClients} isDark={isDark} icon={<User />} />
+        <MetricCard title="New This Month" value={metrics.newClients} change={`+${metrics.newClientsChange}%`} isDark={isDark} icon={<ArrowUp />} />
+        <MetricCard title="Inquiry Success" value={`${metrics.inquirySuccessRate}%`} change={`${metrics.inquiryRateChange}%`} isDark={isDark} icon={<Check />} />
+        <MetricCard title="Overdue Tasks" value={metrics.overdueTasks} change={`+${metrics.overdueTasksChange}`} isDark={isDark} icon={<Clock />} />
       </div>
       
-      {/* Subtle texture overlay */}
-      <div className={cn(
-        "fixed inset-0 -z-9 opacity-[0.05] pointer-events-none",
-        isDark ? "block" : "hidden"
-      )} style={{
-        backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'600\' height=\'600\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.65\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\' opacity=\'0.4\'/%3E%3C/svg%3E")',
-        backgroundRepeat: 'repeat',
-      }} />
-      
-      <div className="space-y-6 md:space-y-8 relative z-10 py-2">
-        {/* Metric Cards Row */}
-        <div className="grid grid-cols-2 gap-2 sm:gap-3 md:gap-4 lg:gap-5 xl:gap-6 lg:grid-cols-4 h-auto">
-          <MetricCard 
-            title="Total Clients" 
-            value={metrics.totalClients} 
-            color={CHART_COLORS[0]}
-          />
-          
-          <MetricCard 
-            title="New Clients" 
-            value={metrics.newClients} 
-            changePercentage={8}
-            changeValue={metrics.newClientsChange}
-            changeLabel="this week"
-            color={CHART_COLORS[1]}
-          />
-          
-          <MetricCard 
-            title="Inquiry Success Rate" 
-            value={metrics.inquirySuccessRate} 
-            suffix="%"
-            changePercentage={-2.5}
-            changeValue={metrics.inquiryRateChange}
-            color={CHART_COLORS[2]}
-            showDonut={true}
-          />
-          
-          <MetricCard 
-            title="Overdue Tasks" 
-            value={metrics.overdueTasks} 
-            changeValue={metrics.overdueTasksChange}
-            changeLabel="this week"
-            color={CHART_COLORS[3]}
-          />
-        </div>
-
-        {/* Main Content Area - Two Columns on larger screens */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          {/* Left Side: Delays & Follow-ups and Quick Actions */}
-          <div className="space-y-6">
-            {/* Delays & Follow-ups Card */}
-            <GlassCard
-              title="Delays & Follow-ups"
-              contentClassName="p-2 sm:p-3 md:p-4"
-            >
-              <div className="space-y-2">
-                {delaysAndFollowups.map((item) => (
-                  <div 
-                    key={item.id} 
-                    className={cn(
-                      "flex items-center p-2 sm:p-3 rounded-lg transition-colors",
-                      isDark ? "hover:bg-zinc-800/50" : "hover:bg-gray-50"
-                    )}
-                  >
-                    {/* Priority marker */}
-                    <div className={cn(
-                      "h-2 w-2 rounded-full mr-2 sm:mr-3 flex-shrink-0",
-                      item.priority === 'high' ? "bg-red-500" : "bg-amber-400"
-                    )} />
-                    
-                    {/* Content */}
-                    <div className="flex-grow min-w-0">
-                      <p className={cn(
-                        "text-xs sm:text-sm md:text-base font-medium truncate",
-                        isDark ? "text-zinc-200" : "text-gray-700"
-                      )}>
-                        {item.title}
-                      </p>
-                    </div>
-                    
-                    {/* Action icon */}
-                    <div className="flex-shrink-0 ml-2">
-                      {item.title.includes('Call') ? (
-                        <Phone className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4", isDark ? "text-zinc-400" : "text-gray-500")} />
-                      ) : item.title.includes('Update') ? (
-                        <Clock className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4", isDark ? "text-zinc-400" : "text-gray-500")} />
-                      ) : (
-                        <Check className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4", isDark ? "text-zinc-400" : "text-gray-500")} />
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </GlassCard>
-            
-            {/* Quick Actions Card */}
-            <GlassCard
-              title="Quick Actions"
-              contentClassName="p-2 sm:p-3 md:p-4"
-            >
-              <div className="space-y-1.5 sm:space-y-2">
-                {quickActions.map((action) => (
-                  <button
-                    key={action.id}
-                    className={cn(
-                      "flex items-center w-full p-2 sm:p-3 rounded-lg transition-colors text-left",
-                      isDark 
-                        ? "hover:bg-zinc-800/50 text-zinc-200" 
-                        : "hover:bg-gray-50 text-gray-700"
-                    )}
-                  >
-                    <span className={cn(
-                      "flex items-center justify-center h-5 w-5 sm:h-6 sm:w-6 rounded-full mr-2 sm:mr-3",
-                      isDark ? "bg-zinc-800" : "bg-gray-100"
-                    )}>
-                      <span className="h-3 w-3 sm:h-4 sm:w-4">{action.icon}</span>
-                    </span>
-                    <span className="text-xs sm:text-sm md:text-base font-medium">{action.title}</span>
-                  </button>
-                ))}
-              </div>
-            </GlassCard>
-          </div>
-          
-          {/* Right Side: Client List */}
-          <div className="lg:col-span-2">
-            <GlassCard contentClassName="p-0">
-              {/* Search and Filter Bar */}
-              <div className={cn(
-                "flex items-center justify-between p-4 border-b",
-                isDark ? "border-zinc-700/50" : "border-gray-200"
-              )}>
-                <div className={cn(
-                  "relative flex-grow max-w-md",
-                )}>
-                  <Search className={cn(
-                    "absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4",
-                    isDark ? "text-zinc-400" : "text-gray-500"
-                  )} />
-                  <input 
-                    type="text" 
-                    placeholder="Search here" 
-                    className={cn(
-                      "w-full pl-10 pr-4 py-2 rounded-lg",
-                      "focus:outline-none focus:ring-1",
-                      isDark 
-                        ? "bg-zinc-800/50 text-zinc-200 placeholder-zinc-400 focus:ring-zinc-600" 
-                        : "bg-gray-100/70 text-gray-800 placeholder-gray-500 focus:ring-gray-300"
-                    )}
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
-                
-                <button className={cn(
-                  "ml-3 p-2 rounded-lg transition-colors",
-                  isDark 
-                    ? "bg-zinc-800/70 hover:bg-zinc-700/70 text-zinc-300" 
-                    : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
+        <div className="lg:col-span-2 space-y-4 md:space-y-6">
+          <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
+            <div className="relative w-full flex-grow">
+              <Search className={cn("absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4", isDark ? "text-zinc-400" : "text-gray-400")} />
+              <input
+                type="text"
+                placeholder="Search clients..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className={cn(
+                  "w-full pl-10 pr-4 py-2 sm:py-2.5 text-sm rounded-md border",
+                  isDark ? "bg-zinc-800 border-zinc-700 text-zinc-100 placeholder-zinc-500" : "bg-white border-gray-300 text-gray-900 placeholder-gray-400",
+                  "focus:ring-blue-500 focus:border-blue-500"
                 )}
-                aria-label="Filter clients">
-                  <Filter className="h-5 w-5" />
-                </button>
-              </div>
-              
-              {/* Client List */}
-              <div className="p-2">
-                {filteredClients.map((client) => (
-                  <div 
-                    key={client.id} 
-                    className={cn(
-                      "p-3 sm:p-4 rounded-xl mb-2 sm:mb-3 transition-colors cursor-pointer",
-                      isDark ? "hover:bg-zinc-800/50" : "hover:bg-gray-50"
-                    )}
-                    onClick={() => handleClientClick(client)}
-                  >
-                    {/* Client Header */}
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center">
-                        <Avatar className="h-10 w-10 sm:h-12 sm:w-12 mr-3 sm:mr-4">
-                          <AvatarFallback className={cn(
-                            isDark ? "bg-zinc-800" : "bg-blue-100",
-                            isDark ? "text-zinc-200" : "text-blue-700",
-                            "text-xs sm:text-sm"
-                          )}>
-                            {client.initials}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <h3 className={cn(
-                            "font-semibold text-sm sm:text-base",
-                            isDark ? "text-zinc-100" : "text-gray-800"
-                          )}>
-                            {client.name}
-                          </h3>
-                          <p className={cn(
-                            "text-[10px] sm:text-sm",
-                            isDark ? "text-zinc-400" : "text-gray-500"
-                          )}>
-                            {client.status}
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <button 
-                        className="text-xs text-blue-500 hover:text-blue-600"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleClientClick(client);
-                        }}
-                        aria-label={`View ${client.name}'s details`}
-                      >
-                        <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
-                      </button>
-                    </div>
-                    
-                    {/* Progress indicator */}
-                    <div className="w-full h-1 bg-gray-200 dark:bg-gray-700 rounded-full mb-3">
-                      <div 
-                        className={cn(
-                          "h-1 rounded-full",
-                          client.progress > 70 ? "bg-green-500" : 
-                          client.progress > 40 ? "bg-amber-500" : "bg-red-500"
-                        )}
-                        style={{ width: `${client.progress}%` }}
-                      ></div>
-                    </div>
-                    
-                    {/* Client Platforms */}
-                    <div className="space-y-1.5 sm:space-y-2">
-                      {client.platforms.map((platform, idx) => (
-                        <div key={idx} className="flex items-center">
-                          <span className={cn(
-                            "text-[10px] sm:text-sm font-bold w-14 sm:w-16",
-                            isDark ? "text-zinc-300" : "text-gray-700"
-                          )}>
-                            {platform.name}:
-                          </span>
-                          <span className={cn(
-                            "text-[8px] sm:text-xs ml-1 sm:ml-2",
-                            isDark ? "text-zinc-400" : "text-gray-600"
-                          )}>
-                            {platform.stats}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </GlassCard>
+              />
+            </div>
+            <button 
+              className={cn(
+                "flex items-center justify-center w-full sm:w-auto px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-medium rounded-md border",
+                isDark ? "bg-zinc-700 hover:bg-zinc-600 text-zinc-100 border-zinc-600" : "bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300"
+              )}
+            >
+              <Filter className="mr-1.5 h-4 w-4" />
+              Filter
+            </button>
           </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
+            {filteredClients.map((client, index) => (
+              <ClientListItem 
+                key={client.id} 
+                client={client} 
+                isDark={isDark} 
+                onClick={handleClientClick}
+                index={index} 
+              />
+            ))}
+            {filteredClients.length === 0 && (
+              <p className={cn("md:col-span-2 text-center py-10", isDark ? "text-zinc-400" : "text-gray-500")}>
+                No clients found.
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="lg:col-span-1 space-y-4 md:space-y-6">
+          <h2 className={cn("text-lg lg:text-xl font-semibold", isDark ? "text-zinc-100" : "text-gray-800")}>
+            Delays & Follow-ups
+          </h2>
+          <GlassCard contentClassName="p-3 sm:p-4" isDark={isDark}>
+            <ul className="space-y-2.5 sm:space-y-3">
+              {delaysAndFollowups.map((item) => (
+                <li 
+                  key={item.id}
+                  className={cn(
+                    "flex items-center justify-between p-2.5 sm:p-3 rounded-md",
+                     isDark ? "bg-zinc-800 hover:bg-zinc-700/70" : "bg-gray-100 hover:bg-gray-200/80"
+                  )}
+                >
+                  <div className="flex items-center">
+                    <div className={cn("w-2 h-2 rounded-full mr-2", item.priority === 'high' ? "bg-red-500" : "bg-yellow-400")}></div>
+                    <span className={cn("text-sm", isDark ? "text-zinc-200" : "text-gray-700")}>{item.title}</span>
+                  </div>
+                  <Phone className={cn("h-4 w-4", isDark ? "text-zinc-400" : "text-gray-500")} />
+                </li>
+              ))}
+            </ul>
+          </GlassCard>
         </div>
       </div>
 
-      {/* Client Detail Modal - using our new component */}
       <ClientDetailModal 
-        isOpen={isModalVisible}
-        onClose={handleCloseDetail}
-        client={selectedClient}
+        isOpen={isModalVisible} 
+        onClose={handleCloseDetail} 
+        client={selectedClient} 
       />
     </div>
   );
 }
 
-// Default export with DashboardLayout
 export default function ClientsPage() {
-  // Use client-side only rendering
-  const [isMounted, setIsMounted] = useState(false);
-  
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-  
-  if (!isMounted) {
-    return null; // Return nothing during SSR to avoid hydration issues
-  }
-  
-  // When mounted, render with DashboardLayout
   return (
-    <DashboardLayout>
+    // <DashboardLayout> // This wrapper is redundant if app/dashboard/layout.tsx provides it
       <ClientsContent />
-    </DashboardLayout>
+    // </DashboardLayout>
   );
-} 
+}

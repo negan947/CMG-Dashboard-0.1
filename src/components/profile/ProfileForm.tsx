@@ -15,7 +15,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { UserRound, Briefcase, Phone, MapPin, Building, Clock } from 'lucide-react';
+import { UserRound, Briefcase, Phone, MapPin, Building, Clock, Loader2 } from 'lucide-react';
 
 interface ProfileFormProps {
   initialData?: any;
@@ -188,12 +188,13 @@ export function ProfileForm({ initialData = {}, onSubmit }: ProfileFormProps) {
             type="submit" 
             disabled={isSubmitting}
             className={cn(
-              "min-w-[120px]",
+              "min-w-[150px] flex items-center justify-center",
               isDark 
                 ? "bg-blue-600 hover:bg-blue-700" 
                 : "bg-blue-500 hover:bg-blue-600"
             )}
           >
+            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isSubmitting ? 'Saving...' : 'Save Changes'}
           </Button>
         </div>

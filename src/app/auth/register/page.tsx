@@ -6,8 +6,11 @@ import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AuthCard, FormInput, SubmitButton } from '@/components/auth';
+import PasswordStrengthIndicator from '@/components/auth/PasswordStrengthIndicator';
 import { registerSchema, RegisterFormValues } from '@/lib/schemas/auth-schemas';
 import { AuthService } from '@/services/auth-service';
+import { APP_ROUTES } from '@/lib/constants/routes';
+import { Mail, Lock } from 'lucide-react';
 
 export default function Register() {
   const [loading, setLoading] = useState(false);
@@ -19,6 +22,7 @@ export default function Register() {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -27,6 +31,8 @@ export default function Register() {
       password: '',
     },
   });
+
+  const passwordValue = watch('password');
 
   const onSubmit = async (formData: RegisterFormValues) => {
     setLoading(true);
@@ -62,7 +68,7 @@ export default function Register() {
       subtitle={
         <>
           Or{' '}
-          <Link href="/auth/login" className="text-blue-600 hover:underline">
+          <Link href={APP_ROUTES.LOGIN} className="text-blue-600 hover:underline hover:opacity-80 transition-opacity duration-150">
             sign in to your account
           </Link>
         </>
@@ -79,6 +85,7 @@ export default function Register() {
             autoComplete="email"
             error={errors.email}
             {...register('email')}
+            leadingIcon={<Mail />}
           />
 
           <FormInput
@@ -89,7 +96,10 @@ export default function Register() {
             error={errors.password}
             description="Password must be at least 6 characters long, include uppercase, lowercase, and numbers"
             {...register('password')}
+            canTogglePassword={true}
+            leadingIcon={<Lock />}
           />
+          <PasswordStrengthIndicator password={passwordValue} />
         </div>
 
         <SubmitButton
