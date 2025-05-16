@@ -175,25 +175,27 @@ src/
 
 ### Database Operations
 
-Two main patterns are observed for database interactions:
+**Preferred Pattern: Direct Supabase JS Client**
 
-1.  **Supabase JS Client ORM-like Methods & RPCs**:
-    *   Used by services like `ProfileService`, `SettingsService`, `DashboardService`.
-    *   Typically involves `supabase.from('table_name').select()/.insert()/etc.` or `supabase.rpc('function_name', ...)`.
-    *   These services often handle "not found" errors gracefully by returning empty default data to ensure UI resilience.
-    *   Leverages Supabase's built-in RLS capabilities directly.
+- **Primary Method**: Use the Supabase JS client directly for **all standard database operations** (CRUD - Create, Read, Update, Delete) and calling RPC functions.
+- **Client Creation**: Utilize helpers from `@supabase/auth-helpers-nextjs` (e.g., `createClientComponentClient`, `createServerComponentClient`) or wrappers like `createClient` from `[src/lib/supabase.ts](mdc:src/lib/supabase.ts)`.
+- **Operations**: Use methods like `supabase.from('table_name').select()`, `supabase.from('table_name').insert()`, `supabase.from('table_name').update()`, `supabase.from('table_name').delete()`, and `supabase.rpc('function_name', ...)`. This pattern is seen in services like `ProfileService`, `SettingsService`, `DashboardService`, and should be the default.
+    - **Example (Data Sending/Mutation)**: Follow the pattern used in `[src/app/admin/notifications/page.tsx](mdc:src/app/admin/notifications/page.tsx)` for direct client-side inserts/updates where appropriate RLS is in place.
+    - **Example (Data Pulling/Fetching)**: Use direct `.select()` or `.rpc()` calls as seen in `ProfileService` or `SettingsService`.
+- **Benefits**: Leverages Supabase's built-in RLS directly, simplifies data handling, often provides better type safety (especially with generated types), and aligns with common Supabase usage.
+- **Data Mapping**: Use utilities from `[src/lib/data-mapper.ts](mdc:src/lib/data-mapper.ts)` when needed to convert between camelCase (application) and snake_case (database) column names, especially when dealing with data returned from Supabase.
 
-2.  **Raw SQL via MCP (Model Context Protocol)**:
-    *   Used by services like `ClientService`, `ProjectService`, `AgencyService` for core CRUD operations.
-    *   Involves constructing SQL query strings.
-    *   Queries are sent via `MCP.supabase.query()` (defined in `[src/lib/mcp.ts](mdc:src/lib/mcp.ts)`) to the `/api/mcp/supabase` Next.js API route.
-    *   This API route then calls a PostgreSQL function `execute_sql(...)` in Supabase.
-    *   Data mapping between camelCase (application) and snake_case (database) is handled by utilities in `[src/lib/data-mapper.ts](mdc:src/lib/data-mapper.ts)`.
-    *   These services typically re-throw errors to be handled by the caller.
-    *   **Security for Raw SQL**: RLS policies and the implementation of the `execute_sql` RPC are critical for securing these operations.
+**Legacy/Special Case Pattern: MCP (Model Context Protocol)**
 
-- Implement RLS (Row Level Security) for data protection across all tables.
-- Use transactions for operations that modify multiple tables when appropriate.
+- **Usage**: The MCP flow (`MCP.supabase.query()` -> `[src/app/api/mcp/supabase/route.ts](mdc:src/app/api/mcp/supabase/route.ts)` -> `execute_sql` RPC) should **NO LONGER be used for standard CRUD operations**. Services like `ClientService`, `ProjectService`, `AgencyService` should be refactored (or new code written) to use the direct Supabase JS client pattern.
+- **Permitted Use**: MCP *may* be reserved **only** for exceptional cases requiring raw SQL execution via a secure backend mechanism, such as complex reporting queries not suitable for RPCs, schema introspection (`information_schema` queries), or specific permission checks *if* direct Supabase methods are insufficient.
+- **Security**: If MCP is used, ensure the `execute_sql` RPC is robust and secure (e.g., `SECURITY DEFINER`, proper input sanitization), and ideally, the backend API route should use secure credentials, not the public anonymous key.
+
+**General Guidelines**
+
+- Implement RLS (Row Level Security) for data protection across all tables. This is critical regardless of the access pattern.
+- Use transactions (`supabase.rpc('run_in_transaction', ...)` or similar) for operations that modify multiple tables when appropriate.
+- **Automatic Contextual IDs**: When creating data linked to a user or agency (e.g., creating a client), the relevant ID (like `agency_id`) **must** be sourced automatically from the authenticated user's session, profile, or other reliable context. **Do not** include manual input fields for such IDs in user-facing forms (e.g., remove the Agency ID input from the Add Client modal).
 
 ### Real-time Subscriptions
 
@@ -247,11 +249,10 @@ Two main patterns are observed for database interactions:
 
 - Always use TypeScript with proper typing. Ensure `[src/types/supabase.ts](mdc:src/types/supabase.ts)` is populated for Supabase client type safety.
 - Follow the project's file structure and naming conventions.
-- **Database Interaction**:
-    - Be mindful of the two established patterns (Supabase JS client vs. Raw SQL via MCP/API).
-    - For complex queries, JSONB manipulation, or auth-related tables, prefer using the Supabase JS client methods (Pattern 1).
-    - For straightforward CRUD on core tables like `clients`, `projects`, `agencies`, follow the existing pattern of using raw SQL via the MCP client and `[src/lib/data-mapper.ts](mdc:src/lib/data-mapper.ts)` (Pattern 2).
-    - When in doubt, emulate the existing service for the relevant data entity.
+- **Database Interaction**: **Prioritize using the direct Supabase JS client** (`createClient` wrapper or auth helpers -> `supabase.from(...).select/insert/update/delete`, `supabase.rpc(...)`) for **all** standard data reading and writing (CRUD). Refer to services like `ProfileService`, `SettingsService` for examples.
+    - **Do NOT use the MCP pattern** (`MCP.supabase.query()`) for new CRUD functionality. If modifying existing MCP-based services (`ClientService`, `ProjectService`, `AgencyService`), prefer refactoring them to use the direct Supabase client pattern.
+    - Use `[src/lib/data-mapper.ts](mdc:src/lib/data-mapper.ts)` for camelCase <-> snake_case conversion when interacting with the database.
+- **Contextual IDs**: Ensure IDs like `agency_id` are sourced automatically from user context when creating related records (e.g., clients). Do not add manual input fields for these in forms.
 - Implement proper error handling and validation.
 - Use Zod for data validation (schemas in `[src/lib/schemas/](mdc:src/lib/schemas)`).
 - Follow React best practices (hooks, functional components).

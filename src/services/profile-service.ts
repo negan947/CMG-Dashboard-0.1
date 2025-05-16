@@ -315,4 +315,58 @@ export class ProfileService {
       };
     }
   }
+
+  /**
+   * Get user core data from public users table (including agency_id)
+   * @param userEmail - The email from auth.users
+   */
+  static async getUserData(userEmail: string) {
+    if (!userEmail) {
+        console.warn('getUserData called without email');
+        return { agencyId: null, error: { message: 'User email is required'} };
+    }
+    try {
+      const supabase = createClientComponentClient();
+      const { data, error } = await supabase
+        .from('users') 
+        .select('agency_id') 
+        .eq('email', userEmail) // Use email to match
+        .single(); 
+      
+      if (error && error.code !== 'PGRST116') { 
+        console.error('Error getting user data:', error);
+        return { agencyId: null, error };
+      }
+
+      if (error && error.code === 'PGRST116') { 
+        console.warn('User not found in public users table by email:', userEmail);
+        return { agencyId: null, error: null };
+      } 
+      
+      if (!data?.agency_id) {
+          console.warn('Agency ID not found in users table for email:', userEmail);
+          return { agencyId: null, error: null };
+      }
+      
+      // Ensure agencyId is a number before returning
+      const agencyIdNum = parseInt(String(data.agency_id), 10);
+      if (isNaN(agencyIdNum)) {
+         console.warn('Agency ID found but is not a valid number for email:', userEmail, data.agency_id);
+         return { agencyId: null, error: null };
+      }
+
+      return { agencyId: agencyIdNum, error: null };
+    } catch (error) {
+      console.error('Unexpected error getting user data:', error);
+      return { 
+        agencyId: null, 
+        error: { message: 'Failed to fetch user data', statusCode: 500 } 
+      };
+    }
+  }
+
+  /**
+   * Get user's agency membership - NO LONGER NEEDED IF users table has agency_id
+   */
+  // static async getAgencyMembership(userId: string) { ... }
 } 

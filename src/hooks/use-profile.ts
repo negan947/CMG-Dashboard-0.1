@@ -14,57 +14,63 @@ export function useProfile() {
   const [profile, setProfile] = useState<any>(null);
   const [preferences, setPreferences] = useState<any>(null);
   const [securityLogs, setSecurityLogs] = useState<any[]>([]);
+  const [currentAgencyId, setCurrentAgencyId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Initialize profile data
   const initializeProfile = useCallback(async () => {
-    if (!user?.id) return;
+    // Ensure we have user and user.email before proceeding
+    if (!user?.id || !user?.email) {
+      console.warn('initializeProfile: user ID or email missing', user);
+      setIsLoading(false); // Stop loading if no user/email
+      return;
+    }
     
     setIsLoading(true);
     setError(null);
+    setCurrentAgencyId(null);
     
     try {
-      // Fetch all data in parallel
-      const [profileResult, preferencesResult, logsResult] = await Promise.all([
+      const [profileResult, preferencesResult, logsResult, userDataResult] = await Promise.all([
         ProfileService.getProfile(user.id),
         ProfileService.getUserPreferences(user.id),
-        ProfileService.getSecurityLogs(user.id)
+        ProfileService.getSecurityLogs(user.id),
+        ProfileService.getUserData(user.email) // Pass user.email here
       ]);
 
-      // Destructure results and handle errors individually
       const { profile, error: profileError } = profileResult;
       const { preferences, error: preferencesError } = preferencesResult;
       const { logs, error: logsError } = logsResult;
+      const { agencyId, error: userDataError } = userDataResult; // Destructure user data result
 
       if (profileError) {
         console.error('Error loading profile:', profileError);
-        // Set a general error or specific ones if needed
-        setError(profileError.message || 'Failed to load profile data');
+        setError(prev => prev || 'Failed to load profile data');
       } else {
-        setProfile(profile || {}); // Use empty object if profile is null
+        setProfile(profile || {});
       }
       
       if (preferencesError) {
         console.error('Error loading preferences:', preferencesError);
-        // Optionally set error or handle silently
+        setError(prev => prev || 'Failed to load preferences');
       } else {
-        setPreferences(preferences || {}); // Use empty object if preferences is null
+        setPreferences(preferences || {});
       }
       
       if (logsError) {
         console.error('Error loading security logs:', logsError);
-        // Optionally set error or handle silently
+        setError(prev => prev || 'Failed to load security logs');
       } else {
-        setSecurityLogs(logs || []); // Use empty array if logs is null
+        setSecurityLogs(logs || []);
       }
 
-      // Consolidate error reporting if any of the fetches failed but others succeeded
-      if (profileError || preferencesError || logsError) {
-        // If a general error isn't already set by profileError, set one.
-        if (!error) { // Check if 'error' state is still null
-             setError('Failed to load some profile components. Please try again.');
-        }
+      if (userDataError) { // Handle user data fetch error
+        console.error('Error loading user data (for agencyId):', userDataError);
+        setError(prev => prev || 'Failed to load agency information');
+        setCurrentAgencyId(null);
+      } else {
+        setCurrentAgencyId(agencyId); // Set the agencyId state from userDataResult
       }
 
     } catch (err: any) {
@@ -73,21 +79,22 @@ export function useProfile() {
     } finally {
       setIsLoading(false);
     }
-  }, [user?.id]);
+  }, [user?.id, user?.email]);
 
   // Load profile data on mount and when user changes
   useEffect(() => {
-    if (user?.id) {
+    if (user?.id && user?.email) {
       initializeProfile();
     } else {
       // Reset states when user is not available
       setProfile(null);
       setPreferences(null);
       setSecurityLogs([]);
+      setCurrentAgencyId(null);
       setIsLoading(false);
       setError(null);
     }
-  }, [user?.id, initializeProfile]);
+  }, [user?.id, user?.email, initializeProfile]);
 
   // Update profile information
   const updateProfile = async (data: ProfileUpdateFormValues) => {
@@ -208,6 +215,7 @@ export function useProfile() {
     securityLogs,
     isLoading,
     error,
+    currentAgencyId,
     
     // Actions
     initializeProfile,

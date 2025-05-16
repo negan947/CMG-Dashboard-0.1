@@ -14,6 +14,7 @@ interface GlassCardProps {
   headerClassName?: string;
   footerContent?: React.ReactNode;
   headerContent?: React.ReactNode;
+  onClick?: React.MouseEventHandler<HTMLDivElement>;
 }
 
 // Default colors for accent
@@ -39,6 +40,7 @@ export function GlassCard({
   headerClassName,
   footerContent,
   headerContent,
+  onClick,
 }: GlassCardProps) {
   const { theme } = useTheme();
   const isDark = theme !== "light";
@@ -92,7 +94,8 @@ export function GlassCard({
         ? "hover:shadow-[0_12px_30px_rgba(0,0,0,0.25)] transition-all duration-300"
         : "hover:shadow-[0_10px_25px_rgba(0,0,0,0.1)] transition-all duration-300"),
       className
-    )}>
+    )}
+    onClick={onClick}>
       {/* Subtle brushed metal texture */}
       {isDark && (
         <div className="absolute inset-0 opacity-[0.05] pointer-events-none hidden sm:block" style={{

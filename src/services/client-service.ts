@@ -1,142 +1,189 @@
-import { MCP } from '@/lib/mcp';
 import { ClientModel, CreateClientInput, UpdateClientInput } from '@/types/models.types';
 import { mapDbRow, camelToSnakeObject } from '@/lib/data-mapper';
+import { createClient } from '@/lib/supabase';
 
 /**
- * Service for managing client data
+ * Service for managing client data using DIRECT Supabase client methods
  */
 export const ClientService = {
   /**
-   * Get all clients
-   * @param agencyId Optional filter by agency ID
-   * @returns Array of clients
+   * Get all clients (optionally filtered by agency ID)
    */
   async getClients(agencyId?: number): Promise<ClientModel[]> {
-    let query = 'SELECT * FROM clients';
-    const params: any[] = [];
-
-    if (agencyId) {
-      query += ' WHERE agency_id = $1';
-      params.push(agencyId);
-    }
-
-    query += ' ORDER BY name';
-
+    const supabase = createClient();
     try {
-      const result = await MCP.supabase.query(query, params);
-      return result.rows.map(row => mapDbRow(row) as ClientModel);
+      let query = supabase.from('clients').select('*');
+      if (agencyId) {
+        query = query.eq('agency_id', agencyId);
+      }
+      query = query.order('name');
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Supabase getClients error:', error);
+        throw new Error(error.message || 'Failed to fetch clients');
+      }
+      
+      return (data || []).map(row => mapDbRow(row) as ClientModel);
     } catch (error) {
-      console.error('Error fetching clients:', error);
-      throw error;
+      console.error('Error in getClients (direct method):', error);
+      throw error instanceof Error ? error : new Error('An unexpected error occurred fetching clients');
     }
   },
 
   /**
    * Get a client by ID
-   * @param id Client ID
-   * @returns Client or null if not found
    */
   async getClientById(id: number): Promise<ClientModel | null> {
+    const supabase = createClient();
     try {
-      const result = await MCP.supabase.query(
-        'SELECT * FROM clients WHERE id = $1',
-        [id]
-      );
+      const { data, error } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle(); // Use maybeSingle to handle not found gracefully
 
-      if (result.rows.length === 0) {
-        return null;
+      if (error) {
+        console.error(`Supabase getClientById error (ID: ${id}):`, error);
+        throw new Error(error.message || 'Failed to fetch client by ID');
       }
 
-      return mapDbRow(result.rows[0]) as ClientModel;
+      return data ? mapDbRow(data) as ClientModel : null;
     } catch (error) {
-      console.error(`Error fetching client with ID ${id}:`, error);
-      throw error;
+      console.error(`Error in getClientById (ID: ${id}, direct method):`, error);
+      throw error instanceof Error ? error : new Error('An unexpected error occurred fetching client by ID');
     }
   },
 
   /**
    * Get clients by agency ID
-   * @param agencyId Agency ID
-   * @returns Array of clients
    */
   async getClientsByAgencyId(agencyId: number): Promise<ClientModel[]> {
-    try {
-      const result = await MCP.supabase.query(
-        'SELECT * FROM clients WHERE agency_id = $1 ORDER BY name',
-        [agencyId]
-      );
-
-      return result.rows.map(row => mapDbRow(row) as ClientModel);
-    } catch (error) {
-      console.error(`Error fetching clients for agency ${agencyId}:`, error);
-      throw error;
-    }
+    // This method is essentially the same as getClients with a required agencyId
+    // We can reuse getClients for consistency or keep it separate if specific logic is needed later
+    return this.getClients(agencyId);
   },
 
   /**
-   * Create a new client
-   * @param client Client data
-   * @returns Created client
+   * Create a new client using DIRECT SUPABASE CLIENT
    */
-  async createClient(client: CreateClientInput): Promise<ClientModel> {
-    const clientData = camelToSnakeObject(client);
-    
-    try {
-      const result = await MCP.supabase.query(
-        `INSERT INTO clients (name, slug, agency_id) 
-         VALUES ($1, $2, $3) 
-         RETURNING *`,
-        [clientData.name, clientData.slug, clientData.agency_id]
-      );
+  async createClient(client: CreateClientInput & { slug: string }): Promise<ClientModel> {
+    const supabase = createClient();
+    const clientDataSnake = camelToSnakeObject(client);
 
-      return mapDbRow(result.rows[0]) as ClientModel;
+    const dataToInsert = {
+      name: clientDataSnake.name,
+      slug: clientDataSnake.slug,
+      agency_id: clientDataSnake.agency_id,
+      email: clientDataSnake.email,
+      phone: clientDataSnake.phone,
+      address: clientDataSnake.address,
+      city: clientDataSnake.city,
+      state: clientDataSnake.state,
+      zip_code: clientDataSnake.zip_code,
+      country: clientDataSnake.country,
+      status: clientDataSnake.status,
+      notes: clientDataSnake.notes,
+      avatar_url: clientDataSnake.avatar_url, 
+      website: clientDataSnake.website,
+      industry: clientDataSnake.industry,
+      company_size: clientDataSnake.company_size,
+      contact_name: clientDataSnake.contact_name,
+      contact_position: clientDataSnake.contact_position,
+    };
+
+    try {
+      const { data, error } = await supabase
+        .from('clients')
+        .insert(dataToInsert)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Supabase direct insert error:', error);
+        throw new Error(error.message || 'Failed to create client in database');
+      }
+
+      if (!data) {
+        throw new Error('No data returned after client creation');
+      }
+
+      return mapDbRow(data) as ClientModel;
     } catch (error) {
-      console.error('Error creating client:', error);
-      throw error;
+      console.error('Error in createClient (direct method):', error);
+      throw error instanceof Error ? error : new Error('An unexpected error occurred during client creation');
     }
   },
 
   /**
-   * Update an existing client
-   * @param client Client data with ID
-   * @returns Updated client
+   * Update an existing client using DIRECT SUPABASE CLIENT
    */
   async updateClient(client: UpdateClientInput): Promise<ClientModel> {
-    if (!client.id) {
+    const supabase = createClient();
+    const { id, ...updateData } = client;
+    
+    if (!id) {
       throw new Error('Client ID is required for update');
     }
 
-    const clientData = camelToSnakeObject(client);
+    // Convert only the fields being updated to snake_case
+    const updateDataSnake = camelToSnakeObject(updateData);
     
-    try {
-      const result = await MCP.supabase.query(
-        `UPDATE clients 
-         SET name = $1, slug = $2, agency_id = $3 
-         WHERE id = $4 
-         RETURNING *`,
-        [clientData.name, clientData.slug, clientData.agency_id, clientData.id]
-      );
+    // Generate slug if name is being updated
+    if (updateDataSnake.name) {
+      updateDataSnake.slug = updateDataSnake.name
+        .toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^\w-]+/g, '')
+        .replace(/--+/g, '-')
+        .replace(/^-+/, '')
+        .replace(/-+$/, '');
+    }
 
-      return mapDbRow(result.rows[0]) as ClientModel;
+    try {
+      const { data, error } = await supabase
+        .from('clients')
+        .update(updateDataSnake)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error(`Supabase updateClient error (ID: ${id}):`, error);
+        throw new Error(error.message || 'Failed to update client');
+      }
+      
+       if (!data) {
+        throw new Error('No data returned after client update');
+      }
+
+      return mapDbRow(data) as ClientModel;
     } catch (error) {
-      console.error(`Error updating client with ID ${client.id}:`, error);
-      throw error;
+      console.error(`Error in updateClient (ID: ${id}, direct method):`, error);
+      throw error instanceof Error ? error : new Error('An unexpected error occurred updating client');
     }
   },
 
   /**
-   * Delete a client
-   * @param id Client ID
+   * Delete a client using DIRECT SUPABASE CLIENT
    */
   async deleteClient(id: number): Promise<void> {
+    const supabase = createClient();
     try {
-      await MCP.supabase.query(
-        'DELETE FROM clients WHERE id = $1',
-        [id]
-      );
+      const { error } = await supabase
+        .from('clients')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error(`Supabase deleteClient error (ID: ${id}):`, error);
+        throw new Error(error.message || 'Failed to delete client');
+      }
+      // No return value needed for delete
     } catch (error) {
-      console.error(`Error deleting client with ID ${id}:`, error);
-      throw error;
+      console.error(`Error in deleteClient (ID: ${id}, direct method):`, error);
+      throw error instanceof Error ? error : new Error('An unexpected error occurred deleting client');
     }
   }
 }; 

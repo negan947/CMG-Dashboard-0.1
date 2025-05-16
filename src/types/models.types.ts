@@ -171,16 +171,14 @@ export enum ClientStatus {
 }
 
 /**
- * Agency Client relationship model
+ * Project Status enum
  */
-export interface AgencyClient {
-  id: string;
-  agencyId: string;
-  clientId: string;
-  status: ClientStatus;
-  managerId: string | null;
-  createdAt: Date;
-  updatedAt: Date;
+export enum ProjectStatus {
+  PLANNED = 'planned',
+  ACTIVE = 'active',
+  ON_HOLD = 'on_hold',
+  COMPLETED = 'completed',
+  CANCELLED = 'cancelled',
 }
 
 /**
@@ -189,16 +187,11 @@ export interface AgencyClient {
 export interface Project {
   id: string;
   name: string;
-  description: string | null;
+  slug?: string | null;
+  description?: string | null;
   clientId: string;
-  agencyId: string;
+  agencyId?: string | null;
   status: ProjectStatus;
-  startDate: Date | null;
-  endDate: Date | null;
-  budget: number | null;
-  budgetCurrency: string | null;
-  budgetType: BudgetType | null;
-  estimatedHours: number | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -213,16 +206,11 @@ export type ProjectModel = Project;
  */
 export interface CreateProjectInput {
   name: string;
+  slug?: string;
   description?: string;
   clientId: number;
-  agencyId: number;
+  agencyId?: number;
   status?: ProjectStatus;
-  startDate?: Date;
-  endDate?: Date;
-  budget?: number;
-  budgetCurrency?: string;
-  budgetType?: BudgetType;
-  estimatedHours?: number;
 }
 
 /**
@@ -231,35 +219,11 @@ export interface CreateProjectInput {
 export interface UpdateProjectInput {
   id: number;
   name?: string;
+  slug?: string;
   description?: string;
   clientId?: number;
   agencyId?: number;
   status?: ProjectStatus;
-  startDate?: Date;
-  endDate?: Date;
-  budget?: number;
-  budgetCurrency?: string;
-  budgetType?: BudgetType;
-  estimatedHours?: number;
-}
-
-/**
- * Project Status enum
- */
-export enum ProjectStatus {
-  PLANNED = 'planned',
-  IN_PROGRESS = 'in_progress',
-  COMPLETED = 'completed',
-  ON_HOLD = 'on_hold',
-  CANCELLED = 'cancelled',
-}
-
-/**
- * Budget Type enum
- */
-export enum BudgetType {
-  FIXED = 'fixed',
-  HOURLY = 'hourly',
 }
 
 /**
@@ -442,4 +406,76 @@ export interface Profile extends BaseModel {
     [key: string]: any;
   };
   skills?: string[];
+}
+
+// Communication Logs Types
+export interface CommunicationLogModel {
+  id: string;
+  clientId: number;
+  agencyId: number;
+  communicationTimestamp: string;
+  communicationType: 'email_sent' | 'email_received' | 'call_made' | 'call_received' | 'meeting' | 'internal_note';
+  summary: string;
+  createdByUserId: string;
+  metadata?: any;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateCommunicationLogInput {
+  clientId: number;
+  agencyId: number;
+  communicationType: 'email_sent' | 'email_received' | 'call_made' | 'call_received' | 'meeting' | 'internal_note';
+  summary: string;
+  createdByUserId: string;
+  metadata?: any;
+  communicationTimestamp?: string; // Optional, defaults to NOW()
+}
+
+export interface UpdateCommunicationLogInput {
+  id: string;
+  communicationType?: 'email_sent' | 'email_received' | 'call_made' | 'call_received' | 'meeting' | 'internal_note';
+  summary?: string;
+  metadata?: any;
+  communicationTimestamp?: string;
+}
+
+// Task Types (incorporating agency_id and created_by_user_id)
+export interface TaskModel {
+  id: number;
+  title: string;
+  description?: string;
+  projectId: number;
+  assigneeId?: number;
+  status: 'todo' | 'inprogress' | 'completed' | 'cancelled';
+  priority: 'low' | 'medium' | 'high';
+  dueDate?: string;
+  agencyId?: number;
+  createdByUserId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateTaskInput {
+  title: string;
+  description?: string;
+  projectId: number;
+  assigneeId?: number;
+  status?: 'todo' | 'inprogress' | 'completed' | 'cancelled';
+  priority?: 'low' | 'medium' | 'high';
+  dueDate?: string;
+  agencyId?: number;
+  createdByUserId?: string;
+}
+
+export interface UpdateTaskInput {
+  id: number;
+  title?: string;
+  description?: string;
+  projectId?: number;
+  assigneeId?: number;
+  status?: 'todo' | 'inprogress' | 'completed' | 'cancelled';
+  priority?: 'low' | 'medium' | 'high';
+  dueDate?: string;
+  agencyId?: number;
 } 
