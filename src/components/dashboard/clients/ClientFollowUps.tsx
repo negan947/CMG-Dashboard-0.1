@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect, useRef } from 'react';
 import { Phone, Check, PlusCircle, Calendar, Clock, AlertCircle, MessageSquare, 
   MoreHorizontal, AlarmClock, Bell, ChevronDown, ChevronRight, X, Filter, 

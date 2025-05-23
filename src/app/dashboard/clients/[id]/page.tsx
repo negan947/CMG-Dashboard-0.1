@@ -1,8 +1,9 @@
 import { ClientFollowUps } from '@/components/dashboard/clients/ClientFollowUps';
 
-export default async function ClientDetailPage({ params }: { params: { id: string } }) {
-  // Assume clientData contains the client information
-  const clientId = parseInt(params.id);
+export default async function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  // Await the params in Next.js 15
+  const resolvedParams = await params;
+  const clientId = parseInt(resolvedParams.id);
 
   return (
     <div>

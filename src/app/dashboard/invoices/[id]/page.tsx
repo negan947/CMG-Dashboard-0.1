@@ -70,7 +70,7 @@ const InvoiceStatusBadge = ({ status }: { status: InvoiceStatus }) => (
 export default function InvoiceDetailPage({ 
   params 
 }: { 
-  params: { id: string } 
+  params: Promise<{ id: string }> 
 }) {
   const router = useRouter();
   const { theme } = useTheme();
@@ -82,6 +82,17 @@ export default function InvoiceDetailPage({
   const [invoiceItems, setInvoiceItems] = useState<InvoiceItemModel[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [invoiceId, setInvoiceId] = useState<string | null>(null);
+  
+  // Resolve params on component mount
+  useEffect(() => {
+    const resolveParams = async () => {
+      const resolvedParams = await params;
+      setInvoiceId(resolvedParams.id);
+    };
+    
+    resolveParams();
+  }, [params]);
   
   // Format currency consistently
   const formatCurrency = (amount: number) => {
@@ -93,13 +104,15 @@ export default function InvoiceDetailPage({
   
   // Fetch invoice details on page load
   useEffect(() => {
+    if (!invoiceId) return;
+    
     const loadInvoiceDetails = async () => {
       setIsLoading(true);
       setError(null);
       
       try {
-        const invoiceId = parseInt(params.id);
-        const { invoice, items } = await fetchInvoiceDetails(invoiceId);
+        const parsedInvoiceId = parseInt(invoiceId);
+        const { invoice, items } = await fetchInvoiceDetails(parsedInvoiceId);
         
         if (!invoice) {
           setError('Invoice not found');
@@ -117,7 +130,7 @@ export default function InvoiceDetailPage({
     };
     
     loadInvoiceDetails();
-  }, [params.id, fetchInvoiceDetails]);
+  }, [invoiceId, fetchInvoiceDetails]);
   
   // Handle status change
   const handleStatusChange = async (status: InvoiceStatus) => {

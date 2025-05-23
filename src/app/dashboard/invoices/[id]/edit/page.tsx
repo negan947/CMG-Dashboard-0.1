@@ -76,7 +76,7 @@ type InvoiceFormValues = z.infer<typeof invoiceFormSchema>;
 export default function EditInvoicePage({ 
   params 
 }: { 
-  params: { id: string } 
+  params: Promise<{ id: string }> 
 }) {
   const router = useRouter();
   const { theme } = useTheme();
@@ -87,6 +87,17 @@ export default function EditInvoicePage({
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [invoiceId, setInvoiceId] = useState<string | null>(null);
+  
+  // Resolve params on component mount
+  useEffect(() => {
+    const resolveParams = async () => {
+      const resolvedParams = await params;
+      setInvoiceId(resolvedParams.id);
+    };
+    
+    resolveParams();
+  }, [params]);
   
   // Form setup
   const form = useForm<InvoiceFormValues>({
@@ -164,13 +175,15 @@ export default function EditInvoicePage({
   
   // Fetch invoice details on page load
   useEffect(() => {
+    if (!invoiceId) return;
+    
     const loadInvoiceDetails = async () => {
       setIsLoading(true);
       setError(null);
       
       try {
-        const invoiceId = parseInt(params.id);
-        const { invoice, items } = await fetchInvoiceDetails(invoiceId);
+        const parsedInvoiceId = parseInt(invoiceId);
+        const { invoice, items } = await fetchInvoiceDetails(parsedInvoiceId);
         
         if (!invoice) {
           setError('Invoice not found');
@@ -215,7 +228,7 @@ export default function EditInvoicePage({
     };
     
     loadInvoiceDetails();
-  }, [params.id, fetchInvoiceDetails, form]);
+  }, [invoiceId, fetchInvoiceDetails, form]);
   
   // Handle form submission
   const onSubmit = async (data: InvoiceFormValues) => {

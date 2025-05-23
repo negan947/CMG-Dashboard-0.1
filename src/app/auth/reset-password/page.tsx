@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -27,13 +27,13 @@ export default function ResetPasswordPage() {
     },
   });
 
-  useState(() => {
+  useEffect(() => {
     if (authHookError) {
       setServerError(authHookError);
     }
   }, [authHookError]);
 
-  useState(() => {
+  useEffect(() => {
     clearError();
     setServerError(null);
   }, [errors, clearError]);
