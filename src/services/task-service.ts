@@ -6,6 +6,7 @@ import {
 import { mapDbRow, camelToSnakeObject } from '@/lib/data-mapper';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { handleSupabaseError } from '@/lib/error-handling';
+import { PostgrestError } from '@supabase/supabase-js';
 
 /**
  * Service for managing tasks using DIRECT Supabase client methods
@@ -29,7 +30,7 @@ export const TaskService = {
       
       return data.map(this.mapDbTaskToModel);
     } catch (error) {
-      throw handleSupabaseError(error);
+      throw handleSupabaseError(error as PostgrestError | Error);
     }
   },
 
@@ -65,7 +66,7 @@ export const TaskService = {
       
       return tasks.map(this.mapDbTaskToModel);
     } catch (error) {
-      throw handleSupabaseError(error);
+      throw handleSupabaseError(error as PostgrestError | Error);
     }
   },
 
@@ -120,7 +121,7 @@ export const TaskService = {
       
       return data.map(this.mapDbTaskToModel);
     } catch (error) {
-      throw handleSupabaseError(error);
+      throw handleSupabaseError(error as PostgrestError | Error);
     }
   },
 
@@ -151,7 +152,7 @@ export const TaskService = {
       
       return this.mapDbTaskToModel(data);
     } catch (error) {
-      throw handleSupabaseError(error);
+      throw handleSupabaseError(error as PostgrestError | Error);
     }
   },
 
@@ -183,7 +184,7 @@ export const TaskService = {
       
       return this.mapDbTaskToModel(data);
     } catch (error) {
-      throw handleSupabaseError(error);
+      throw handleSupabaseError(error as PostgrestError | Error);
     }
   },
 
@@ -201,18 +202,30 @@ export const TaskService = {
       
       if (error) throw error;
     } catch (error) {
-      throw handleSupabaseError(error);
+      throw handleSupabaseError(error as PostgrestError | Error);
     }
   },
 
   /**
-   * Mark a task as completed
+   * Complete a task
    */
   async completeTask(taskId: number): Promise<TaskModel> {
-    return this.updateTask({
-      id: taskId,
-      status: 'completed'
-    });
+    try {
+      const supabase = createClientComponentClient();
+      
+      const { data, error } = await supabase
+        .from('tasks')
+        .update({ status: 'completed' })
+        .eq('id', taskId)
+        .select('*')
+        .single();
+      
+      if (error) throw error;
+      
+      return this.mapDbTaskToModel(data);
+    } catch (error) {
+      throw handleSupabaseError(error as PostgrestError | Error);
+    }
   },
 
   /**

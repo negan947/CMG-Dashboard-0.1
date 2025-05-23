@@ -56,7 +56,7 @@ export const useAuthStore = create<AuthStore>()(
           const { session, error: supabaseError } = await AuthService.getSession();
           
           if (supabaseError) {
-            const friendlyError = handleAuthError(supabaseError);
+            const friendlyError = handleAuthError(supabaseError as Error | null);
             set({ error: friendlyError.message, isLoading: false });
             clearTimeout(timeoutId);
             return;
@@ -100,7 +100,7 @@ export const useAuthStore = create<AuthStore>()(
           const { data, error: supabaseError } = await AuthService.signIn(credentials);
           
           if (supabaseError) {
-            const friendlyError = handleAuthError(supabaseError);
+            const friendlyError = handleAuthError(supabaseError as Error | null);
             set({ error: friendlyError.message, isLoading: false });
             return { error: friendlyError };
           }
@@ -129,7 +129,7 @@ export const useAuthStore = create<AuthStore>()(
           const { data, error: supabaseError, isEmailConfirmationRequired, isExistingUser } = await AuthService.signUp(credentials);
           
           if (supabaseError) {
-            const friendlyError = handleAuthError(supabaseError);
+            const friendlyError = handleAuthError(supabaseError as Error | null);
             set({ error: friendlyError.message, isLoading: false });
             return { error: friendlyError, isEmailConfirmationRequired: false, isExistingUser: !!isExistingUser };
           }
@@ -171,7 +171,7 @@ export const useAuthStore = create<AuthStore>()(
           const { error: supabaseError } = await AuthService.signOut();
           
           if (supabaseError) {
-            const friendlyError = handleAuthError(supabaseError);
+            const friendlyError = handleAuthError(supabaseError as Error | null);
             set({ error: friendlyError.message, isLoading: false });
             return { error: friendlyError };
           }
@@ -198,7 +198,7 @@ export const useAuthStore = create<AuthStore>()(
           set({ isLoading: false }); // Clear loading regardless of error
           
           if (supabaseError) {
-            const friendlyError = handleAuthError(supabaseError);
+            const friendlyError = handleAuthError(supabaseError as Error | null);
             set({ error: friendlyError.message }); // Set error message
             return { error: friendlyError };
           }
@@ -223,7 +223,7 @@ export const useAuthStore = create<AuthStore>()(
           set({ isLoading: false }); // Clear loading regardless of error
           
           if (supabaseError) {
-            const friendlyError = handleAuthError(supabaseError);
+            const friendlyError = handleAuthError(supabaseError as Error | null);
             set({ error: friendlyError.message }); // Set error message
             return { error: friendlyError };
           }

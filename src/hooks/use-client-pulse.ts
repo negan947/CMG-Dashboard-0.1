@@ -19,9 +19,20 @@ export interface ClientPulseData {
   clientName?: string;
   activeFilter: TaskFilter;
   searchQuery: string;
+  error: string | null;
 }
 
-export function useClientPulse(clientId?: number, agencyId?: number) {
+export function useClientPulse(clientId?: number, agencyId?: number): ClientPulseData & {
+  filteredTasks: TaskModel[];
+  setActiveFilter: (filter: TaskFilter) => void;
+  setSearchQuery: (query: string) => void;
+  handleComplete: (taskId: number) => Promise<void>;
+  handleSnooze: (taskId: number, days: number) => Promise<void>;
+  createTask: (input: Omit<CreateTaskInput, 'agencyId' | 'createdByUserId' | 'projectId'>) => Promise<boolean>;
+  logCommunication: (input: Omit<CreateCommunicationLogInput, 'agencyId' | 'createdByUserId' | 'clientId'>) => Promise<boolean>;
+  fetchTasks: () => Promise<void>;
+  fetchCommunicationLogs: () => Promise<void>;
+} {
   const [data, setData] = useState<ClientPulseData>({
     tasks: [],
     communicationLogs: [],
@@ -31,7 +42,8 @@ export function useClientPulse(clientId?: number, agencyId?: number) {
     activeAgencyId: null,
     clientId,
     activeFilter: 'all',
-    searchQuery: ''
+    searchQuery: '',
+    error: null,
   });
   
   // Set up state updaters
@@ -204,6 +216,7 @@ export function useClientPulse(clientId?: number, agencyId?: number) {
     } catch (error) {
       console.error('Failed to fetch tasks:', error);
       toast.error("Failed to load follow-ups");
+      updateData({ error: 'Failed to load follow-ups.' });
     } finally {
       updateData({ isLoading: false });
     }
@@ -225,6 +238,7 @@ export function useClientPulse(clientId?: number, agencyId?: number) {
       updateData({ communicationLogs: logs });
     } catch (error) {
       console.error('Failed to fetch communication logs:', error);
+      updateData({ error: 'Failed to load communication logs.' });
     }
   };
   
@@ -375,6 +389,7 @@ export function useClientPulse(clientId?: number, agencyId?: number) {
     } catch (error) {
       console.error('Failed to create task:', error);
       toast.error("Failed to create follow-up");
+      updateData({ error: 'Failed to create follow-up.' });
       return false;
     }
   };
@@ -407,6 +422,7 @@ export function useClientPulse(clientId?: number, agencyId?: number) {
     } catch (error) {
       console.error('Failed to log communication:', error);
       toast.error("Failed to log communication");
+      updateData({ error: 'Failed to log communication.' });
       return false;
     }
   };

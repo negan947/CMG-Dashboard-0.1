@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CreateClientFormValues, createClientSchema, clientStatusEnum } from '@/lib/schemas/client-schemas';
 import { ClientService } from '@/services/client-service';
-import { ClientModel } from '@/types/models.types'; // For the onSubmit return type
+import { ClientModel, ClientStatus } from '@/types/models.types'; // For the onSubmit return type
 import { toast } from 'sonner';
 import { Button } from "@/components/ui/button";
 import {
@@ -93,8 +93,20 @@ export function AddClientModal({ isOpen, onOpenChange, onClientAdded, agencyId }
     setIsSubmitting(true);
     try {
       const slug = generateSlug(values.name);
+      
+      // Convert string status to ClientStatus enum
+      const convertedStatus = values.status === 'active' ? ClientStatus.ACTIVE :
+                            values.status === 'inactive' ? ClientStatus.INACTIVE :
+                            values.status === 'lead' ? ClientStatus.LEAD :
+                            ClientStatus.ACTIVE;
+      
       // Ensure the values passed match CreateClientInput & { slug: string }
-      const clientDataWithSlug = { ...values, slug, agencyId: agencyId }; 
+      const clientDataWithSlug = { 
+        ...values, 
+        slug, 
+        agencyId: agencyId,
+        status: convertedStatus
+      }; 
 
       const newClient = await ClientService.createClient(clientDataWithSlug);
       toast.success('Client added successfully!');

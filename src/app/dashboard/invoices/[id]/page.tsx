@@ -318,7 +318,7 @@ export default function InvoiceDetailPage({
               
               <Button
                 variant="outline"
-                disabled={invoice.status === InvoiceStatus.PAID}
+                disabled={(invoice.status as InvoiceStatus) === InvoiceStatus.PAID}
                 onClick={handleMarkAsPaid}
               >
                 <CheckCircle className="h-4 w-4 mr-2" />
@@ -326,12 +326,12 @@ export default function InvoiceDetailPage({
               </Button>
               
               <Button
-                variant={invoice.status === InvoiceStatus.DRAFT ? "default" : "outline"}
-                disabled={invoice.status !== InvoiceStatus.DRAFT}
+                variant={(invoice.status as InvoiceStatus) === InvoiceStatus.DRAFT ? "default" : "outline"}
+                disabled={(invoice.status as InvoiceStatus) !== InvoiceStatus.DRAFT}
                 onClick={() => handleStatusChange(InvoiceStatus.SENT)}
               >
                 <Send className="h-4 w-4 mr-2" />
-                {invoice.status === InvoiceStatus.DRAFT ? "Send Invoice" : "Sent"}
+                {(invoice.status as InvoiceStatus) === InvoiceStatus.DRAFT ? "Send Invoice" : "Sent"}
               </Button>
               
               <DropdownMenu>
@@ -346,19 +346,19 @@ export default function InvoiceDetailPage({
                     Edit Invoice
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem disabled={invoice.status === InvoiceStatus.DRAFT} 
+                  <DropdownMenuItem disabled={(invoice.status as InvoiceStatus) === InvoiceStatus.DRAFT} 
                     onClick={() => handleStatusChange(InvoiceStatus.DRAFT)}>
                     Mark as Draft
                   </DropdownMenuItem>
-                  <DropdownMenuItem disabled={invoice.status === InvoiceStatus.PAID} 
+                  <DropdownMenuItem disabled={(invoice.status as InvoiceStatus) === InvoiceStatus.PAID} 
                     onClick={() => handleStatusChange(InvoiceStatus.PAID)}>
                     Mark as Paid
                   </DropdownMenuItem>
-                  <DropdownMenuItem disabled={invoice.status === InvoiceStatus.OVERDUE} 
+                  <DropdownMenuItem disabled={(invoice.status as InvoiceStatus) === InvoiceStatus.OVERDUE} 
                     onClick={() => handleStatusChange(InvoiceStatus.OVERDUE)}>
                     Mark as Overdue
                   </DropdownMenuItem>
-                  <DropdownMenuItem disabled={invoice.status === InvoiceStatus.CANCELLED} 
+                  <DropdownMenuItem disabled={(invoice.status as InvoiceStatus) === InvoiceStatus.CANCELLED} 
                     onClick={() => handleStatusChange(InvoiceStatus.CANCELLED)}>
                     Mark as Cancelled
                   </DropdownMenuItem>
@@ -569,11 +569,11 @@ export default function InvoiceDetailPage({
                 </div>
               </CardContent>
               <CardFooter className="flex flex-col gap-2">
-                {invoice.status !== InvoiceStatus.PAID ? (
+                {(invoice.status as InvoiceStatus) !== InvoiceStatus.PAID ? (
                   <Button 
                     className="w-full" 
                     onClick={handleMarkAsPaid}
-                    disabled={invoice.status === InvoiceStatus.PAID}
+                    disabled={(invoice.status as InvoiceStatus) === InvoiceStatus.PAID}
                   >
                     <CheckCircle className="h-4 w-4 mr-2" />
                     Mark as Paid
@@ -587,7 +587,7 @@ export default function InvoiceDetailPage({
                   </div>
                 )}
                 
-                {invoice.status === InvoiceStatus.DRAFT && (
+                {(invoice.status as InvoiceStatus) === InvoiceStatus.DRAFT && (
                   <Button
                     className="w-full" 
                     variant="outline"

@@ -29,8 +29,8 @@ describe('useAuthStore', () => {
   describe('signIn', () => {
     it('should update state on successful sign in', async () => {
       // Arrange
-      const mockUser = { id: 'user-123', email: 'test@example.com' };
-      const mockSession = { user: mockUser };
+      const mockUser = { id: 'user-123', email: 'test@example.com', app_metadata: {}, user_metadata: {}, aud: 'authenticated', created_at: new Date().toISOString() };
+      const mockSession = { user: mockUser, access_token: 'mock-access-token', refresh_token: 'mock-refresh-token', expires_in: 3600, token_type: 'bearer' };
       const mockCredentials = { email: 'test@example.com', password: 'password123', rememberMe: false };
       
       (AuthService.signIn as jest.Mock).mockResolvedValue({ 
@@ -82,8 +82,8 @@ describe('useAuthStore', () => {
   describe('signOut', () => {
     it('should clear state on successful sign out', async () => {
       // Arrange
-      const mockUser = { id: 'user-123', email: 'test@example.com' };
-      const mockSession = { user: mockUser };
+      const mockUser = { id: 'user-123', email: 'test@example.com', app_metadata: {}, user_metadata: {}, aud: 'authenticated', created_at: new Date().toISOString() };
+      const mockSession = { user: mockUser, access_token: 'mock-access-token', refresh_token: 'mock-refresh-token', expires_in: 3600, token_type: 'bearer' };
       
       (AuthService.signOut as jest.Mock).mockResolvedValue({ error: null });
       
@@ -115,8 +115,8 @@ describe('useAuthStore', () => {
   describe('initialize', () => {
     it('should set session and user on initialization', async () => {
       // Arrange
-      const mockUser = { id: 'user-123', email: 'test@example.com' };
-      const mockSession = { user: mockUser };
+      const mockUser = { id: 'user-123', email: 'test@example.com', app_metadata: {}, user_metadata: {}, aud: 'authenticated', created_at: new Date().toISOString() };
+      const mockSession = { user: mockUser, access_token: 'mock-access-token', refresh_token: 'mock-refresh-token', expires_in: 3600, token_type: 'bearer' };
       
       (AuthService.getSession as jest.Mock).mockResolvedValue({ 
         session: mockSession, 

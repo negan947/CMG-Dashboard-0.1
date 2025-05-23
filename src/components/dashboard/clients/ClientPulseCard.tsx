@@ -7,14 +7,18 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { 
-  useClientPulse, 
-  EngagementHealth, 
-  ClientPulseData 
+import {
+  useClientPulse,
+  ClientPulseData,
+  TaskFilter
 } from '@/hooks/use-client-pulse';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { TaskModel } from '@/types/models.types';
+import {
+  TaskModel,
+  CreateTaskInput,
+  CreateCommunicationLogInput
+} from '@/types/models.types';
 import { toast } from 'sonner';
 
 import { CommunicationLogForm } from './CommunicationLogForm';
@@ -27,6 +31,8 @@ interface ClientPulseCardProps {
   projectId?: number;
   className?: string;
 }
+
+type EngagementHealth = 'healthy' | 'attention' | 'critical';
 
 export function ClientPulseCard({ 
   clientId, 
@@ -41,22 +47,42 @@ export function ClientPulseCard({
   const [showLogForm, setShowLogForm] = useState(false);
   const [showFollowUpForm, setShowFollowUpForm] = useState(false);
   
-  const clientPulse = useClientPulse(clientId, agencyId, userId, projectId);
+  const clientPulse = useClientPulse(clientId, agencyId);
   
-  const { 
-    lastContactSummary, 
-    nextFollowUpSummary, 
-    engagementHealth, 
-    upcomingTasks,
-    isLoading,
-    error,
-    completeTask,
-    snoozeTask
+  const {
+    communicationLogs,
+    tasks
   } = clientPulse;
+
+  // Calculate last contact summary
+  const lastContact = communicationLogs
+    .sort((a, b) => new Date(b.communicationTimestamp).getTime() - new Date(a.communicationTimestamp).getTime());
+
+  const lastContactSummary = lastContact && lastContact.length > 0
+    ? `Last contact was ${formatDistanceToNow(new Date(lastContact[0].communicationTimestamp), { addSuffix: true })}`
+    : 'No recent contact';
+
+  // Calculate next follow-up summary
+  const nextFollowUp = tasks
+    .filter(task => task.status !== 'completed' && task.dueDate)
+    .sort((a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime())[0];
+
+  const nextFollowUpSummary = nextFollowUp
+    ? `Next follow-up is on ${format(new Date(nextFollowUp.dueDate!), 'MMM dd, yyyy')}`
+    : 'No upcoming follow-ups';
+
+  // Calculate upcoming tasks (tasks not completed and with a future or today due date)
+  const upcomingTasks = tasks.filter(task => 
+    task.status !== 'completed' && task.dueDate && new Date(task.dueDate) >= new Date()
+  ).sort((a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime());
+
+  // Calculate engagement health (simplified example)
+  // This would need more complex logic based on frequency of contact, task completion, etc.
+  const engagementHealth: EngagementHealth = upcomingTasks.length > 0 && upcomingTasks.some(task => new Date(task.dueDate!) < new Date()) ? 'critical' : (upcomingTasks.length > 0 ? 'attention' : 'healthy');
 
   const handleComplete = async (taskId: number) => {
     try {
-      await completeTask(taskId);
+      await clientPulse.handleComplete(taskId);
       toast.success('Follow-up marked as completed');
     } catch (error) {
       toast.error('Failed to complete follow-up');
@@ -65,7 +91,7 @@ export function ClientPulseCard({
   
   const handleSnooze = async (taskId: number, days: number) => {
     try {
-      await snoozeTask(taskId, days);
+      await clientPulse.handleSnooze(taskId, days);
       toast.success(`Follow-up snoozed for ${days} day${days > 1 ? 's' : ''}`);
     } catch (error) {
       toast.error('Failed to snooze follow-up');
@@ -102,12 +128,12 @@ export function ClientPulseCard({
       </CardHeader>
       
       <CardContent>
-        {error ? (
+        {clientPulse.error ? (
           <div className="p-4 text-destructive text-sm">
             <AlertCircle className="h-4 w-4 inline mr-2" />
-            {error}
+            {clientPulse.error}
           </div>
-        ) : isLoading ? (
+        ) : clientPulse.isLoading ? (
           <LoadingSkeleton />
         ) : (
           <>
@@ -170,7 +196,7 @@ export function ClientPulseCard({
                 ) : (
                   <div className="space-y-2">
                     <AnimatePresence>
-                      {upcomingTasks.map((task) => (
+                      {upcomingTasks.map((task: TaskModel) => (
                         <FollowUpItem 
                           key={task.id} 
                           task={task} 
@@ -190,12 +216,14 @@ export function ClientPulseCard({
                 <CommunicationLogFormModal 
                   clientPulse={clientPulse} 
                   onClose={() => setShowLogForm(false)} 
+                  projectId={projectId}
                 />
               )}
               {showFollowUpForm && (
                 <FollowUpFormModal 
                   clientPulse={clientPulse} 
                   onClose={() => setShowFollowUpForm(false)} 
+                  projectId={projectId}
                 />
               )}
             </AnimatePresence>
@@ -399,11 +427,22 @@ function LoadingSkeleton() {
 
 // Communication Log Form Modal
 interface ModalProps {
-  clientPulse: ClientPulseData;
+  clientPulse: ClientPulseData & {
+    filteredTasks: TaskModel[];
+    setActiveFilter: (filter: TaskFilter) => void;
+    setSearchQuery: (query: string) => void;
+    handleComplete: (taskId: number) => Promise<void>;
+    handleSnooze: (taskId: number, days: number) => Promise<void>;
+    createTask: (input: Omit<CreateTaskInput, 'agencyId' | 'createdByUserId' | 'projectId'>) => Promise<boolean>;
+    logCommunication: (input: Omit<CreateCommunicationLogInput, 'agencyId' | 'createdByUserId' | 'clientId'>) => Promise<boolean>;
+    fetchTasks: () => Promise<void>;
+    fetchCommunicationLogs: () => Promise<void>;
+  };
   onClose: () => void;
+  projectId?: number;
 }
 
-function CommunicationLogFormModal({ clientPulse, onClose }: ModalProps) {
+function CommunicationLogFormModal({ clientPulse, onClose, projectId }: ModalProps) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   
@@ -439,7 +478,7 @@ function CommunicationLogFormModal({ clientPulse, onClose }: ModalProps) {
         </div>
         
         <CommunicationLogForm 
-          clientPulse={clientPulse} 
+          logCommunication={clientPulse.logCommunication}
           onSuccess={onClose} 
         />
       </motion.div>
@@ -448,7 +487,7 @@ function CommunicationLogFormModal({ clientPulse, onClose }: ModalProps) {
 }
 
 // Follow Up Form Modal
-function FollowUpFormModal({ clientPulse, onClose }: ModalProps) {
+function FollowUpFormModal({ clientPulse, onClose, projectId }: ModalProps) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   
@@ -484,8 +523,10 @@ function FollowUpFormModal({ clientPulse, onClose }: ModalProps) {
         </div>
         
         <FollowUpForm 
-          clientPulse={clientPulse} 
+          createTask={clientPulse.createTask}
+          projects={clientPulse.projects}
           onSuccess={onClose} 
+          projectId={projectId}
         />
       </motion.div>
     </motion.div>

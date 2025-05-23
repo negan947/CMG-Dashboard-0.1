@@ -124,7 +124,7 @@ export default async function SettingsPage() {
   // Successfully loaded settings - render client component with server data
   return (
     <Suspense fallback={<SettingsPageSkeleton />}>
-      <SettingsPageClient initialData={settingsResult.data} />
+      <SettingsPageClient initialData={settingsResult.data!} />
     </Suspense>
   );
 }

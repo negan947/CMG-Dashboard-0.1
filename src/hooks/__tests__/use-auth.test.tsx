@@ -38,8 +38,8 @@ describe('useAuth', () => {
     jest.clearAllMocks();
     
     // Setup mocks
-    (useRouter as jest.Mock).mockReturnValue(mockRouter);
-    (useAuthStore as jest.Mock).mockReturnValue(mockAuthStore);
+    (useRouter as any).mockReturnValue(mockRouter);
+    (useAuthStore as any).mockReturnValue(mockAuthStore);
   });
   
   it('should initialize auth state on mount', () => {
@@ -111,7 +111,7 @@ describe('useAuth', () => {
       const mockUser = { id: 'user-123', email: 'test@example.com' };
       const mockSession = { user: mockUser };
       
-      (useAuthStore as jest.Mock).mockReturnValue({
+      (useAuthStore as any).mockReturnValue({
         ...mockAuthStore,
         user: mockUser,
         session: mockSession
@@ -126,7 +126,7 @@ describe('useAuth', () => {
     
     it('should return false when user or session does not exist', () => {
       // Arrange
-      (useAuthStore as jest.Mock).mockReturnValue({
+      (useAuthStore as any).mockReturnValue({
         ...mockAuthStore,
         user: null,
         session: null

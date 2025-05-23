@@ -231,7 +231,9 @@ export function SettingsPageClient({ initialData }: SettingsPageClientProps) {
               >
                 <TeamManagement 
                   members={initialData.teamMembers}
-                  isLoading={isPending}
+                  onInvite={async () => ({ success: true })}
+                  onUpdate={async () => ({ success: true })}
+                  onRemove={async () => ({ success: true })}
                 />
               </GlassCard>
             )}

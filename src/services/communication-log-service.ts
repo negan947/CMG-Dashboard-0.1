@@ -1,6 +1,7 @@
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { CommunicationLogModel, CreateCommunicationLogInput, UpdateCommunicationLogInput } from '@/types/models.types';
 import { handleSupabaseError } from '@/lib/error-handling';
+import { PostgrestError } from '@supabase/supabase-js';
 
 /**
  * Service for managing communication logs using DIRECT Supabase client methods
@@ -23,7 +24,7 @@ export class CommunicationLogService {
       
       return data.map(this.mapDbLogToModel);
     } catch (error) {
-      throw handleSupabaseError(error);
+      throw handleSupabaseError(error as PostgrestError | Error);
     }
   }
 
@@ -46,7 +47,7 @@ export class CommunicationLogService {
       
       return data ? this.mapDbLogToModel(data) : null;
     } catch (error) {
-      throw handleSupabaseError(error);
+      throw handleSupabaseError(error as PostgrestError | Error);
     }
   }
 
@@ -67,7 +68,7 @@ export class CommunicationLogService {
       
       return data.map(this.mapDbLogToModel);
     } catch (error) {
-      throw handleSupabaseError(error);
+      throw handleSupabaseError(error as PostgrestError | Error);
     }
   }
 
@@ -96,7 +97,7 @@ export class CommunicationLogService {
       
       return this.mapDbLogToModel(data);
     } catch (error) {
-      throw handleSupabaseError(error);
+      throw handleSupabaseError(error as PostgrestError | Error);
     }
   }
 
@@ -124,7 +125,7 @@ export class CommunicationLogService {
       
       return this.mapDbLogToModel(data);
     } catch (error) {
-      throw handleSupabaseError(error);
+      throw handleSupabaseError(error as PostgrestError | Error);
     }
   }
 
@@ -142,7 +143,7 @@ export class CommunicationLogService {
       
       if (error) throw error;
     } catch (error) {
-      throw handleSupabaseError(error);
+      throw handleSupabaseError(error as PostgrestError | Error);
     }
   }
 

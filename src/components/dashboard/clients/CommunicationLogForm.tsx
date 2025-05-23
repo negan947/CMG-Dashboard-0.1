@@ -22,7 +22,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
-import { ClientPulseData } from '@/hooks/use-client-pulse';
+import { CreateCommunicationLogInput } from '@/types/models.types';
 
 // Define the form schema
 const formSchema = z.object({
@@ -41,11 +41,11 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 interface CommunicationLogFormProps {
-  clientPulse: ClientPulseData;
+  logCommunication: (input: Omit<CreateCommunicationLogInput, 'agencyId' | 'createdByUserId' | 'clientId'>) => Promise<boolean>;
   onSuccess?: () => void;
 }
 
-export function CommunicationLogForm({ clientPulse, onSuccess }: CommunicationLogFormProps) {
+export function CommunicationLogForm({ logCommunication, onSuccess }: CommunicationLogFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Communication type options
@@ -72,7 +72,7 @@ export function CommunicationLogForm({ clientPulse, onSuccess }: CommunicationLo
     setIsSubmitting(true);
     
     try {
-      await clientPulse.logCommunication({
+      await logCommunication({
         communicationType: values.communicationType,
         summary: values.summary,
         metadata: values.metadata || {},

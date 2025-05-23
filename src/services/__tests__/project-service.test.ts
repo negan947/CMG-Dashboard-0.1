@@ -1,5 +1,6 @@
 import { ProjectService } from '../project-service';
 import { MCP } from '@/lib/mcp';
+import { ProjectStatus } from '@/types/models.types';
 
 // Mock MCP to avoid actual database calls
 jest.mock('@/lib/mcp', () => ({
@@ -181,7 +182,7 @@ describe('ProjectService', () => {
         slug: 'new-project',
         description: 'New project description',
         clientId: 1,
-        status: 'active'
+        status: ProjectStatus.ACTIVE
       };
 
       const mockResult = {
@@ -190,7 +191,7 @@ describe('ProjectService', () => {
         slug: 'new-project',
         description: 'New project description',
         client_id: 1,
-        status: 'active',
+        status: ProjectStatus.ACTIVE,
         created_at: new Date()
       };
 
@@ -207,7 +208,7 @@ describe('ProjectService', () => {
           'new-project',
           'New project description',
           1,
-          'active'
+          ProjectStatus.ACTIVE
         ])
       );
       expect(result.id).toBe(1);
@@ -215,7 +216,7 @@ describe('ProjectService', () => {
       expect(result.slug).toBe('new-project');
       expect(result.description).toBe('New project description');
       expect(result.clientId).toBe(1);
-      expect(result.status).toBe('active');
+      expect(result.status).toBe(ProjectStatus.ACTIVE);
     });
 
     it('should use default active status when not provided', async () => {
@@ -232,7 +233,7 @@ describe('ProjectService', () => {
         slug: 'new-project',
         description: 'New project description',
         client_id: 1,
-        status: 'active',
+        status: ProjectStatus.ACTIVE,
         created_at: new Date()
       };
 
@@ -249,7 +250,7 @@ describe('ProjectService', () => {
           'new-project',
           'New project description',
           1,
-          'active'
+          ProjectStatus.ACTIVE
         ])
       );
     });
@@ -263,7 +264,7 @@ describe('ProjectService', () => {
         slug: 'updated-project',
         description: 'Updated description',
         clientId: 2,
-        status: 'completed'
+        status: ProjectStatus.COMPLETED
       };
 
       const mockResult = {
@@ -272,7 +273,7 @@ describe('ProjectService', () => {
         slug: 'updated-project',
         description: 'Updated description',
         client_id: 2,
-        status: 'completed',
+        status: ProjectStatus.COMPLETED,
         created_at: new Date()
       };
 
@@ -289,7 +290,7 @@ describe('ProjectService', () => {
           'updated-project',
           'Updated description',
           2,
-          'completed',
+          ProjectStatus.COMPLETED,
           1
         ])
       );
@@ -298,7 +299,7 @@ describe('ProjectService', () => {
       expect(result.slug).toBe('updated-project');
       expect(result.description).toBe('Updated description');
       expect(result.clientId).toBe(2);
-      expect(result.status).toBe('completed');
+      expect(result.status).toBe(ProjectStatus.COMPLETED);
     });
 
     it('should throw error if project id is missing', async () => {

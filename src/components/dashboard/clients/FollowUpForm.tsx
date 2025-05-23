@@ -30,7 +30,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { ClientPulseData } from '@/hooks/use-client-pulse';
+import { CreateTaskInput } from '@/types/models.types';
 import { cn } from '@/lib/utils';
 
 // Define the form schema
@@ -56,19 +56,14 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 interface FollowUpFormProps {
-  clientPulse: ClientPulseData;
+  createTask: (input: Omit<CreateTaskInput, 'agencyId' | 'createdByUserId' | 'projectId'>) => Promise<boolean>;
+  projects: { id: number; name: string }[];
   onSuccess?: () => void;
   projectId?: number;
 }
 
-export function FollowUpForm({ clientPulse, projectId, onSuccess }: FollowUpFormProps) {
+export function FollowUpForm({ createTask, projects, onSuccess, projectId: defaultProjectId }: FollowUpFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [projects, setProjects] = useState<{id: number, name: string}[]>([
-    // Temporary hard-coded projects (in a real implementation, these would be fetched)
-    { id: 1, name: 'Marketing Campaign' },
-    { id: 2, name: 'Website Redesign' },
-    { id: 3, name: 'SEO Optimization' },
-  ]);
   
   // Priority options
   const priorities = [
@@ -83,7 +78,7 @@ export function FollowUpForm({ clientPulse, projectId, onSuccess }: FollowUpForm
     defaultValues: {
       title: '',
       description: '',
-      projectId: projectId || undefined,
+      projectId: defaultProjectId || (projects.length > 0 ? projects[0].id : undefined),
       priority: 'medium',
       dueDate: new Date(),
     },
@@ -94,10 +89,9 @@ export function FollowUpForm({ clientPulse, projectId, onSuccess }: FollowUpForm
     setIsSubmitting(true);
     
     try {
-      await clientPulse.scheduleFollowUp({
+      await createTask({
         title: values.title,
         description: values.description,
-        projectId: values.projectId,
         priority: values.priority,
         dueDate: values.dueDate.toISOString(),
       });

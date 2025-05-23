@@ -1,6 +1,8 @@
 import React from 'react'
 import { screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import '@testing-library/jest-dom';
+import '@testing-library/jest-dom/extend-expect'; // Import Jest DOM matchers
 import { ClientFollowUps } from '../ClientFollowUps'
 import { TaskService } from '@/services/task-service'
 import { render, mockTask, mockProject, mockSession, waitForAsyncOperation } from '@/lib/test-utils'

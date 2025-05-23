@@ -95,7 +95,6 @@ describe('AuthService', () => {
       const result = await AuthService.signUp({ 
         email: 'new@example.com', 
         password: 'password123',
-        confirmPassword: 'password123'
       });
       
       expect(result.data?.user).toEqual(mockUser);
@@ -118,7 +117,6 @@ describe('AuthService', () => {
       const result = await AuthService.signUp({ 
         email: 'existing@example.com', 
         password: 'password123',
-        confirmPassword: 'password123'
       });
       
       expect(result.data).toBeNull();

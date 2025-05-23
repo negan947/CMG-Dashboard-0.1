@@ -35,8 +35,7 @@ async function getUserAndVerifyAccess(): Promise<{
   agencyId: string;
   canManageSettings: boolean;
 }> {
-  const cookieStore = await cookies();
-  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const supabase = createServerComponentClient({ cookies });
   
   // Get authenticated user
   const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -92,8 +91,7 @@ async function getUserAndVerifyAccess(): Promise<{
 export async function getSettingsData() {
   try {
     const { agencyId } = await getUserAndVerifyAccess();
-    const cookieStore = await cookies();
-    const supabase = createServerComponentClient({ cookies: () => cookieStore });
+    const supabase = createServerComponentClient({ cookies });
     
     // Fetch settings with proper RLS
     const { data: settings, error } = await supabase
@@ -166,8 +164,7 @@ export async function updateGeneralSettings(formData: FormData) {
     // Server-side validation
     const validatedData = GeneralSettingsSchema.parse(rawData);
     
-    const cookieStore = await cookies();
-    const supabase = createServerComponentClient({ cookies: () => cookieStore });
+    const supabase = createServerComponentClient({ cookies });
     
     // Check if settings exist
     const { data: existingSettings } = await supabase
@@ -249,8 +246,7 @@ export async function updateSecuritySettings(formData: FormData) {
     const rawData = Object.fromEntries(formData.entries());
     delete rawData.current_password; // Remove password from stored data
     
-    const cookieStore = await cookies();
-    const supabase = createServerComponentClient({ cookies: () => cookieStore });
+    const supabase = createServerComponentClient({ cookies });
     
     // Check if settings exist
     const { data: existingSettings } = await supabase
@@ -317,8 +313,7 @@ export async function updateSecuritySettings(formData: FormData) {
 export async function checkSettingsAccess() {
   try {
     const { agencyId } = await getUserAndVerifyAccess();
-    const cookieStore = await cookies();
-    const supabase = createServerComponentClient({ cookies: () => cookieStore });
+    const supabase = createServerComponentClient({ cookies });
     
     // Try to query settings table
     const { error } = await supabase

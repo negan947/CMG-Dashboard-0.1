@@ -11,6 +11,12 @@ import { mapDbRow, camelToSnakeObject } from '@/lib/data-mapper';
 import { createClient } from '@/lib/supabase';
 import { handleSupabaseError } from '@/lib/error-handling';
 import { User } from '@supabase/auth-helpers-nextjs';
+import { PostgrestError } from '@supabase/supabase-js';
+
+// Define a new interface that extends InvoiceModel to include clientName
+interface InvoiceModelWithClient extends InvoiceModel {
+  clientName: string;
+}
 
 /**
  * Service for managing invoice data using direct Supabase client
@@ -19,7 +25,7 @@ export const InvoiceService = {
   /**
    * Get all invoices (optionally filtered by agency ID)
    */
-  async getInvoices(agencyId?: number): Promise<InvoiceModel[]> {
+  async getInvoices(agencyId?: number): Promise<InvoiceModelWithClient[]> {
     const supabase = createClient();
     try {
       let query = supabase.from('invoices').select(`
@@ -36,22 +42,24 @@ export const InvoiceService = {
       if (error) throw error;
       
       return (data || []).map((row) => {
-        const invoice = mapDbRow(row);
+        const invoice = mapDbRow(row) as InvoiceModelWithClient;
         // Add clientName from the joined table
         if (row.clients) {
-          invoice.clientName = row.clients.name;
+          invoice.clientName = (row.clients as any).name;
+        } else {
+          invoice.clientName = 'Unknown Client';
         }
-        return invoice as InvoiceModel;
+        return invoice;
       });
     } catch (error) {
-      throw handleSupabaseError(error);
+      throw handleSupabaseError(error as PostgrestError | Error);
     }
   },
 
   /**
    * Get invoices for a specific client
    */
-  async getInvoicesByClientId(clientId: number): Promise<InvoiceModel[]> {
+  async getInvoicesByClientId(clientId: number): Promise<InvoiceModelWithClient[]> {
     const supabase = createClient();
     try {
       const { data, error } = await supabase
@@ -66,22 +74,24 @@ export const InvoiceService = {
       if (error) throw error;
       
       return (data || []).map((row) => {
-        const invoice = mapDbRow(row);
+        const invoice = mapDbRow(row) as InvoiceModelWithClient;
         // Add clientName from the joined table
         if (row.clients) {
-          invoice.clientName = row.clients.name;
+          invoice.clientName = (row.clients as any).name;
+        } else {
+          invoice.clientName = 'Unknown Client';
         }
-        return invoice as InvoiceModel;
+        return invoice;
       });
     } catch (error) {
-      throw handleSupabaseError(error);
+      throw handleSupabaseError(error as PostgrestError | Error);
     }
   },
 
   /**
    * Get invoices for a specific project
    */
-  async getInvoicesByProjectId(projectId: number): Promise<InvoiceModel[]> {
+  async getInvoicesByProjectId(projectId: number): Promise<InvoiceModelWithClient[]> {
     const supabase = createClient();
     try {
       const { data, error } = await supabase
@@ -96,22 +106,24 @@ export const InvoiceService = {
       if (error) throw error;
       
       return (data || []).map((row) => {
-        const invoice = mapDbRow(row);
+        const invoice = mapDbRow(row) as InvoiceModelWithClient;
         // Add clientName from the joined table
         if (row.clients) {
-          invoice.clientName = row.clients.name;
+          invoice.clientName = (row.clients as any).name;
+        } else {
+          invoice.clientName = 'Unknown Client';
         }
-        return invoice as InvoiceModel;
+        return invoice;
       });
     } catch (error) {
-      throw handleSupabaseError(error);
+      throw handleSupabaseError(error as PostgrestError | Error);
     }
   },
 
   /**
    * Get a single invoice by ID
    */
-  async getInvoiceById(id: number): Promise<InvoiceModel | null> {
+  async getInvoiceById(id: number): Promise<InvoiceModelWithClient | null> {
     const supabase = createClient();
     try {
       const { data, error } = await supabase
@@ -130,16 +142,18 @@ export const InvoiceService = {
       
       if (!data) return null;
       
-      const invoice = mapDbRow(data) as InvoiceModel;
+      const invoice = mapDbRow(data) as InvoiceModelWithClient;
       
       // Add clientName from the joined table
       if (data.clients) {
-        invoice.clientName = data.clients.name;
+        invoice.clientName = (data.clients as any).name;
+      } else {
+        invoice.clientName = 'Unknown Client';
       }
       
       return invoice;
     } catch (error) {
-      throw handleSupabaseError(error);
+      throw handleSupabaseError(error as PostgrestError | Error);
     }
   },
 
@@ -159,7 +173,7 @@ export const InvoiceService = {
       
       return (data || []).map(row => mapDbRow(row) as InvoiceItemModel);
     } catch (error) {
-      throw handleSupabaseError(error);
+      throw handleSupabaseError(error as PostgrestError | Error);
     }
   },
 
@@ -183,7 +197,7 @@ export const InvoiceService = {
       
       return mapDbRow(data) as InvoiceModel;
     } catch (error) {
-      throw handleSupabaseError(error);
+      throw handleSupabaseError(error as PostgrestError | Error);
     }
   },
 
@@ -210,7 +224,7 @@ export const InvoiceService = {
       
       return mapDbRow(data) as InvoiceModel;
     } catch (error) {
-      throw handleSupabaseError(error);
+      throw handleSupabaseError(error as PostgrestError | Error);
     }
   },
 
@@ -229,7 +243,7 @@ export const InvoiceService = {
       
       return true;
     } catch (error) {
-      throw handleSupabaseError(error);
+      throw handleSupabaseError(error as PostgrestError | Error);
     }
   },
 
@@ -258,7 +272,7 @@ export const InvoiceService = {
       
       return mapDbRow(data) as InvoiceModel;
     } catch (error) {
-      throw handleSupabaseError(error);
+      throw handleSupabaseError(error as PostgrestError | Error);
     }
   },
 
@@ -287,7 +301,7 @@ export const InvoiceService = {
       
       return mapDbRow(data) as InvoiceModel;
     } catch (error) {
-      throw handleSupabaseError(error);
+      throw handleSupabaseError(error as PostgrestError | Error);
     }
   },
 
@@ -316,7 +330,7 @@ export const InvoiceService = {
       
       return mapDbRow(data) as InvoiceItemModel;
     } catch (error) {
-      throw handleSupabaseError(error);
+      throw handleSupabaseError(error as PostgrestError | Error);
     }
   },
 
@@ -348,7 +362,7 @@ export const InvoiceService = {
       
       return mapDbRow(data) as InvoiceItemModel;
     } catch (error) {
-      throw handleSupabaseError(error);
+      throw handleSupabaseError(error as PostgrestError | Error);
     }
   },
 
@@ -368,7 +382,7 @@ export const InvoiceService = {
       
       return true;
     } catch (error) {
-      throw handleSupabaseError(error);
+      throw handleSupabaseError(error as PostgrestError | Error);
     }
   },
 
@@ -420,7 +434,7 @@ export const InvoiceService = {
       
       return stats;
     } catch (error) {
-      throw handleSupabaseError(error);
+      throw handleSupabaseError(error as PostgrestError | Error);
     }
   }
 }; 

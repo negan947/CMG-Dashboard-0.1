@@ -1,6 +1,8 @@
 import { MCP } from '@/lib/mcp';
 import { ProjectModel, CreateProjectInput, UpdateProjectInput } from '@/types/models.types';
 import { mapDbRow, camelToSnakeObject } from '@/lib/data-mapper';
+import { createClient } from '@/lib/supabase'; // Import the Supabase client helper
+import { handleSupabaseError } from '@/lib/error-handling'; // Import handleSupabaseError
 
 /**
  * Service for managing project data
@@ -70,6 +72,31 @@ export const ProjectService = {
     } catch (error) {
       console.error(`Error fetching projects for client ${clientId}:`, error);
       throw error;
+    }
+  },
+
+  /**
+   * Get projects by agency ID using the direct Supabase client
+   * @param agencyId Agency ID
+   * @returns Array of projects
+   */
+  async getProjectsByAgencyId(agencyId: number): Promise<ProjectModel[]> {
+    const supabase = createClient(); // Use the direct client
+    try {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('agency_id', agencyId)
+        .order('name');
+
+      if (error) throw error;
+
+      // Map snake_case database columns to camelCase model properties
+      return (data || []).map(row => mapDbRow(row) as ProjectModel);
+    } catch (error) {
+      console.error(`Error fetching projects for agency ${agencyId}:`, error);
+      // Use handleSupabaseError for consistent error handling, casting error
+      throw handleSupabaseError(error as any); // Keeping 'any' for now, will refine if needed
     }
   },
 

@@ -38,15 +38,13 @@ import { ClientFollowUps } from '@/components/dashboard/clients/ClientFollowUps'
 // Define types for our data
 
 // Simplified local Client type to match DB + minimal UI needs
-interface Client { 
-  id: string;
-  name: string;
-  status: string;
+interface Client extends ClientModel { 
   initials: string;
-  // Removed: progress, platforms, objectives, aovData, cpaData
-  // Add other fields from ClientModel if needed for detail view
-  email?: string | null;
-  phone?: string | null;
+}
+
+interface DataPoint {
+  name: string;
+  value: number;
 }
 
 // Modern chart component using recharts to match the client trends chart exactly
@@ -225,13 +223,8 @@ function ClientsContent() {
       
       // Simplified mapping to the updated local Client type
       const mappedClients: Client[] = fetchedClients.map(dbClient => ({
-        id: String(dbClient.id),
-        name: dbClient.name,
-        status: dbClient.status as string || 'Unknown',
+        ...dbClient, // Spread all ClientModel properties
         initials: dbClient.name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase(),
-        email: dbClient.email,
-        phone: dbClient.phone,
-        // No longer mapping progress, platforms, etc.
       }));
 
       setClients(mappedClients);
@@ -301,12 +294,8 @@ function ClientsContent() {
   const handleClientAdded = (newClientData: ClientModel) => {
     // Simplified mapping for adding new client to local state
     const newListItem: Client = {
-      id: String(newClientData.id), 
-      name: newClientData.name,
-      status: newClientData.status as string || 'New Client',
+      ...newClientData, // Spread all ClientModel properties
       initials: newClientData.name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase(),
-      email: newClientData.email,
-      phone: newClientData.phone,
     };
     setClients(prevClients => [newListItem, ...prevClients]);
     // fetchClients(); // Consider refetching instead for full consistency
@@ -483,10 +472,10 @@ function ClientsContent() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-        <MetricCard title="Total Clients" value={metrics.totalClients} isDark={isDark} icon={<User />} />
-        <MetricCard title="New This Month" value={metrics.newClients} change={`+${metrics.newClientsChange}%`} isDark={isDark} icon={<ArrowUp />} />
-        <MetricCard title="Inquiry Success" value={`${metrics.inquirySuccessRate}%`} change={`${metrics.inquiryRateChange}%`} isDark={isDark} icon={<Check />} />
-        <MetricCard title="Overdue Tasks" value={metrics.overdueTasks} change={`+${metrics.overdueTasksChange}`} isDark={isDark} icon={<Clock />} />
+        <MetricCard title="Total Clients" value={metrics.totalClients} />
+        <MetricCard title="New This Month" value={metrics.newClients} changePercentage={metrics.newClientsChange} />
+        <MetricCard title="Inquiry Success" value={metrics.inquirySuccessRate} suffix="%" changePercentage={metrics.inquiryRateChange} />
+        <MetricCard title="Overdue Tasks" value={metrics.overdueTasks} changeValue={metrics.overdueTasksChange} />
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">

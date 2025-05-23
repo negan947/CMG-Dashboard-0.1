@@ -116,7 +116,6 @@ export default function AnalyticsPage() {
             value={28.4} 
             suffix="%" 
             changePercentage={3.2}
-            icon={<Percent className="h-4 w-4" />}
             color={CHART_COLORS[0]}
             showDonut={true}
           />
@@ -126,7 +125,6 @@ export default function AnalyticsPage() {
             value={1250} 
             prefix="$"
             changePercentage={12.5}
-            icon={<DollarSign className="h-4 w-4" />}
             color={CHART_COLORS[1]}
             showDonut={false} 
           />
@@ -136,7 +134,6 @@ export default function AnalyticsPage() {
             value={64} 
             suffix="%"
             changePercentage={8.7}
-            icon={<Activity className="h-4 w-4" />}
             color={CHART_COLORS[2]}
             showDonut={true}
           />
@@ -146,7 +143,6 @@ export default function AnalyticsPage() {
             value={72} 
             suffix="%"
             changePercentage={5.3}
-            icon={<Target className="h-4 w-4" />}
             color={CHART_COLORS[3]}
             showDonut={true}
           />
@@ -184,7 +180,11 @@ export default function AnalyticsPage() {
             </p>
             
             <div className="h-[300px] mt-4">
-              <ClientTrendsChart data={performanceTrendData} />
+              <ClientTrendsChart 
+                title="Performance Trends"
+                subtitle={`This ${timeFrame}`}
+                data={performanceTrendData} 
+              />
             </div>
           </div>
         </GlassCard>

@@ -8,10 +8,14 @@ import { ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { ClientModel, ClientStatus } from '@/types/models.types';
 
+interface Client extends ClientModel {
+  initials: string;
+}
+
 interface ClientListItemProps {
-  client: ClientModel;
+  client: Client;
   isDark: boolean;
-  onClick: (client: ClientModel) => void;
+  onClick: (client: Client) => void;
   index: number;
 }
 
@@ -57,9 +61,6 @@ export function ClientListItem({ client, isDark, onClick, index }: ClientListIte
         key={client.id}
         contentClassName="p-4 cursor-pointer transition-all duration-200"
         onClick={() => onClick(client)}
-        color="dynamic"
-        baseColor={isDark ? [36, 42, 66] : [230, 235, 250]}
-        glowOpacity={0.08}
         className={cn("overflow-hidden", isDark ? "border border-zinc-700/30" : "border border-slate-300/50")}
       >
         <div className="flex items-center justify-between">
@@ -69,7 +70,7 @@ export function ClientListItem({ client, isDark, onClick, index }: ClientListIte
                 isDark ? "bg-zinc-600 text-zinc-200" : "bg-blue-100 text-blue-600",
                 "group-hover:bg-sky-500/20 group-hover:text-sky-500 dark:group-hover:bg-sky-500/20 dark:group-hover:text-sky-300 transition-colors duration-150"
               )}>
-                {getInitials(clientName)}
+                {client.initials || getInitials(clientName)}
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0">

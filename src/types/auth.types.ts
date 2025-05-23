@@ -44,7 +44,7 @@ export interface AuthResponse<T = any> {
 /**
  * Structured Auth Error
  */
-export interface AuthError {
+export interface AuthError extends Error {
   message: string;
   statusCode: number;
   errorCode?: string;

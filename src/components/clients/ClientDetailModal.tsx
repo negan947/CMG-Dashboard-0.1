@@ -270,9 +270,7 @@ export function ClientDetailModal({
         {projects.map((project) => (
           <GlassCard 
             key={project.id} 
-            isDark={isDark} 
             className={cn("transition-all", isDark ? "border border-zinc-700/30" : "border border-slate-300/40")}
-            baseColor={isDark ? [40,45,70] : [235,240,255]}
             contentClassName="p-4"
           >
             <h5 className={cn("font-semibold mb-1", valueClass)}>{project.name}</h5>
@@ -343,9 +341,6 @@ export function ClientDetailModal({
             onClick={(e) => e.stopPropagation()}
           >
             <GlassCard
-              color="dynamic"
-              baseColor={isDark ? [25, 30, 50] : [240, 245, 255]}
-              glowOpacity={isDark ? 0.08 : 0.1}
               className="max-h-[90vh] flex flex-col shadow-2xl dark:shadow-sky-900/50"
             >
               {/* Header */}

@@ -75,7 +75,6 @@ export default function ResetPasswordPage() {
         <SubmitButton
           isLoading={isLoading}
           loadingText="Sending instructions..."
-          fullWidth
         >
           Send Reset Instructions
         </SubmitButton>

@@ -15,6 +15,7 @@ export interface BaseModel {
 export interface Agency {
   id: string;
   name: string;
+  slug?: string | null;
   logoUrl: string | null;
   address: string | null;
   city: string | null;

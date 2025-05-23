@@ -248,9 +248,9 @@ export default function EditInvoicePage({
         taxRate: data.taxRate,
         discountAmount: data.discountAmount,
         discountType: data.discountType,
-        notes: data.notes,
-        paymentMethod: data.paymentMethod,
-        footerText: data.footerText
+        notes: data.notes || undefined,
+        paymentMethod: data.paymentMethod || undefined,
+        footerText: data.footerText || undefined
       };
       
       const updatedInvoice = await updateInvoice(invoiceData);
@@ -503,6 +503,7 @@ export default function EditInvoicePage({
                             id="projectId"
                             type="number"
                             {...field}
+                            value={field.value || ''}
                             onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : null)}
                             className={cn(isDark ? "bg-zinc-800/70" : "bg-white")}
                           />
@@ -776,6 +777,7 @@ export default function EditInvoicePage({
                           placeholder="Additional notes for the client..."
                           className={cn("min-h-32", isDark ? "bg-zinc-800/70" : "bg-white")}
                           {...field}
+                          value={field.value || ''}
                         />
                       )}
                     />
@@ -792,6 +794,7 @@ export default function EditInvoicePage({
                           placeholder="Text to appear at the bottom of the invoice..."
                           className={cn(isDark ? "bg-zinc-800/70" : "bg-white")}
                           {...field}
+                          value={field.value || ''}
                         />
                       )}
                     />
@@ -818,6 +821,7 @@ export default function EditInvoicePage({
                           placeholder="e.g. Bank Transfer, PayPal, etc."
                           className={cn(isDark ? "bg-zinc-800/70" : "bg-white")}
                           {...field}
+                          value={field.value || ''}
                         />
                       )}
                     />

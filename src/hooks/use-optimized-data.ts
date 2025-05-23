@@ -3,6 +3,7 @@ import { TaskService } from '@/services/task-service';
 import { ClientService } from '@/services/client-service';
 import { ProjectService } from '@/services/project-service';
 import { toast } from 'sonner';
+import { UpdateTaskInput } from '@/types/models.types';
 
 /**
  * Default SWR configuration for optimized data fetching
@@ -123,7 +124,7 @@ export function useProjects(
  */
 export async function updateTaskOptimistic(
   taskId: number,
-  updates: Partial<{ status: string; dueDate: string }>,
+  updates: Partial<UpdateTaskInput>,
   mutateKey: string
 ) {
   // Optimistically update the cache

@@ -50,7 +50,7 @@ export class AuthService {
       
       if (error) {
         console.error('Error getting session:', error);
-        return { session: null, error: { message: error.message, statusCode: 500 } };
+        return { session: null, error: error };
       }
       
       if (!data?.session) {
@@ -64,7 +64,7 @@ export class AuthService {
       console.error('Unexpected error getting session:', error);
       return { 
         session: null, 
-        error: { message: 'Failed to get session', statusCode: 500 } 
+        error: { message: 'Failed to get session', statusCode: 500 } as AuthError
       };
     }
   }
@@ -118,7 +118,7 @@ export class AuthService {
       if (error) {
         return { 
           data: null, 
-          error: { message: error.message, statusCode: 500 } as AuthError 
+          error: error
         };
       }
       
@@ -162,7 +162,7 @@ export class AuthService {
       } else if (existingUsers && existingUsers.length > 0) {
         return {
           data: null,
-          error: { message: 'A user with this email already exists', statusCode: 400 } as AuthError,
+          error: { message: 'A user with this email already exists', statusCode: 409 },
           isEmailConfirmationRequired: false,
           isExistingUser: true
         };
@@ -182,7 +182,7 @@ export class AuthService {
       if (error) {
         return { 
           data: null, 
-          error: { message: error.message, statusCode: 500 } as AuthError,
+          error: error,
           isEmailConfirmationRequired: false,
           isExistingUser: false
         };
@@ -224,7 +224,7 @@ export class AuthService {
       const { error } = await supabase.auth.signOut();
       
       if (error) {
-        return { error: { message: error.message, statusCode: 500 } as AuthError };
+        return { error: error };
       }
       
       return { error: null };
@@ -253,7 +253,7 @@ export class AuthService {
       });
       
       if (error) {
-        return { error: { message: error.message, statusCode: 500 } as AuthError };
+        return { error };
       }
       
       return { error: null };
@@ -282,7 +282,7 @@ export class AuthService {
       });
       
       if (error) {
-        return { error: { message: error.message, statusCode: 500 } as AuthError };
+        return { error };
       }
       
       return { error: null };
