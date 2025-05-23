@@ -8,6 +8,29 @@ export async function middleware(request: NextRequest) {
     // Create a response object that we'll modify and return
     const response = NextResponse.next()
     
+    // Add security headers
+    response.headers.set('X-Frame-Options', 'DENY')
+    response.headers.set('X-Content-Type-Options', 'nosniff')
+    response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+    response.headers.set('Permissions-Policy', 'geolocation=(), microphone=(), camera=()')
+    
+    // Content Security Policy (adjust as needed)
+    const csp = [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://supabase.com",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: https: blob:",
+      "font-src 'self'",
+      "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+      "frame-src 'none'",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "frame-ancestors 'none'",
+    ].join('; ')
+    
+    response.headers.set('Content-Security-Policy', csp)
+    
     // Create a Supabase client for the middleware
     const supabase = createMiddlewareClient({ req: request, res: response })
     
@@ -20,9 +43,27 @@ export async function middleware(request: NextRequest) {
       request.nextUrl.pathname === APP_ROUTES.LOGIN || // Though /auth/* covers this, explicit can be kept or removed
       request.nextUrl.pathname === APP_ROUTES.HOME
     
-    // If the user is not signed in and trying to access a protected route, redirect to login
-    if (!session && !isPublicRoute) {
+    // Check if it's an API route
+    const isApiRoute = request.nextUrl.pathname.startsWith('/api')
+    
+    // API routes should also be protected unless specifically public
+    if (!session && !isPublicRoute && !isApiRoute) {
       return NextResponse.redirect(new URL(APP_ROUTES.LOGIN, request.url))
+    }
+    
+    // Protect API routes (except specific public ones)
+    if (isApiRoute && !session) {
+      const publicApiRoutes = ['/api/health', '/api/auth'] // Add your public API routes
+      const isPublicApi = publicApiRoutes.some(route => 
+        request.nextUrl.pathname.startsWith(route)
+      )
+      
+      if (!isPublicApi) {
+        return NextResponse.json(
+          { error: 'Unauthorized' },
+          { status: 401 }
+        )
+      }
     }
     
     // If the user is signed in and trying to access an auth page, redirect to dashboard
@@ -42,5 +83,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 } 

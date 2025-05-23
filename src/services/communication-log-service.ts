@@ -23,7 +23,7 @@ export class CommunicationLogService {
       
       return data.map(this.mapDbLogToModel);
     } catch (error) {
-      throw handleSupabaseError(error, 'Failed to fetch communication logs');
+      throw handleSupabaseError(error);
     }
   }
 
@@ -46,7 +46,7 @@ export class CommunicationLogService {
       
       return data ? this.mapDbLogToModel(data) : null;
     } catch (error) {
-      throw handleSupabaseError(error, 'Failed to fetch last communication log');
+      throw handleSupabaseError(error);
     }
   }
 
@@ -67,7 +67,7 @@ export class CommunicationLogService {
       
       return data.map(this.mapDbLogToModel);
     } catch (error) {
-      throw handleSupabaseError(error, 'Failed to fetch communication logs');
+      throw handleSupabaseError(error);
     }
   }
 
@@ -96,7 +96,7 @@ export class CommunicationLogService {
       
       return this.mapDbLogToModel(data);
     } catch (error) {
-      throw handleSupabaseError(error, 'Failed to create communication log');
+      throw handleSupabaseError(error);
     }
   }
 
@@ -124,7 +124,7 @@ export class CommunicationLogService {
       
       return this.mapDbLogToModel(data);
     } catch (error) {
-      throw handleSupabaseError(error, 'Failed to update communication log');
+      throw handleSupabaseError(error);
     }
   }
 
@@ -142,7 +142,7 @@ export class CommunicationLogService {
       
       if (error) throw error;
     } catch (error) {
-      throw handleSupabaseError(error, 'Failed to delete communication log');
+      throw handleSupabaseError(error);
     }
   }
 

@@ -530,7 +530,7 @@ function TaskItem({
       case 'high':
         return <Badge variant="destructive" className="ml-2">High</Badge>;
       case 'medium':
-        return <Badge variant="warning" className={cn("ml-2", isDark ? "bg-yellow-700" : "bg-yellow-200 text-yellow-800")}>Medium</Badge>;
+        return <Badge variant="secondary" className={cn("ml-2", isDark ? "bg-yellow-700" : "bg-yellow-200 text-yellow-800")}>Medium</Badge>;
       case 'low':
         return <Badge variant="outline" className="ml-2">Low</Badge>;
     }
@@ -711,7 +711,7 @@ function TaskItem({
                 )}
                 
                 <Badge variant={
-                  task.status === 'completed' ? "success" : "secondary"
+                  task.status === 'completed' ? "secondary" : "secondary"
                 } className={task.status === 'completed' ? (isDark ? "bg-green-700" : "bg-green-200 text-green-800") : ""}>
                   {task.status === 'completed' ? 'Completed' : 'Pending'}
                 </Badge>
@@ -840,13 +840,13 @@ export function ClientFollowUps({ clientId, agencyId, className }: ClientFollowU
   });
   
   const onSubmitTask = async (data: z.infer<typeof taskFormSchema>) => {
-    // Display loading state
-    toast.loading("Creating follow-up task...");
+    // Display loading state with a specific ID
+    const toastId = toast.loading("Creating follow-up task...");
     
     const success = await clientPulse.createTask(data);
     
-    // Clear the loading toast
-    toast.dismiss();
+    // Clear the specific loading toast
+    toast.dismiss(toastId);
     
     if (success) {
       setOpen(false);
@@ -1008,7 +1008,7 @@ export function ClientFollowUps({ clientId, agencyId, className }: ClientFollowU
           isDark ? "border-zinc-800" : "border-gray-200"
         )}>
           <AnimatePresence initial={false}>
-            <motion.div layout>
+            <motion.div>
               {clientPulse.tasks.map(task => (
                 <TaskItem 
                   key={task.id} 

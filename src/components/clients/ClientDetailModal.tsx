@@ -249,7 +249,7 @@ export function ClientDetailModal({
 
     if (projectsError) {
       return (
-        <div className="flex flex-col items-center justify-center h-40 space-y-3 p-4 rounded-lg", isDark ? "bg-red-900/20" : "bg-red-50/70"}>
+        <div className={cn("flex flex-col items-center justify-center h-40 space-y-3 p-4 rounded-lg", isDark ? "bg-red-900/20" : "bg-red-50/70")}>
           <AlertTriangle className={cn("h-8 w-8", isDark ? "text-red-400" : "text-red-500")} />
           <p className={cn(valueClass, isDark ? "text-red-300" : "text-red-700", "text-center")}>Error: {projectsError}</p>
         </div>

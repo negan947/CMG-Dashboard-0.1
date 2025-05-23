@@ -1,4 +1,4 @@
-import { LucideIcon, BarChart3, Users, Monitor, LifeBuoy, FileText, Settings } from 'lucide-react';
+import { LucideIcon, BarChart3, Users, Monitor, LifeBuoy, FileText, Settings, LineChart } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -20,6 +20,7 @@ interface SidebarProps {
 
 const navItems: NavItem[] = [
   { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
+  { name: 'Analytics', href: '/dashboard/analytics', icon: LineChart },
   { name: 'Clients', href: '/dashboard/clients', icon: Users },
   { name: 'Platforms', href: '/dashboard/platforms', icon: Monitor },
   { name: 'Support', href: '/dashboard/support', icon: LifeBuoy },

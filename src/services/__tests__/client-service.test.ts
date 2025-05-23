@@ -1,238 +1,190 @@
 import { ClientService } from '../client-service';
-import { MCP } from '@/lib/mcp';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { mockClient } from '@/lib/test-utils';
 
-// Mock MCP to avoid actual database calls
-jest.mock('@/lib/mcp', () => ({
-  MCP: {
-    supabase: {
-      query: jest.fn()
-    }
-  }
+// Mock the Supabase client creation
+jest.mock('@/lib/supabase', () => ({
+  createClient: jest.fn(),
 }));
 
+const mockSupabase = {
+  from: jest.fn(),
+  auth: {
+    getSession: jest.fn(),
+  },
+};
+
+const mockQuery = {
+  select: jest.fn().mockReturnThis(),
+  insert: jest.fn().mockReturnThis(),
+  update: jest.fn().mockReturnThis(),
+  delete: jest.fn().mockReturnThis(),
+  eq: jest.fn().mockReturnThis(),
+  in: jest.fn().mockReturnThis(),
+  order: jest.fn().mockReturnThis(),
+  limit: jest.fn().mockReturnThis(),
+  single: jest.fn(),
+  maybeSingle: jest.fn(),
+};
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  const { createClient } = require('@/lib/supabase');
+  (createClient as jest.Mock).mockImplementation(() => mockSupabase);
+  mockSupabase.from.mockReturnValue(mockQuery);
+});
+
 describe('ClientService', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
   describe('getClients', () => {
-    it('should return all clients when no agencyId provided', async () => {
-      const mockRows = [
-        { id: 1, name: 'Client 1', slug: 'client-1', agency_id: 1, created_at: new Date() },
-        { id: 2, name: 'Client 2', slug: 'client-2', agency_id: 2, created_at: new Date() }
-      ];
+    it('should fetch all clients when no agencyId provided', async () => {
+      const mockClients = [mockClient(), mockClient({ id: 2, name: 'Client 2' })]
+      mockQuery.order.mockResolvedValueOnce({ data: mockClients, error: null })
 
-      (MCP.supabase.query as jest.Mock).mockResolvedValue({
-        rows: mockRows
-      });
+      const result = await ClientService.getClients()
 
-      const clients = await ClientService.getClients();
+      expect(mockSupabase.from).toHaveBeenCalledWith('clients')
+      expect(mockQuery.order).toHaveBeenCalledWith('name')
+      expect(result).toHaveLength(2)
+    })
 
-      expect(MCP.supabase.query).toHaveBeenCalledWith(
-        'SELECT * FROM clients ORDER BY name',
-        []
-      );
-      expect(clients).toHaveLength(2);
-      expect(clients[0].id).toBe(1);
-      expect(clients[0].name).toBe('Client 1');
-      expect(clients[1].id).toBe(2);
-      expect(clients[1].name).toBe('Client 2');
-    });
+    it('should filter by agency when agencyId provided', async () => {
+      const mockClients = [mockClient()]
+      mockQuery.order.mockResolvedValueOnce({ data: mockClients, error: null })
 
-    it('should filter clients by agencyId when provided', async () => {
-      const mockRows = [
-        { id: 1, name: 'Client 1', slug: 'client-1', agency_id: 1, created_at: new Date() }
-      ];
+      const result = await ClientService.getClients(1)
 
-      (MCP.supabase.query as jest.Mock).mockResolvedValue({
-        rows: mockRows
-      });
+      expect(mockSupabase.from).toHaveBeenCalledWith('clients')
+      expect(mockQuery.eq).toHaveBeenCalledWith('agency_id', 1)
+      expect(mockQuery.order).toHaveBeenCalledWith('name')
+      expect(result).toHaveLength(1)
+    })
 
-      const clients = await ClientService.getClients(1);
+    it('should handle database errors gracefully', async () => {
+      mockQuery.order.mockResolvedValueOnce({ data: null, error: { message: 'Database error' } })
 
-      expect(MCP.supabase.query).toHaveBeenCalledWith(
-        'SELECT * FROM clients WHERE agency_id = $1 ORDER BY name',
-        [1]
-      );
-      expect(clients).toHaveLength(1);
-      expect(clients[0].id).toBe(1);
-      expect(clients[0].agencyId).toBe(1);
-    });
-
-    it('should handle error', async () => {
-      (MCP.supabase.query as jest.Mock).mockRejectedValue(new Error('Database error'));
-
-      await expect(ClientService.getClients()).rejects.toThrow('Database error');
-    });
-  });
+      await expect(ClientService.getClients()).rejects.toThrow()
+    })
+  })
 
   describe('getClientById', () => {
-    it('should return client by id', async () => {
-      const mockRow = { 
-        id: 1, 
-        name: 'Client 1', 
-        slug: 'client-1', 
-        agency_id: 1, 
-        created_at: new Date() 
-      };
+    it('should fetch a client by ID', async () => {
+      const client = mockClient()
+      mockQuery.maybeSingle.mockResolvedValueOnce({ data: client, error: null })
 
-      (MCP.supabase.query as jest.Mock).mockResolvedValue({
-        rows: [mockRow]
-      });
+      const result = await ClientService.getClientById(1)
 
-      const client = await ClientService.getClientById(1);
+      expect(mockSupabase.from).toHaveBeenCalledWith('clients')
+      expect(mockQuery.eq).toHaveBeenCalledWith('id', 1)
+      expect(result?.id).toBe(1)
+    })
 
-      expect(MCP.supabase.query).toHaveBeenCalledWith(
-        'SELECT * FROM clients WHERE id = $1',
-        [1]
-      );
-      expect(client).toBeDefined();
-      expect(client?.id).toBe(1);
-      expect(client?.name).toBe('Client 1');
-      expect(client?.agencyId).toBe(1);
-    });
+    it('should return null when client not found', async () => {
+      mockQuery.maybeSingle.mockResolvedValueOnce({ data: null, error: null })
 
-    it('should return null if client not found', async () => {
-      (MCP.supabase.query as jest.Mock).mockResolvedValue({
-        rows: []
-      });
+      const result = await ClientService.getClientById(999)
 
-      const client = await ClientService.getClientById(999);
+      expect(result).toBeNull()
+    })
 
-      expect(MCP.supabase.query).toHaveBeenCalledWith(
-        'SELECT * FROM clients WHERE id = $1',
-        [999]
-      );
-      expect(client).toBeNull();
-    });
-  });
+    it('should handle database errors', async () => {
+      mockQuery.maybeSingle.mockResolvedValueOnce({ data: null, error: { message: 'Database error' } })
+
+      await expect(ClientService.getClientById(1)).rejects.toThrow()
+    })
+  })
 
   describe('getClientsByAgencyId', () => {
-    it('should return clients for a specific agency', async () => {
-      const mockRows = [
-        { id: 1, name: 'Client 1', slug: 'client-1', agency_id: 1, created_at: new Date() },
-        { id: 3, name: 'Client 3', slug: 'client-3', agency_id: 1, created_at: new Date() }
-      ];
+    it('should fetch clients for an agency', async () => {
+      const mockClients = [mockClient(), mockClient({ id: 2, name: 'Client 2' })]
+      mockQuery.order.mockResolvedValueOnce({ data: mockClients, error: null })
 
-      (MCP.supabase.query as jest.Mock).mockResolvedValue({
-        rows: mockRows
-      });
+      const result = await ClientService.getClientsByAgencyId(1)
 
-      const clients = await ClientService.getClientsByAgencyId(1);
-
-      expect(MCP.supabase.query).toHaveBeenCalledWith(
-        'SELECT * FROM clients WHERE agency_id = $1 ORDER BY name',
-        [1]
-      );
-      expect(clients).toHaveLength(2);
-      expect(clients[0].id).toBe(1);
-      expect(clients[0].agencyId).toBe(1);
-      expect(clients[1].id).toBe(3);
-      expect(clients[1].agencyId).toBe(1);
-    });
-  });
+      expect(mockSupabase.from).toHaveBeenCalledWith('clients')
+      expect(mockQuery.eq).toHaveBeenCalledWith('agency_id', 1)
+      expect(result).toHaveLength(2)
+      expect(result[0].name).toBe('Test Client')
+    })
+  })
 
   describe('createClient', () => {
     it('should create a new client', async () => {
-      const mockClient = {
+      const newClient = {
         name: 'New Client',
         slug: 'new-client',
-        agencyId: 1
-      };
+        email: 'new@client.com',
+        agencyId: 1,
+        createdByUserId: 'user-1',
+      }
 
-      const mockResult = {
-        id: 1,
-        name: 'New Client',
-        slug: 'new-client',
-        agency_id: 1,
-        created_at: new Date()
-      };
+      const createdClient = mockClient(newClient)
+      mockQuery.single.mockResolvedValueOnce({ data: createdClient, error: null })
 
-      (MCP.supabase.query as jest.Mock).mockResolvedValue({
-        rows: [mockResult]
-      });
+      const result = await ClientService.createClient(newClient)
 
-      const result = await ClientService.createClient(mockClient);
-
-      expect(MCP.supabase.query).toHaveBeenCalledWith(
-        expect.stringContaining('INSERT INTO clients'),
-        expect.arrayContaining([
-          'New Client',
-          'new-client',
-          1
-        ])
-      );
-      expect(result.id).toBe(1);
-      expect(result.name).toBe('New Client');
-      expect(result.slug).toBe('new-client');
-      expect(result.agencyId).toBe(1);
-    });
-  });
+      expect(mockSupabase.from).toHaveBeenCalledWith('clients')
+      expect(mockQuery.insert).toHaveBeenCalledWith(expect.objectContaining({
+        name: newClient.name,
+        slug: newClient.slug,
+        email: newClient.email,
+        agency_id: newClient.agencyId,
+      }))
+      expect(result.name).toBe(newClient.name)
+    })
+  })
 
   describe('updateClient', () => {
     it('should update an existing client', async () => {
-      const mockClient = {
+      const updates = {
         id: 1,
         name: 'Updated Client',
+        email: 'updated@client.com',
+      }
+
+      const updatedClient = mockClient(updates)
+      mockQuery.single.mockResolvedValueOnce({ data: updatedClient, error: null })
+
+      const result = await ClientService.updateClient(updates)
+
+      expect(mockSupabase.from).toHaveBeenCalledWith('clients')
+      expect(mockQuery.update).toHaveBeenCalledWith(expect.objectContaining({
+        name: updates.name,
         slug: 'updated-client',
-        agencyId: 2
-      };
-
-      const mockResult = {
-        id: 1,
-        name: 'Updated Client',
-        slug: 'updated-client',
-        agency_id: 2,
-        created_at: new Date()
-      };
-
-      (MCP.supabase.query as jest.Mock).mockResolvedValue({
-        rows: [mockResult]
-      });
-
-      const result = await ClientService.updateClient(mockClient);
-
-      expect(MCP.supabase.query).toHaveBeenCalledWith(
-        expect.stringContaining('UPDATE clients SET'),
-        expect.arrayContaining([
-          'Updated Client',
-          'updated-client',
-          2,
-          1
-        ])
-      );
-      expect(result.id).toBe(1);
-      expect(result.name).toBe('Updated Client');
-      expect(result.slug).toBe('updated-client');
-      expect(result.agencyId).toBe(2);
-    });
+        email: updates.email,
+      }))
+      expect(mockQuery.eq).toHaveBeenCalledWith('id', updates.id)
+      expect(result.name).toBe(updates.name)
+    })
 
     it('should throw error if client id is missing', async () => {
-      const mockClient = {
+      const updates = {
         name: 'Invalid Client',
-        slug: 'invalid-client',
-        agencyId: 1
-      };
+        email: 'invalid@client.com',
+      }
 
-      await expect(ClientService.updateClient(mockClient as any)).rejects.toThrow(
+      await expect(ClientService.updateClient(updates as any)).rejects.toThrow(
         'Client ID is required for update'
-      );
-      expect(MCP.supabase.query).not.toHaveBeenCalled();
-    });
-  });
+      )
+    })
+  })
 
   describe('deleteClient', () => {
     it('should delete a client', async () => {
-      (MCP.supabase.query as jest.Mock).mockResolvedValue({
-        rows: []
-      });
+      const clientId = 1
+      mockQuery.delete.mockResolvedValueOnce({ data: null, error: null })
 
-      await ClientService.deleteClient(1);
+      await ClientService.deleteClient(clientId)
 
-      expect(MCP.supabase.query).toHaveBeenCalledWith(
-        'DELETE FROM clients WHERE id = $1',
-        [1]
-      );
-    });
-  });
+      expect(mockSupabase.from).toHaveBeenCalledWith('clients')
+      expect(mockQuery.delete).toHaveBeenCalled()
+      expect(mockQuery.eq).toHaveBeenCalledWith('id', clientId)
+    })
+    
+    it('should handle deletion errors', async () => {
+      const clientId = 1
+      mockQuery.eq.mockResolvedValueOnce({ data: null, error: { message: 'Deletion failed' } })
+
+      await expect(ClientService.deleteClient(clientId)).rejects.toThrow()
+    })
+  })
 }); 

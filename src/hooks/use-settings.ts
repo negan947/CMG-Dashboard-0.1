@@ -242,7 +242,7 @@ export function useSettings() {
   }, [agencyId, initializeSettings]);
 
   // Update general settings
-  const updateGeneralSettings = async (data: GeneralSettingsFormValues) => {
+  const updateGeneralSettings = async (data: GeneralSettingsFormValues, silent = false) => {
     if (!agencyId) {
       toast.error('You must be logged in to update settings');
       return { success: false };
@@ -279,7 +279,10 @@ export function useSettings() {
       // Refresh settings data
       await initializeSettings();
       
-      toast.success('General settings updated successfully');
+      // Only show success toast if not silent
+      if (!silent) {
+        toast.success('General settings updated successfully');
+      }
       return { success: true };
     } catch (err: any) {
       console.error('Error updating general settings:', err);

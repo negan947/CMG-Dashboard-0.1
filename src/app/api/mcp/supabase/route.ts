@@ -1,29 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-// Initialize the Supabase client with environment variables
-const supabaseUrl = 'https://mkmvxrgfjzogxhbzvgxk.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1rbXZ4cmdmanpvZ3hoYnp2Z3hrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE5MzY5ODAsImV4cCI6MjA1NzUxMjk4MH0.D02rogTgil1lrLmlDZ9FyWFwQODykZkJzV3dEDTzA5M';
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
 
 /**
  * API endpoint for executing SQL queries against Supabase
  * This allows secure access to the database from client components
+ * 
+ * SECURITY NOTE: This endpoint should be used sparingly and only for
+ * complex queries that cannot be handled by direct Supabase client methods
  */
 export async function POST(request: NextRequest) {
   try {
+    // Create authenticated Supabase client
+    const supabase = createRouteHandlerClient({ cookies });
+    
+    // Verify user is authenticated
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+    
     // Parse the request body
     const { sql, params = [] } = await request.json();
 
     // Validate request
-    if (!sql) {
+    if (!sql || typeof sql !== 'string') {
       return NextResponse.json(
-        { error: 'SQL query is required' },
+        { error: 'Invalid SQL query' },
         { status: 400 }
       );
     }
-
-    // Execute the query using the Supabase client
+    
+    // Additional security: Log the query for audit purposes
+    console.log(`[MCP Query] User: ${session.user.id}, Query: ${sql.substring(0, 100)}...`);
+    
+    // Execute the query using the Supabase client with user context
     const { data, error } = await supabase.rpc('execute_sql', {
       query_text: sql,
       query_params: params,
@@ -31,8 +46,9 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error('Database query error:', error);
+      // Don't expose detailed database errors to client
       return NextResponse.json(
-        { error: error.message },
+        { error: 'Query execution failed' },
         { status: 500 }
       );
     }

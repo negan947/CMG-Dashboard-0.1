@@ -29,7 +29,7 @@ export const TaskService = {
       
       return data.map(this.mapDbTaskToModel);
     } catch (error) {
-      throw handleSupabaseError(error, 'Failed to fetch tasks');
+      throw handleSupabaseError(error);
     }
   },
 
@@ -65,7 +65,7 @@ export const TaskService = {
       
       return tasks.map(this.mapDbTaskToModel);
     } catch (error) {
-      throw handleSupabaseError(error, 'Failed to fetch client tasks');
+      throw handleSupabaseError(error);
     }
   },
 
@@ -120,7 +120,7 @@ export const TaskService = {
       
       return data.map(this.mapDbTaskToModel);
     } catch (error) {
-      throw handleSupabaseError(error, 'Failed to fetch agency tasks');
+      throw handleSupabaseError(error);
     }
   },
 
@@ -151,7 +151,7 @@ export const TaskService = {
       
       return this.mapDbTaskToModel(data);
     } catch (error) {
-      throw handleSupabaseError(error, 'Failed to create task');
+      throw handleSupabaseError(error);
     }
   },
 
@@ -183,7 +183,7 @@ export const TaskService = {
       
       return this.mapDbTaskToModel(data);
     } catch (error) {
-      throw handleSupabaseError(error, 'Failed to update task');
+      throw handleSupabaseError(error);
     }
   },
 
@@ -201,7 +201,7 @@ export const TaskService = {
       
       if (error) throw error;
     } catch (error) {
-      throw handleSupabaseError(error, 'Failed to delete task');
+      throw handleSupabaseError(error);
     }
   },
 
@@ -218,7 +218,7 @@ export const TaskService = {
   /**
    * Map database task to model
    */
-  private mapDbTaskToModel(dbTask: any): TaskModel {
+  mapDbTaskToModel(dbTask: any): TaskModel {
     return {
       id: dbTask.id,
       title: dbTask.title,
