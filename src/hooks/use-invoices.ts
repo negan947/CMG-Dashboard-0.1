@@ -62,6 +62,42 @@ export function useInvoices(clientId?: number, projectId?: number) {
     }
   };
 
+  // Create a new invoice with items in a single transaction
+  const createInvoiceWithItems = async (
+    invoiceData: Omit<CreateInvoiceInput, 'agencyId'>,
+    items: Omit<CreateInvoiceItemInput, 'invoiceId'>[]
+  ) => {
+    if (!currentAgencyId) {
+      setError('Agency ID is required to create an invoice');
+      toast.error('Missing agency information');
+      return null;
+    }
+    
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const result = await InvoiceService.createInvoiceWithItems(
+        { ...invoiceData, agencyId: currentAgencyId },
+        items.map(item => ({ ...item, invoiceId: 0 })) // invoiceId will be set in service
+      );
+      
+      // Add the new invoice to the state
+      setInvoices(prev => [result.invoice, ...prev]);
+      toast.success('Invoice created successfully with PDF generated');
+      
+      return result;
+    } catch (err) {
+      console.error('Error creating invoice with items:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create invoice';
+      setError(errorMessage);
+      toast.error(errorMessage);
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Create a new invoice
   const createInvoice = async (data: Omit<CreateInvoiceInput, 'agencyId'>) => {
     if (!currentAgencyId) {
@@ -87,6 +123,36 @@ export function useInvoices(clientId?: number, projectId?: number) {
     } catch (err) {
       console.error('Error creating invoice:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to create invoice';
+      setError(errorMessage);
+      toast.error(errorMessage);
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Generate PDF for an existing invoice
+  const generateInvoicePdf = async (invoiceId: number) => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const pdfUrl = await InvoiceService.generateInvoicePdf(invoiceId);
+      
+      if (pdfUrl) {
+        // Update the invoice in state with the new PDF URL
+        setInvoices(prev => prev.map(inv => 
+          inv.id === invoiceId.toString() ? { ...inv, pdf_url: pdfUrl } : inv
+        ));
+        toast.success('PDF generated successfully');
+        return pdfUrl;
+      } else {
+        toast.error('Failed to generate PDF');
+        return null;
+      }
+    } catch (err) {
+      console.error('Error generating PDF:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to generate PDF';
       setError(errorMessage);
       toast.error(errorMessage);
       return null;
@@ -270,6 +336,7 @@ export function useInvoices(clientId?: number, projectId?: number) {
     error,
     fetchInvoices,
     fetchInvoiceDetails,
+    createInvoiceWithItems,
     createInvoice,
     updateInvoice,
     deleteInvoice,
@@ -278,5 +345,6 @@ export function useInvoices(clientId?: number, projectId?: number) {
     createInvoiceItem,
     updateInvoiceItem,
     deleteInvoiceItem,
+    generateInvoicePdf,
   };
 } 

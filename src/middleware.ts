@@ -53,7 +53,7 @@ export async function middleware(request: NextRequest) {
     
     // Protect API routes (except specific public ones)
     if (isApiRoute && !session) {
-      const publicApiRoutes = ['/api/health', '/api/auth'] // Add your public API routes
+      const publicApiRoutes = ['/api/health', '/api/auth', '/api/invoices'] // Add your public API routes
       const isPublicApi = publicApiRoutes.some(route => 
         request.nextUrl.pathname.startsWith(route)
       )

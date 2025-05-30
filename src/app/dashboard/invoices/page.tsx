@@ -8,7 +8,7 @@ import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
 import { useInvoices } from '@/hooks/use-invoices';
 import { useProfile } from '@/hooks/use-profile';
-import { InvoiceModel, InvoiceStatus } from '@/types/models.types';
+import { InvoiceModel, InvoiceStatus, ClientModel, InvoiceItemModel, CreateInvoiceInput, CreateInvoiceItemInput } from '@/types/models.types';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { 
@@ -43,7 +43,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { ClientSelect } from '@/components/clients/ClientSelect';
-import { ClientModel } from '@/types/models.types';
 
 // Placeholder components until we create them
 const InvoiceStatusBadge = ({ status }: { status: InvoiceStatus }) => (
@@ -98,51 +97,166 @@ const InvoiceActionMenu = ({
   </DropdownMenu>
 );
 
-const InvoiceViewer = ({ invoice }: { invoice: InvoiceModel }) => (
-  <div className="p-4 border rounded-md">
-    <h3 className="text-lg font-semibold mb-4">Invoice Preview</h3>
-    <p className="text-sm mb-2">This is a placeholder for the invoice viewer component.</p>
-    <div className="grid grid-cols-2 gap-4 mb-4">
-      <div>
-        <p className="text-sm font-medium">Invoice Number</p>
-        <p>{invoice.invoiceNumber}</p>
-      </div>
-      <div>
-        <p className="text-sm font-medium">Client ID</p>
-        <p>{invoice.clientId}</p>
-      </div>
-      <div>
-        <p className="text-sm font-medium">Issue Date</p>
-        <p>{format(new Date(invoice.issueDate), 'MMMM d, yyyy')}</p>
-      </div>
-      <div>
-        <p className="text-sm font-medium">Due Date</p>
-        <p>{format(new Date(invoice.dueDate), 'MMMM d, yyyy')}</p>
-      </div>
-      <div>
-        <p className="text-sm font-medium">Status</p>
-        <InvoiceStatusBadge status={invoice.status} />
-      </div>
-      <div>
-        <p className="text-sm font-medium">Total Amount</p>
-        <p>${invoice.totalAmount.toFixed(2)}</p>
-      </div>
+const InvoiceViewer = ({ invoice, formatCurrency }: { invoice: InvoiceModel, formatCurrency: (amount: number) => string }) => {
+  const handleDownloadPdf = () => {
+    if (!invoice || !invoice.id) {
+      toast.error('Cannot download PDF: Invoice not found.');
+      return;
+    }
+
+    // Check if PDF exists
+    if (invoice.pdf_url) {
+      console.log('PDF exists, downloading from URL:', invoice.pdf_url);
+      window.open(invoice.pdf_url, '_blank');
+    } else {
+      toast.error('PDF not available. Please contact support to regenerate the PDF.');
+    }
+  };
+
+  return (
+    <div className="p-4 border rounded-md">
+      <h3 className="text-lg font-semibold mb-4">Invoice Preview</h3>
+      {/* Conditionally display PDF or data summary */}
+      {invoice.pdf_url ? (
+        // Display PDF using embed
+        <embed 
+          src={invoice.pdf_url}
+          type="application/pdf"
+          width="100%"
+          height="600px" // Adjust height as needed
+          className="rounded-md"
+        />
+      ) : (
+        // Display data summary if no PDF URL
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Invoice Number</p>
+              <p className="text-base font-semibold">{invoice.invoiceNumber}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Status</p>
+              <InvoiceStatusBadge status={invoice.status} />
+            </div>
+            {/* Display Client Name if available */}
+            {invoice.client && (
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Client</p>
+                <p className="text-base">{invoice.client.name}</p>
+              </div>
+            )}
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Issue Date</p>
+              <p className="text-base">{format(new Date(invoice.issueDate), 'MMMM d, yyyy')}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Due Date</p>
+              <p className="text-base">{format(new Date(invoice.dueDate), 'MMMM d, yyyy')}</p>
+            </div>
+            {invoice.paymentDate && (
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Payment Date</p>
+                <p className="text-base">{format(new Date(invoice.paymentDate), 'MMMM d, yyyy')}</p>
+              </div>
+            )}
+            {invoice.projectId && (
+               <div>
+                <p className="text-sm font-medium text-muted-foreground">Project ID</p>
+                <p className="text-base">{invoice.projectId}</p>
+               </div>
+            )}
+          </div>
+
+          {/* Line Items */}
+          <div>
+            <h4 className="text-base font-medium mb-2">Items</h4>
+            <div className="border rounded-md overflow-hidden">
+               <div className="grid grid-cols-12 gap-2 px-3 py-2 text-sm font-medium bg-gray-50 dark:bg-zinc-800/50">
+                 <div className="col-span-7">Description</div>
+                 <div className="col-span-2">Qty</div>
+                 <div className="col-span-3 text-right">Price</div>
+               </div>
+               {
+                 invoice.items && invoice.items.length > 0 ? (
+                   invoice.items.map(item => (
+                     <div key={item.id} className="grid grid-cols-12 gap-2 px-3 py-2 text-sm">
+                       <div className="col-span-7">{item.description}</div>
+                       <div className="col-span-2">{item.quantity}</div>
+                       <div className="col-span-3 text-right">{formatCurrency(item.unitPrice)}</div>
+                     </div>
+                   ))
+                 ) : (
+                   <div className="px-3 py-2 text-sm text-muted-foreground italic">
+                     No items found for this invoice.
+                   </div>
+                 )
+               }
+            </div>
+          </div>
+
+          {/* Totals */}
+          <div className="flex justify-end">
+            <div className="w-full max-w-xs space-y-1 text-sm">
+               <div className="flex justify-between">
+                 <span>Subtotal:</span>
+                 <span>{formatCurrency(invoice.subtotal)}</span>
+               </div>
+               {typeof invoice.discountAmount === 'number' && invoice.discountAmount > 0 && (
+                  <div className="flex justify-between">
+                     <span>Discount ({invoice.discountType === 'percentage' ? 'Percentage' : 'Fixed'}):</span>
+                     <span>-{formatCurrency(invoice.discountAmount)}</span>
+                  </div>
+               )}
+               <div className="flex justify-between">
+                 <span>Tax ({invoice.taxRate}%):</span>
+                 <span>{formatCurrency(invoice.taxAmount)}</span>
+               </div>
+               <div className="flex justify-between font-semibold text-base">
+                 <span>Total:</span>
+                 <span>{formatCurrency(invoice.totalAmount)}</span>
+               </div>
+            </div>
+          </div>
+
+          {/* Notes */}
+          {invoice.notes && (
+             <div>
+                <h4 className="text-base font-medium mb-2">Notes</h4>
+                <p className="text-sm text-muted-foreground">{invoice.notes}</p>
+             </div>
+          )}
+
+           {/* Footer Text */}
+           {invoice.footerText && (
+             <div>
+                <h4 className="text-base font-medium mb-2">Footer Text</h4>
+                <p className="text-sm text-muted-foreground">{invoice.footerText}</p>
+             </div>
+          )}
+        </div>
+      )}
+
+      <Button variant="outline" className="w-full mt-6" onClick={handleDownloadPdf}>
+        <Download className="h-4 w-4 mr-2" />
+        {invoice.pdf_url ? 'Download PDF' : 'PDF Not Available'}
+      </Button>
     </div>
-    <Button variant="outline" className="w-full">
-      <Download className="h-4 w-4 mr-2" />
-      Download PDF
-    </Button>
-  </div>
-);
+  );
+};
 
 const AddInvoiceModal = ({ 
   isOpen, 
   onClose, 
-  onInvoiceCreated 
+  onInvoiceCreated,
+  createInvoiceWithItems 
 }: { 
   isOpen: boolean, 
   onClose: () => void, 
-  onInvoiceCreated: (invoice: InvoiceModel) => void 
+  onInvoiceCreated: (invoice: InvoiceModel) => void,
+  createInvoiceWithItems: (
+    invoiceData: Omit<CreateInvoiceInput, 'agencyId'>,
+    items: Omit<CreateInvoiceItemInput, 'invoiceId'>[]
+  ) => Promise<{ invoice: InvoiceModel; items: InvoiceItemModel[] } | null> 
 }) => {
   const { theme } = useTheme();
   const isDark = theme !== 'light';
@@ -162,6 +276,14 @@ const AddInvoiceModal = ({
   const subtotal = items.reduce((sum, item) => sum + (item.quantity * item.price), 0);
   const tax = subtotal * 0.1; // 10% tax
   const total = subtotal + tax;
+  
+  // Format currency consistently for the preview
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(amount);
+  };
   
   const addItem = () => {
     setItems([...items, { description: "", quantity: 1, price: 0 }]);
@@ -201,17 +323,9 @@ const AddInvoiceModal = ({
       const calculatedTax = calculatedSubtotal * 0.1; // 10% tax
       const calculatedTotal = calculatedSubtotal + calculatedTax;
       
-      // Generate a unique invoice number - format: INV-{YY}{MM}-{Random 4 digits}
-      const now = new Date();
-      const year = now.getFullYear().toString().slice(-2);
-      const month = (now.getMonth() + 1).toString().padStart(2, '0');
-      const randomDigits = Math.floor(1000 + Math.random() * 9000); // 4-digit random number
-      const invoiceNumber = `INV-${year}${month}-${randomDigits}`;
-      
-      // Create a new invoice object
-      const newInvoice = {
+      // Prepare invoice data (invoice number will be auto-generated)
+      const invoiceData = {
         clientId: parseInt(selectedClient.id),
-        invoiceNumber,
         issueDate: issueDate, // Send as string in YYYY-MM-DD format
         dueDate: dueDate, // Send as string in YYYY-MM-DD format
         status: InvoiceStatus.DRAFT,
@@ -222,32 +336,23 @@ const AddInvoiceModal = ({
         notes
       };
       
-      console.log('Creating invoice:', newInvoice);
+      // Prepare invoice items
+      const invoiceItems = items.map((item) => ({
+        description: item.description,
+        quantity: item.quantity,
+        unitPrice: item.price,
+        totalAmount: item.quantity * item.price
+      }));
       
-      // Call the createInvoice function from useInvoices
-      const createdInvoice = await createInvoice(newInvoice);
+      console.log('Creating invoice with items:', { invoiceData, invoiceItems });
       
-      if (createdInvoice) {
-        // Create invoice items one by one
-        const invoiceId = parseInt(createdInvoice.id);
-        console.log('Created invoice with ID:', invoiceId);
-        
-        const itemPromises = items.map((item, index) => 
-          createInvoiceItem({
-            invoiceId,
-            description: item.description,
-            quantity: item.quantity,
-            unitPrice: item.price,
-            totalAmount: item.quantity * item.price,
-            sortOrder: index + 1
-          })
-        );
-        
-        await Promise.all(itemPromises);
-        console.log('Created all invoice items');
-        
-        toast.success("Invoice created successfully");
-        onInvoiceCreated(createdInvoice);
+      // Create invoice with items in a single transaction (PDF will be generated automatically)
+      const result = await createInvoiceWithItems(invoiceData, invoiceItems);
+      
+      if (result) {
+        console.log('Created invoice with items and PDF:', result.invoice.id);
+        toast.success("Invoice created successfully with PDF");
+        onInvoiceCreated(result.invoice);
       } else {
         toast.error("Failed to create invoice");
       }
@@ -518,14 +623,19 @@ export default function InvoicesPage() {
   const isDark = theme !== 'light';
   const { profile, isLoading: profileLoading } = useProfile();
   const { 
-    invoices, 
+    invoices,
     isLoading: invoicesLoading,
     error,
     createInvoice,
+    createInvoiceWithItems,
     updateInvoice,
     deleteInvoice,
     updateInvoiceStatus,
-    markInvoiceAsPaid
+    markInvoiceAsPaid,
+    fetchInvoices,
+    fetchInvoiceDetails,
+    createInvoiceItem,
+    generateInvoicePdf
   } = useInvoices();
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -536,7 +646,10 @@ export default function InvoicesPage() {
   const [sortField, setSortField] = useState<'date' | 'amount' | 'due'>('date');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
-  // Format currency consistently
+  useEffect(() => {
+    fetchInvoices();
+  }, [fetchInvoices]);
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -544,7 +657,6 @@ export default function InvoicesPage() {
     }).format(amount);
   };
 
-  // Handle sorting
   const handleSort = (field: 'date' | 'amount' | 'due') => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -554,15 +666,12 @@ export default function InvoicesPage() {
     }
   };
 
-  // Filter and sort invoices
   const filteredInvoices = invoices
     .filter(invoice => {
-      // Status filter
       if (statusFilter !== 'all' && invoice.status !== statusFilter) {
         return false;
       }
       
-      // Search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         const invoiceNumber = invoice.invoiceNumber?.toLowerCase() || '';
@@ -572,7 +681,6 @@ export default function InvoicesPage() {
       return true;
     })
     .sort((a, b) => {
-      // Sort logic
       const direction = sortDirection === 'asc' ? 1 : -1;
       
       if (sortField === 'date') {
@@ -586,10 +694,23 @@ export default function InvoicesPage() {
       return 0;
     });
 
-  // Handle invoice actions
-  const handleViewInvoice = (invoice: InvoiceModel) => {
-    setCurrentInvoice(invoice);
+  const handleViewInvoice = async (invoice: InvoiceModel) => {
     setIsViewerOpen(true);
+    setCurrentInvoice(null);
+
+    try {
+      const invoiceId = parseInt(invoice.id);
+      const details = await fetchInvoiceDetails(invoiceId);
+
+      if (details && details.invoice) {
+        setCurrentInvoice(details.invoice);
+      } else {
+        setCurrentInvoice(invoice);
+      }
+    } catch (err) {
+       console.error('Error fetching invoice details for viewer:', err);
+       setCurrentInvoice(invoice);
+    }
   };
 
   const handleEditInvoice = (invoice: InvoiceModel) => {
@@ -619,7 +740,6 @@ export default function InvoicesPage() {
     await updateInvoiceStatus(id, status);
   };
 
-  // Clear all filters
   const clearFilters = () => {
     setSearchQuery('');
     setStatusFilter('all');
@@ -633,7 +753,6 @@ export default function InvoicesPage() {
     router.push(`/dashboard/invoices/${newInvoice.id}`);
   };
 
-  // Background styling
   const backgroundElements = (
     <>
       <div className={cn(
@@ -675,7 +794,6 @@ export default function InvoicesPage() {
       {backgroundElements}
 
       <div className="space-y-6 md:space-y-8 relative z-10 py-2 p-4 md:p-6">
-        {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="flex items-center space-x-3">
             <FileText className={cn("h-8 w-8", isDark ? "text-blue-400" : "text-blue-600")} />
@@ -696,7 +814,6 @@ export default function InvoicesPage() {
           </Button>
         </div>
 
-        {/* Filters */}
         <GlassCard contentClassName="p-4">
           <div className="flex flex-col md:flex-row gap-3 items-start md:items-center">
             <div className="relative flex-grow max-w-md">
@@ -785,7 +902,6 @@ export default function InvoicesPage() {
           </div>
         </GlassCard>
 
-        {/* Invoices Table */}
         <GlassCard contentClassName="p-0 overflow-hidden">
           {invoicesLoading ? (
             <div className="flex items-center justify-center p-8">
@@ -848,7 +964,9 @@ export default function InvoicesPage() {
                     <TableCell className="font-medium">
                       {invoice.invoiceNumber}
                     </TableCell>
-                    <TableCell>Client #{invoice.clientId}</TableCell>
+                    <TableCell>
+                      {invoice.client ? invoice.client.name : `Client #${invoice.clientId}`}
+                    </TableCell>
                     <TableCell>
                       {format(new Date(invoice.issueDate), 'MMM d, yyyy')}
                     </TableCell>
@@ -871,7 +989,7 @@ export default function InvoicesPage() {
                           onMarkAsPaid={() => handleMarkAsPaid(invoice)}
                           onStatusChange={(status) => handleStatusChange(invoice, status)}
                         />
-          </div>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -881,14 +999,13 @@ export default function InvoicesPage() {
         </GlassCard>
       </div>
 
-      {/* Create Invoice Modal */}
       <AddInvoiceModal 
         isOpen={isCreateModalOpen} 
         onClose={() => setIsCreateModalOpen(false)}
         onInvoiceCreated={handleInvoiceCreated}
+        createInvoiceWithItems={createInvoiceWithItems}
       />
 
-      {/* Invoice Viewer Modal */}
       <Dialog open={isViewerOpen} onOpenChange={setIsViewerOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
           <DialogHeader>
@@ -905,7 +1022,7 @@ export default function InvoicesPage() {
               </div>
             )}
           </DialogHeader>
-          {currentInvoice && <InvoiceViewer invoice={currentInvoice} />}
+          {currentInvoice && <InvoiceViewer invoice={currentInvoice} formatCurrency={formatCurrency} />}
         </DialogContent>
       </Dialog>
     </div>

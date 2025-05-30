@@ -252,6 +252,9 @@ export interface Invoice {
   createdByUserId: string | null;
   createdAt: Date;
   updatedAt: Date;
+  pdf_url: string | null;
+  client?: ClientModel;
+  items?: InvoiceItemModel[];
 }
 
 /**
