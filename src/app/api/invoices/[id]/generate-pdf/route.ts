@@ -1,22 +1,22 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase-server';
 import { generateInvoicePdfHtml } from '@/lib/server/pdf-templates';
-// @ts-ignore
-import nodeHtmlToImage from 'node-html-to-image';
+import puppeteer from 'puppeteer';
 import { v4 as uuidv4 } from 'uuid';
 
 // Define types for API route parameters
 interface GeneratePdfParams {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export async function GET(
   request: Request,
   { params }: GeneratePdfParams
 ) {
-  const invoiceId = parseInt(params.id, 10);
+  const resolvedParams = await params;
+  const invoiceId = parseInt(resolvedParams.id, 10);
 
   if (isNaN(invoiceId)) {
     return NextResponse.json({ error: 'Invalid invoice ID' }, { status: 400 });
@@ -81,16 +81,28 @@ export async function GET(
     });
     console.log('✓ HTML generated, length:', htmlContent.length);
 
-    // Step 4: Generate PDF
+    // Step 4: Generate PDF using Puppeteer
     console.log('Step 4: Generating PDF from HTML...');
-    const pdfBuffer = await nodeHtmlToImage({
-      html: htmlContent,
-      type: 'pdf',
-      encoding: 'binary',
-      puppeteerArgs: {
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
+    const browser = await puppeteer.launch({
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      headless: true
+    });
+
+    const page = await browser.newPage();
+    await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+    
+    const pdfBuffer = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      margin: {
+        top: '20mm',
+        right: '20mm',
+        bottom: '20mm',
+        left: '20mm'
       }
     });
+
+    await browser.close();
 
     if (!pdfBuffer) {
         throw new Error('Failed to generate PDF buffer');
@@ -116,7 +128,7 @@ export async function GET(
 
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from(bucketName)
-      .upload(filePath, pdfBuffer, {
+      .upload(filePath, pdfBuffer as any, {
         contentType: 'application/pdf',
         upsert: false,
       });
