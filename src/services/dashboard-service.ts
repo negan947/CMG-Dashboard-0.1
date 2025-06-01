@@ -560,11 +560,18 @@ export class DashboardService {
    */
   async getProjectTableData(agencyId: number): Promise<any[]> {
     try {
+      // Get projects through clients that belong to the agency
       const { data, error } = await this.supabase
         .from('projects')
-        .select('id, name, status, due_date, client_id, clients(name)')
-        .eq('agency_id', agencyId)
-        .order('due_date', { ascending: true })
+        .select(`
+          id, 
+          name, 
+          status, 
+          created_at, 
+          client_id, 
+          clients(name, agency_id)
+        `)
+        .order('created_at', { ascending: false })
         .limit(10);
       
       if (error) {
@@ -572,9 +579,21 @@ export class DashboardService {
         return [];
       }
       
-      return (data || []).map(project => {
+      // Filter projects to only include those where the client belongs to the specified agency
+      const filteredProjects = (data || []).filter(project => {
         // Define a type for the expected client structure
-        type ClientData = { name: string };
+        type ClientData = { name: string; agency_id: number };
+        
+        // Extract client data with type assertion
+        const clientData = project.clients as unknown as ClientData;
+        
+        // Only include projects where the client's agency_id matches the specified agency_id
+        return clientData?.agency_id === agencyId;
+      });
+      
+      return filteredProjects.map(project => {
+        // Define a type for the expected client structure
+        type ClientData = { name: string; agency_id: number };
         
         // Extract client data with type assertion
         const clientData = project.clients as unknown as ClientData;
@@ -584,11 +603,12 @@ export class DashboardService {
           name: project.name,
           status: project.status,
           clientName: clientData?.name || 'Unknown',
-          dueDate: project.due_date ? new Date(project.due_date).toLocaleDateString() : 'N/A'
+          // Using created_at instead of due_date
+          createdAt: project.created_at ? new Date(project.created_at).toLocaleDateString() : 'N/A'
         };
       });
     } catch (err) {
-      console.error('Unexpected error fetching project table data:', err);
+      console.error('Error fetching project table data:', err);
       return [];
     }
   }
