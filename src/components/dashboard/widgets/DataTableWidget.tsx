@@ -16,16 +16,22 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+// Define a type for table columns
+interface TableColumn {
+  key: string;
+  label: string;
+}
+
 export function DataTableWidget({ id, config, isEditing, onConfigChange, onRemove }: WidgetProps) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
-  const service = new DashboardService(createClientComponentClient());
+  const service = new DashboardService();
   
   // Determine data source
   const dataSource = config.dataSource || 'clients';
   
   // Determine column configuration based on data source
-  const getColumns = () => {
+  const getColumns = (): TableColumn[] => {
     switch (dataSource) {
       case 'clients':
         return [
@@ -118,7 +124,7 @@ export function DataTableWidget({ id, config, isEditing, onConfigChange, onRemov
               <Table>
                 <TableHeader>
                   <TableRow>
-                    {columns.map((column) => (
+                    {columns.map((column: TableColumn) => (
                       <TableHead key={column.key} className="text-xs">
                         {column.label}
                       </TableHead>
@@ -128,7 +134,7 @@ export function DataTableWidget({ id, config, isEditing, onConfigChange, onRemov
                 <TableBody>
                   {(tableData || []).slice(0, rowsToDisplay).map((row) => (
                     <TableRow key={row.id}>
-                      {columns.map((column) => (
+                      {columns.map((column: TableColumn) => (
                         <TableCell key={`${row.id}-${column.key}`} className="text-xs py-2">
                           {row[column.key]}
                         </TableCell>

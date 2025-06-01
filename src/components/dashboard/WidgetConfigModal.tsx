@@ -25,7 +25,7 @@ export function WidgetConfigModal({ widget, onClose, onSave }: WidgetConfigModal
     <ConfigComponent
       id={widget.id}
       config={widget.config}
-      onChange={(newConfig) => onSave(widget.id, newConfig)}
+      onChange={(newConfig: Record<string, any>) => onSave(widget.id, newConfig)}
       onClose={onClose}
     />
   );

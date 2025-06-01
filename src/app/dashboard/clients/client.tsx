@@ -800,9 +800,20 @@ export default function ClientPage({ initialClients }: ClientPageProps) {
                 filteredClients.map((client) => (
                   <ClientListItem
                     key={client.id}
-                    client={client}
+                    client={{
+                      ...client,
+                      initials: client.name
+                        ? client.name.split(' ').map(n => n[0]).filter(Boolean).slice(0, 2).join('').toUpperCase()
+                        : ''
+                    }}
                     isDark={isDark}
-                    onClick={() => handleClientClick(client)}
+                    onClick={() => handleClientClick({
+                      ...client,
+                      initials: client.name
+                        ? client.name.split(' ').map(n => n[0]).filter(Boolean).slice(0, 2).join('').toUpperCase()
+                        : ''
+                    })}
+                    index={0}
                   />
                 ))
               ) : (

@@ -35,7 +35,7 @@ export function PieChartWidget({ id, config, isEditing, onConfigChange, onRemove
 
   // Determine which data set to use based on the widget config
   const dataSource = config.dataSource || 'leadSources';
-  const chartData = dataSets[dataSource] || dataSets.leadSources;
+  const chartData = dataSets[dataSource as keyof typeof dataSets] || dataSets.leadSources;
 
   return (
     <div className="w-full h-full flex flex-col">

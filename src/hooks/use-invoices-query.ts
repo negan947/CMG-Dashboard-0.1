@@ -17,7 +17,7 @@ export function useInvoicesQuery(agencyId?: number) {
     // Keep the data fresh for 2 minutes
     staleTime: 2 * 60 * 1000,
     // Cache for 5 minutes
-    cacheTime: 5 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
   });
 }
 

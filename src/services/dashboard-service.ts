@@ -572,13 +572,21 @@ export class DashboardService {
         return [];
       }
       
-      return (data || []).map(project => ({
-        id: project.id,
-        name: project.name,
-        status: project.status,
-        clientName: project.clients?.name || 'Unknown',
-        dueDate: project.due_date ? new Date(project.due_date).toLocaleDateString() : 'N/A'
-      }));
+      return (data || []).map(project => {
+        // Define a type for the expected client structure
+        type ClientData = { name: string };
+        
+        // Extract client data with type assertion
+        const clientData = project.clients as unknown as ClientData;
+        
+        return {
+          id: project.id,
+          name: project.name,
+          status: project.status,
+          clientName: clientData?.name || 'Unknown',
+          dueDate: project.due_date ? new Date(project.due_date).toLocaleDateString() : 'N/A'
+        };
+      });
     } catch (err) {
       console.error('Unexpected error fetching project table data:', err);
       return [];
@@ -602,14 +610,22 @@ export class DashboardService {
         return [];
       }
       
-      return (data || []).map(invoice => ({
-        id: invoice.id,
-        invoiceNumber: invoice.invoice_number,
-        clientName: invoice.clients?.name || 'Unknown',
-        amount: `$${invoice.amount.toFixed(2)}`,
-        status: invoice.status,
-        dueDate: invoice.due_date ? new Date(invoice.due_date).toLocaleDateString() : 'N/A'
-      }));
+      return (data || []).map(invoice => {
+        // Define a type for the expected client structure
+        type ClientData = { name: string };
+        
+        // Extract client data with type assertion
+        const clientData = invoice.clients as unknown as ClientData;
+        
+        return {
+          id: invoice.id,
+          invoiceNumber: invoice.invoice_number,
+          clientName: clientData?.name || 'Unknown',
+          amount: `$${invoice.amount.toFixed(2)}`,
+          status: invoice.status,
+          dueDate: invoice.due_date ? new Date(invoice.due_date).toLocaleDateString() : 'N/A'
+        };
+      });
     } catch (err) {
       console.error('Unexpected error fetching invoice table data:', err);
       return [];
@@ -633,13 +649,21 @@ export class DashboardService {
         return [];
       }
       
-      return (data || []).map(task => ({
-        id: task.id,
-        title: task.title,
-        assignedTo: task.users?.full_name || 'Unassigned',
-        status: task.status,
-        dueDate: task.due_date ? new Date(task.due_date).toLocaleDateString() : 'N/A'
-      }));
+      return (data || []).map(task => {
+        // Define a type for the expected user structure
+        type UserData = { full_name: string };
+        
+        // Extract user data with type assertion
+        const userData = task.users as unknown as UserData;
+        
+        return {
+          id: task.id,
+          title: task.title,
+          assignedTo: userData?.full_name || 'Unassigned',
+          status: task.status,
+          dueDate: task.due_date ? new Date(task.due_date).toLocaleDateString() : 'N/A'
+        };
+      });
     } catch (err) {
       console.error('Unexpected error fetching task table data:', err);
       return [];
