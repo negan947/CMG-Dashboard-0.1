@@ -11,6 +11,31 @@ import { cn } from '@/lib/utils';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
+// Override any potential CSS conflicts
+const gridStyles = `
+  .react-grid-item.react-grid-placeholder {
+    background: #0ea5e9;
+    opacity: 0.2;
+    transition-duration: 100ms;
+    z-index: 2;
+    border-radius: 0.5rem;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    -o-user-select: none;
+    user-select: none;
+  }
+  
+  .react-resizable-handle {
+    opacity: 0.5;
+    transition: opacity 0.2s;
+  }
+  
+  .react-grid-item:hover .react-resizable-handle {
+    opacity: 1;
+  }
+`;
+
 // Apply width provider to make the grid responsive
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
@@ -92,6 +117,9 @@ export function EditableDashboard({
 
   return (
     <div className="relative">
+      {/* Add style tag for grid styles */}
+      <style jsx global>{gridStyles}</style>
+      
       {isEditing && (
         <div className={cn(
           "sticky top-0 z-20 p-4 mb-4 rounded-lg",
@@ -121,7 +149,7 @@ export function EditableDashboard({
         </div>
       )}
       
-      <div className="mb-5">
+      <div className="overflow-hidden">
         <ResponsiveGridLayout
           className="layout"
           layouts={layouts}

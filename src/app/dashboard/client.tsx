@@ -287,26 +287,29 @@ export default function ClientPage({
       }} />
       
       <div className="space-y-2 sm:space-y-3 md:space-y-5 relative z-10 py-1 md:py-2">
-        <div className="flex flex-col sm:flex-row justify-between gap-3 items-start sm:items-center">
-          <GlassCard contentClassName="p-1.5 sm:p-2 md:p-4 lg:p-6">
-            <h1 className={`text-base sm:text-lg md:text-xl lg:text-2xl font-bold ${
-              isDark ? "text-zinc-100" : "text-gray-800"
-            }`}>Welcome back, {userName}</h1>
-            <p className={`text-[10px] sm:text-xs md:text-sm ${
-              isDark ? "text-zinc-300" : "text-gray-600"
-            }`}>
-              Here's an overview of your marketing performance and client activities.
-            </p>
-          </GlassCard>
+        <div className="flex flex-col sm:flex-row justify-between gap-3 items-start sm:items-center mb-2">
+          <div className="flex-grow">
+            <GlassCard contentClassName="p-1.5 sm:p-2 md:p-4 lg:p-6">
+              <h1 className={`text-base sm:text-lg md:text-xl lg:text-2xl font-bold ${
+                isDark ? "text-zinc-100" : "text-gray-800"
+              }`}>Welcome back, {userName}</h1>
+              <p className={`text-[10px] sm:text-xs md:text-sm ${
+                isDark ? "text-zinc-300" : "text-gray-600"
+              }`}>
+                Here's an overview of your marketing performance and client activities.
+              </p>
+            </GlassCard>
+          </div>
           
-          <div className="flex gap-2">
+          <div className="flex-shrink-0 flex gap-2 self-end sm:self-center">
             {isEditing ? (
               <>
                 <button
                   onClick={saveLayout}
                   className={cn(
                     "px-3 py-1.5 sm:px-4 sm:py-2 rounded-md text-sm sm:text-base",
-                    "bg-blue-600 text-white hover:bg-blue-700"
+                    "bg-blue-600 text-white hover:bg-blue-700",
+                    "shadow-sm"
                   )}
                 >
                   Save Layout
@@ -317,7 +320,8 @@ export default function ClientPage({
                     "px-3 py-1.5 sm:px-4 sm:py-2 rounded-md text-sm sm:text-base",
                     isDark 
                       ? "bg-zinc-800 text-zinc-100 hover:bg-zinc-700" 
-                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                      : "bg-gray-200 text-gray-700 hover:bg-gray-300",
+                    "shadow-sm"
                   )}
                 >
                   Cancel
@@ -331,8 +335,13 @@ export default function ClientPage({
                   isDark 
                     ? "bg-zinc-800 text-zinc-100 hover:bg-zinc-700" 
                     : "bg-white text-gray-700 hover:bg-gray-100",
-                  "border",
-                  isDark ? "border-zinc-700" : "border-gray-200"
+                  "border border-solid",
+                  isDark ? "border-zinc-700" : "border-gray-200",
+                  "shadow-sm overflow-hidden relative",
+                  "before:content-[''] before:absolute before:-top-px before:left-0 before:right-0 before:h-[2px]",
+                  isDark 
+                    ? "before:bg-[#0F0F12]" 
+                    : "before:bg-[#F5F9FF]"
                 )}
               >
                 Edit Dashboard
