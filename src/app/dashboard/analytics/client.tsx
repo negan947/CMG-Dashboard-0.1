@@ -193,23 +193,45 @@ export default function ClientPage({ initialAnalyticsData }: ClientPageProps) {
           ) : (
             // Show actual charts when loaded
             <>
-              <PieChart
-                title="Traffic by Channel"
-                subtitle={`This ${timeFrame}`}
-                data={analyticsData.channelData}
-                innerRadius={50}
-                outerRadius="80%"
-                showLegend={true}
-              />
+              <GlassCard>
+                <div className="flex flex-col gap-1 p-4">
+                  <h2 className={`text-lg font-semibold ${isDark ? "text-zinc-100" : "text-gray-800"}`}>
+                    Traffic by Channel
+                  </h2>
+                  <p className={`text-xs ${isDark ? "text-zinc-400" : "text-gray-500"}`}>
+                    This {timeFrame}
+                  </p>
+                  
+                  <div className="h-[240px] mt-4">
+                    <PieChart
+                      data={analyticsData.channelData}
+                      innerRadius={50}
+                      outerRadius="80%"
+                      showLegend={true}
+                    />
+                  </div>
+                </div>
+              </GlassCard>
               
-              <PieChart
-                title="Conversion Funnel"
-                subtitle={`This ${timeFrame}`}
-                data={analyticsData.conversionData}
-                innerRadius={50}
-                outerRadius="80%"
-                showLegend={true}
-              />
+              <GlassCard>
+                <div className="flex flex-col gap-1 p-4">
+                  <h2 className={`text-lg font-semibold ${isDark ? "text-zinc-100" : "text-gray-800"}`}>
+                    Conversion Funnel
+                  </h2>
+                  <p className={`text-xs ${isDark ? "text-zinc-400" : "text-gray-500"}`}>
+                    This {timeFrame}
+                  </p>
+                  
+                  <div className="h-[240px] mt-4">
+                    <PieChart
+                      data={analyticsData.conversionData}
+                      innerRadius={50}
+                      outerRadius="80%"
+                      showLegend={true}
+                    />
+                  </div>
+                </div>
+              </GlassCard>
             </>
           )}
         </div>
@@ -237,9 +259,7 @@ export default function ClientPage({ initialAnalyticsData }: ClientPageProps) {
               
               <div className="h-[300px] mt-4">
                 <ClientTrendsChart 
-                  title="Performance Trends"
-                  subtitle={`This ${timeFrame}`}
-                  data={analyticsData.performanceTrends} 
+                  data={analyticsData.performanceTrends as any[]} 
                 />
               </div>
             </div>

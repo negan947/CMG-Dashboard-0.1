@@ -1,7 +1,7 @@
 ---
 description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 ---
 description: Comprehensive best practices for developing with Supabase, covering code organization, performance, security, testing, and common pitfalls. This rule provides actionable guidance for developers to build robust and scalable applications using Supabase.
@@ -321,7 +321,7 @@ RLS is vital for data protection in this multi-tenant (agency-based) application
 
 Every authorization system has an impact on performance. While row level security is powerful, the performance impact is important to keep in mind. This is especially true for queries that scan every row in a table.
 
-Based on a series of [tests](https://github.com/GaryAustin1/RLS-Performance), we have a few recommendations for RLS:
+Based on a series of [tests](mdc:https:/github.com/GaryAustin1/RLS-Performance), we have a few recommendations for RLS:
 
 -   **Add Indexes:**
     -   Ensure you've added [indexes](mdc:docs/guides/database/postgres/indexes) on any columns used within your RLS Policies which are not already indexed (or primary keys).

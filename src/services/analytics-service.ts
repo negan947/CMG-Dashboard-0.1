@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 export interface ChannelData {
   name: string;

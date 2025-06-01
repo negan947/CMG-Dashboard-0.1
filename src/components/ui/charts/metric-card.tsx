@@ -7,17 +7,21 @@ import { DonutChart } from "./donut-chart";
 
 interface MetricCardProps {
   title: string;
-  value: number;
+  value: number | string;
   suffix?: string;
   prefix?: string;
   changePercentage?: number;
   changeValue?: number;
   changeLabel?: string;
+  changeType?: "increase" | "decrease" | string;
+  period?: string;
   secondaryLabel?: string;
   secondaryValue?: string | number;
   color?: string;
   showDonut?: boolean;
   className?: string;
+  icon?: React.ReactNode;
+  isDark?: boolean;
 }
 
 export function MetricCard({
@@ -28,18 +32,25 @@ export function MetricCard({
   changePercentage,
   changeValue,
   changeLabel = "vs. last period",
+  changeType,
+  period,
   secondaryLabel,
   secondaryValue,
   color = "blue",
   showDonut = false,
   className,
+  icon,
+  isDark: propIsDark,
 }: MetricCardProps) {
   const { theme } = useTheme();
-  const isDark = theme !== "light";
+  const isDark = propIsDark !== undefined ? propIsDark : theme !== "light";
   
   // Determine color for percentage change
-  const isPositiveChange = changePercentage !== undefined ? changePercentage >= 0 : true;
+  const isPositiveChange = changeType ? changeType === "increase" : (changePercentage !== undefined ? changePercentage >= 0 : true);
   const changeColor = isPositiveChange ? "text-green-500" : "text-red-500";
+  
+  // Convert value to number for DonutChart if necessary
+  const numericValue = typeof value === 'string' ? parseFloat(value.replace(/[^0-9.-]+/g, '')) || 0 : value;
   
   return (
     <GlassCard 
@@ -48,16 +59,17 @@ export function MetricCard({
       contentClassName="p-3 sm:p-3.5 md:p-4 h-full flex flex-col"
     >
       <div className="flex flex-col h-full justify-between">
-        <h3 className={`text-[11px] sm:text-xs md:text-sm font-medium mb-2 sm:mb-3 ${
+        <h3 className={`text-[11px] sm:text-xs md:text-sm font-medium mb-2 sm:mb-3 flex items-center gap-1 ${
           isDark ? "text-zinc-300" : "text-gray-600"
         }`}>
+          {icon && <span className="flex-shrink-0">{icon}</span>}
           {title}
         </h3>
         
         <div className="flex items-center gap-2 sm:gap-3 md:gap-4 flex-1">
           {showDonut && (
             <DonutChart
-              value={value}
+              value={numericValue}
               color={color}
               size={36}
               className="shrink-0 sm:size-40 md:size-44 lg:size-48"
@@ -108,7 +120,15 @@ export function MetricCard({
               )}
             </div>
             
-            {changeLabel && (changePercentage !== undefined || changeValue !== undefined) && (
+            {period && (
+              <div className={`text-[8px] sm:text-[10px] md:text-xs ${
+                isDark ? "text-zinc-500" : "text-gray-500"
+              }`}>
+                {period}
+              </div>
+            )}
+            
+            {changeLabel && (changePercentage !== undefined || changeValue !== undefined) && !period && (
               <div className={`text-[8px] sm:text-[10px] md:text-xs ${
                 isDark ? "text-zinc-500" : "text-gray-500"
               }`}>

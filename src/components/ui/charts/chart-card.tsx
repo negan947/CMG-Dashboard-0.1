@@ -1,65 +1,52 @@
 import React from "react";
-import { cn } from "@/lib/utils";
-import { GlassCard } from "../glass-card";
 import { useTheme } from "next-themes";
+import { cn } from "@/lib/utils";
 
 interface ChartCardProps {
-  title: string;
-  description?: string;
+  title?: string;
   subtitle?: string;
-  className?: string;
+  description?: string;
   children: React.ReactNode;
-  color?: string;
+  className?: string;
 }
 
 export function ChartCard({
   title,
-  description,
   subtitle,
-  className,
+  description,
   children,
-  color = "blue"
+  className
 }: ChartCardProps) {
   const { theme } = useTheme();
   const isDark = theme !== "light";
   
   return (
-    <GlassCard
-      title={title}
-      description={description}
-      className={cn("transition-all", className)}
-      color={color}
-      contentClassName={cn(
-        "p-0 min-h-[350px] h-full w-full", // Increased minimum height to match the chart
-        isDark 
-          ? "pt-0 sm:pt-0" 
-          : "pt-0 sm:pt-0",
-        "p-4 sm:p-6"
-      )}
-      headerClassName="px-6 pb-0"
-      variant="default"
-      headerContent={
-        subtitle ? (
-          <div className="flex items-center justify-between">
+    <div className={cn("flex flex-col", className)}>
+      {(title || subtitle || description) && (
+        <div className="mb-2">
+          {title && (
             <h3 className={cn(
-              "text-base font-semibold md:text-lg",
+              "text-lg font-semibold",
               isDark ? "text-zinc-100" : "text-gray-800"
             )}>
               {title}
             </h3>
-            <div className="flex items-center">
-              <span className={cn(
-                "ml-2 text-xs font-medium rounded-full px-2 py-1",
-                isDark ? "bg-zinc-800 text-zinc-300" : "bg-green-50/70 text-green-700"
-              )}>
-                ▼ {subtitle}
-              </span>
-            </div>
-          </div>
-        ) : null
-      }
-    >
-      {children}
-    </GlassCard>
+          )}
+          
+          {(subtitle || description) && (
+            <p className={cn(
+              "text-xs",
+              isDark ? "text-zinc-400" : "text-gray-500"
+            )}>
+              {subtitle || description}
+            </p>
+          )}
+        </div>
+      )}
+      
+      <div className="flex-1">
+        {children}
+      </div>
+    </div>
   );
 } 

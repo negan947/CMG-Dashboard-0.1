@@ -2,17 +2,17 @@
 
 import { useAuth } from '@/hooks/use-auth';
 import { useTheme } from 'next-themes';
-import { useQuery } from '@tanstack/react-query';
-import {
-  PieChart,
-  ClientTrendsChart,
-  MetricCard
-} from '@/components/ui/charts';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { GlassCard } from '@/components/ui/glass-card';
 import { cn } from '@/lib/utils';
 import { CHART_COLORS } from '@/components/ui/charts/pie-chart';
-import { SupportRequestsCard } from '@/components/support-requests-card';
 import { DashboardService } from '@/services/dashboard-service';
+import { EditableDashboard } from '@/components/dashboard/EditableDashboard';
+import { useState, useEffect } from 'react';
+import { UserWidget } from '@/components/dashboard/widgets/types';
+import { AddWidgetModal } from '@/components/dashboard/AddWidgetModal';
+import { WidgetConfigModal } from '@/components/dashboard/WidgetConfigModal';
+import { toast } from 'sonner';
 
 // Define types for the props
 interface DashboardMetricsData {
@@ -66,7 +66,14 @@ export default function ClientPage({
   const isDark = theme !== "light";
   const service = DashboardService.getInstance();
   
-  // Use React Query to fetch and cache data, with initial data from the server
+  // State for the editable dashboard
+  const [isEditing, setIsEditing] = useState(false);
+  const [showAddWidget, setShowAddWidget] = useState(false);
+  const [configWidget, setConfigWidget] = useState<UserWidget | null>(null);
+  const [userWidgets, setUserWidgets] = useState<UserWidget[]>([]);
+  const [pendingChanges, setPendingChanges] = useState<UserWidget[]>([]);
+  
+  // Use React Query to fetch dashboard metrics, with initial data from the server
   const { data: dashboardMetrics } = useQuery({
     queryKey: ['dashboard-metrics'],
     queryFn: async () => {
@@ -95,6 +102,7 @@ export default function ClientPage({
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
   
+  // Use React Query to fetch campaign data
   const { data: campaignData } = useQuery({
     queryKey: ['campaign-data'],
     queryFn: async () => {
@@ -116,23 +124,131 @@ export default function ClientPage({
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
   
+  // Fetch user's dashboard widgets
+  const { data: widgets, isLoading: isLoadingWidgets, refetch: refetchWidgets } = useQuery({
+    queryKey: ['user-dashboard', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      return service.getUserDashboardWidgets(user.id);
+    },
+    enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+  
+  // Mutation for saving widgets
+  const saveWidgetsMutation = useMutation({
+    mutationFn: async (widgets: UserWidget[]) => {
+      if (!user?.id) return false;
+      return service.saveUserDashboardWidgets(user.id, widgets);
+    },
+    onSuccess: () => {
+      refetchWidgets();
+      toast.success('Dashboard layout saved');
+      setIsEditing(false);
+    },
+    onError: () => {
+      toast.error('Failed to save dashboard layout');
+    },
+  });
+  
+  // If user has no saved widgets, use default layout
+  useEffect(() => {
+    if (!isLoadingWidgets) {
+      if (!widgets || widgets.length === 0) {
+        setUserWidgets(service.getDefaultWidgets());
+      } else {
+        setUserWidgets(widgets);
+      }
+    }
+  }, [widgets, isLoadingWidgets, service]);
+  
   const userName = user?.email ? user.email.split('@')[0] : 'User';
-
-  // Sample client trends data (based on the screenshot)
-  const clientTrendsData = [
-    { name: 'Week 1', 'KLINT.RO': 14, 'Rustufuria': 12, 'Nike': 0 },
-    { name: 'Week 2', 'KLINT.RO': 10, 'Rustufuria': 6, 'Nike': 30 },
-    { name: 'Week 3', 'KLINT.RO': 38, 'Rustufuria': 20, 'Nike': 25 },
-    { name: 'Week 4', 'KLINT.RO': 30, 'Rustufuria': 15, 'Nike': 40 },
-  ];
-
-  // Sample funnel channel data
-  const funnelChannelData = [
-    { name: 'Google', value: 42.5, color: CHART_COLORS[0] },
-    { name: 'Meta', value: 24.3, color: CHART_COLORS[1] },
-    { name: 'TikTok', value: 18.7, color: CHART_COLORS[2] },
-    { name: 'IRL', value: 14.5, color: CHART_COLORS[3] }
-  ];
+  
+  // Handle editing mode
+  const startEditing = () => {
+    setPendingChanges([...userWidgets]);
+    setIsEditing(true);
+  };
+  
+  const cancelEditing = () => {
+    setIsEditing(false);
+    setPendingChanges([]);
+    setConfigWidget(null);
+  };
+  
+  const saveLayout = () => {
+    saveWidgetsMutation.mutate(pendingChanges);
+  };
+  
+  // Add/remove widgets
+  const handleAddWidget = (widget: UserWidget) => {
+    setPendingChanges([...pendingChanges, widget]);
+  };
+  
+  /**
+   * Removes a widget from the dashboard
+   * This implementation ensures widgets are removed both from state
+   * and persisted to the backend as needed
+   */
+  const handleRemoveWidget = (widgetId: string) => {
+    console.log('Handling widget removal for widget ID:', widgetId);
+    
+    // Get the current widgets based on edit state
+    const currentWidgets = isEditing ? pendingChanges : userWidgets;
+    
+    // Create new array without the widget to remove
+    const updatedWidgets = currentWidgets.filter(w => w.id !== widgetId);
+    console.log(`Filtered widgets from ${currentWidgets.length} to ${updatedWidgets.length}`);
+    
+    if (isEditing) {
+      // In edit mode, just update the pending changes
+      setPendingChanges(updatedWidgets);
+    } else {
+      // In view mode, update both states and persist changes
+      setUserWidgets(updatedWidgets);
+      setPendingChanges(updatedWidgets);
+      
+      // Save changes to the server immediately
+      saveWidgetsMutation.mutate(updatedWidgets);
+    }
+  };
+  
+  // Configure widget
+  const handleConfigureWidget = (widgetId: string) => {
+    const widget = pendingChanges.find(w => w.id === widgetId);
+    if (widget) {
+      setConfigWidget(widget);
+    }
+  };
+  
+  const handleSaveWidgetConfig = (widgetId: string, newConfig: Record<string, any>) => {
+    setPendingChanges(pendingChanges.map(widget => 
+      widget.id === widgetId 
+        ? { ...widget, config: newConfig }
+        : widget
+    ));
+    setConfigWidget(null);
+  };
+  
+  // Update layout
+  const handleLayoutChange = (layout: any) => {
+    const updatedWidgets = pendingChanges.map(widget => {
+      const layoutItem = layout.find((item: any) => item.i === widget.id);
+      if (!layoutItem) return widget;
+      
+      return {
+        ...widget,
+        gridPosition: {
+          x: layoutItem.x,
+          y: layoutItem.y,
+          w: layoutItem.w,
+          h: layoutItem.h
+        }
+      };
+    });
+    
+    setPendingChanges(updatedWidgets);
+  };
 
   return (
     <div className="relative min-h-screen">
@@ -171,245 +287,81 @@ export default function ClientPage({
       }} />
       
       <div className="space-y-2 sm:space-y-3 md:space-y-5 relative z-10 py-1 md:py-2">
-        <GlassCard contentClassName="p-1.5 sm:p-2 md:p-4 lg:p-6">
-          <h1 className={`text-base sm:text-lg md:text-xl lg:text-2xl font-bold ${
-            isDark ? "text-zinc-100" : "text-gray-800"
-          }`}>Welcome back, {userName}</h1>
-          <p className={`text-[10px] sm:text-xs md:text-sm ${
-            isDark ? "text-zinc-300" : "text-gray-600"
-          }`}>
-            Here's an overview of your marketing performance and client activities.
-          </p>
-        </GlassCard>
-        
-        <div className="grid grid-cols-2 gap-2 sm:gap-3 md:gap-4 lg:gap-5 xl:gap-6 lg:grid-cols-4">
-          <MetricCard 
-            title="Objectives" 
-            value={53} 
-            suffix="%" 
-            changePercentage={18}
-            changeValue={5}
-            color={CHART_COLORS[0]}
-            showDonut={true}
-          />
+        <div className="flex flex-col sm:flex-row justify-between gap-3 items-start sm:items-center">
+          <GlassCard contentClassName="p-1.5 sm:p-2 md:p-4 lg:p-6">
+            <h1 className={`text-base sm:text-lg md:text-xl lg:text-2xl font-bold ${
+              isDark ? "text-zinc-100" : "text-gray-800"
+            }`}>Welcome back, {userName}</h1>
+            <p className={`text-[10px] sm:text-xs md:text-sm ${
+              isDark ? "text-zinc-300" : "text-gray-600"
+            }`}>
+              Here's an overview of your marketing performance and client activities.
+            </p>
+          </GlassCard>
           
-          <MetricCard 
-            title="Inquiry Success Rate" 
-            value={36.2} 
-            suffix="%"
-            changePercentage={-2.5}
-            changeValue={-0.9}
-            color={CHART_COLORS[2]}
-            showDonut={true} 
-          />
-          
-          <MetricCard 
-            title="New Leads" 
-            value={134} 
-            changePercentage={18}
-            changeValue={28}
-            color={CHART_COLORS[1]}
-            showDonut={false}
-          />
-          
-          <MetricCard 
-            title="Overdue Tasks" 
-            value={12} 
-            changeValue={7}
-            changePercentage={12}
-            color={CHART_COLORS[0]}
-            showDonut={false}
-          />
-        </div>
-
-        {/* New Row of Metric Cards */}
-        <div className="grid grid-cols-2 gap-2 sm:gap-3 md:gap-4 lg:gap-5 xl:gap-6 lg:grid-cols-4">
-          <MetricCard 
-            title="Total Clients" 
-            value={87} 
-            changePercentage={14}
-            changeValue={11}
-            color={CHART_COLORS[3]}
-            showDonut={false}
-          />
-          
-          <MetricCard 
-            title="Support Requests" 
-            value={24} 
-            changePercentage={8}
-            changeValue={2}
-            color={CHART_COLORS[1]}
-            showDonut={false} 
-          />
-          
-          <MetricCard 
-            title="Overdue Payments" 
-            value={5} 
-            secondaryLabel="Total Value"
-            secondaryValue="$12,500"
-            color={CHART_COLORS[2]}
-            showDonut={false}
-          />
-          
-          <MetricCard 
-            title="Team Productivity" 
-            value={68} 
-            suffix="%"
-            changeValue={4}
-            changePercentage={6}
-            color={CHART_COLORS[0]}
-            showDonut={true}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 gap-3 sm:gap-4 md:gap-5 lg:gap-6 lg:grid-cols-2">
-          <PieChart
-            title="Client Category"
-            subtitle="This Month"
-            data={[
-              { name: 'Fashion', value: 18.4, color: CHART_COLORS[0] },
-              { name: 'Electronics', value: 29.1, color: CHART_COLORS[1] },
-              { name: 'Healthcare', value: 27.5, color: CHART_COLORS[2] },
-              { name: 'Sporting Goods', value: 25, color: CHART_COLORS[3] }
-            ]}
-            innerRadius={50}
-            outerRadius="80%"
-            showLegend={true}
-          />
-          
-          <ClientTrendsChart
-            title="Clients Trends"
-            subtitle="This Month"
-            data={clientTrendsData}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 gap-3 sm:gap-4 md:gap-5 lg:gap-6 lg:grid-cols-2">
-          <PieChart
-            title="Funnel Channel"
-            subtitle="This Month"
-            data={funnelChannelData}
-            innerRadius={50}
-            outerRadius="80%"
-            showLegend={true}
-          />
-          
-          <SupportRequestsCard />
-        </div>
-
-        <GlassCard>
-          <div className="p-6">
-            <div className="flex flex-col items-start justify-between md:flex-row md:items-center">
-              <h2 className={`text-base font-semibold md:text-lg ${
-                isDark ? "text-zinc-100" : "text-gray-800"
-              }`}>Campaign Overview</h2>
-              <div className="mt-2 md:mt-0">
-                <a href="/dashboard/campaigns" className={`text-sm font-medium transition-colors ${
+          <div className="flex gap-2">
+            {isEditing ? (
+              <>
+                <button
+                  onClick={saveLayout}
+                  className={cn(
+                    "px-3 py-1.5 sm:px-4 sm:py-2 rounded-md text-sm sm:text-base",
+                    "bg-blue-600 text-white hover:bg-blue-700"
+                  )}
+                >
+                  Save Layout
+                </button>
+                <button
+                  onClick={cancelEditing}
+                  className={cn(
+                    "px-3 py-1.5 sm:px-4 sm:py-2 rounded-md text-sm sm:text-base",
+                    isDark 
+                      ? "bg-zinc-800 text-zinc-100 hover:bg-zinc-700" 
+                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  )}
+                >
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={startEditing}
+                className={cn(
+                  "px-3 py-1.5 sm:px-4 sm:py-2 rounded-md text-sm sm:text-base",
                   isDark 
-                    ? "text-zinc-300 hover:text-white" 
-                    : "text-blue-600 hover:text-blue-800"
-                }`}>
-                  View all campaigns
-                </a>
-              </div>
-            </div>
-            
-            <div className="mt-6 overflow-x-auto -mx-6 px-6 pb-2">
-              <div className="min-w-[600px] lg:min-w-full">
-                <table className={`w-full divide-y ${
-                  isDark ? "divide-zinc-700" : "divide-gray-200"
-                }`}>
-                  <colgroup>
-                    <col className="w-[22%]" />
-                    <col className="w-[18%]" />
-                    <col className="w-[15%]" />
-                    <col className="w-[15%]" />
-                    <col className="w-[15%]" />
-                    <col className="w-[15%]" />
-                  </colgroup>
-                  <thead>
-                    <tr>
-                      <th scope="col" className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${
-                        isDark ? "text-zinc-400" : "text-gray-500"
-                      }`}>
-                        Campaign
-                      </th>
-                      <th scope="col" className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${
-                        isDark ? "text-zinc-400" : "text-gray-500"
-                      }`}>
-                        Platform
-                      </th>
-                      <th scope="col" className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${
-                        isDark ? "text-zinc-400" : "text-gray-500"
-                      }`}>
-                        Status
-                      </th>
-                      <th scope="col" className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${
-                        isDark ? "text-zinc-400" : "text-gray-500"
-                      }`}>
-                        Budget
-                      </th>
-                      <th scope="col" className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${
-                        isDark ? "text-zinc-400" : "text-gray-500"
-                      }`}>
-                        Spent
-                      </th>
-                      <th scope="col" className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${
-                        isDark ? "text-zinc-400" : "text-gray-500"
-                      }`}>
-                        ROI
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className={isDark ? "divide-y divide-zinc-700" : "divide-y divide-gray-200"}>
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <tr key={i} className={`transition-colors ${
-                        isDark ? "hover:bg-zinc-800/40" : "hover:bg-gray-50/80"
-                      }`}>
-                        <td className={`whitespace-nowrap px-4 py-4 text-sm ${
-                          isDark ? "text-zinc-300" : "text-gray-800"
-                        }`}>
-                          Campaign {i + 1}
-                        </td>
-                        <td className={`whitespace-nowrap px-4 py-4 text-sm ${
-                          isDark ? "text-zinc-300" : "text-gray-800"
-                        }`}>
-                          {['Facebook', 'Instagram', 'Google', 'Twitter', 'LinkedIn'][i]}
-                        </td>
-                        <td className={`whitespace-nowrap px-4 py-4 text-sm`}>
-                          <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
-                            i % 3 === 0 
-                              ? "bg-green-100 text-green-800" 
-                              : i % 3 === 1 
-                                ? "bg-blue-100 text-blue-800" 
-                                : "bg-amber-100 text-amber-800"
-                          }`}>
-                            {i % 3 === 0 ? 'Active' : i % 3 === 1 ? 'Completed' : 'Planned'}
-                          </span>
-                        </td>
-                        <td className={`whitespace-nowrap px-4 py-4 text-sm ${
-                          isDark ? "text-zinc-300" : "text-gray-800"
-                        }`}>
-                          ${(2000 + i * 1500).toLocaleString()}
-                        </td>
-                        <td className={`whitespace-nowrap px-4 py-4 text-sm ${
-                          isDark ? "text-zinc-300" : "text-gray-800"
-                        }`}>
-                          ${Math.floor((1500 + i * 800) * (i % 3 === 1 ? 1 : 0.7)).toLocaleString()}
-                        </td>
-                        <td className={`whitespace-nowrap px-4 py-4 text-sm ${
-                          isDark ? "text-zinc-300" : "text-gray-800"
-                        }`}>
-                          {(120 + i * 15)}%
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+                    ? "bg-zinc-800 text-zinc-100 hover:bg-zinc-700" 
+                    : "bg-white text-gray-700 hover:bg-gray-100",
+                  "border",
+                  isDark ? "border-zinc-700" : "border-gray-200"
+                )}
+              >
+                Edit Dashboard
+              </button>
+            )}
           </div>
-        </GlassCard>
+        </div>
+        
+        <EditableDashboard 
+          widgets={isEditing ? pendingChanges : userWidgets}
+          isEditing={isEditing}
+          onLayoutChange={handleLayoutChange}
+          onRemoveWidget={handleRemoveWidget}
+          onConfigureWidget={handleConfigureWidget}
+          onAddWidget={() => setShowAddWidget(true)}
+        />
+        
+        {/* Widget modals */}
+        <AddWidgetModal 
+          isOpen={showAddWidget}
+          onClose={() => setShowAddWidget(false)}
+          onAddWidget={handleAddWidget}
+        />
+        
+        <WidgetConfigModal 
+          widget={configWidget}
+          onClose={() => setConfigWidget(null)}
+          onSave={handleSaveWidgetConfig}
+        />
       </div>
     </div>
   );
