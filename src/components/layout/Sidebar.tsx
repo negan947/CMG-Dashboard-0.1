@@ -1,9 +1,9 @@
 import { LucideIcon, BarChart3, Users, Monitor, LifeBuoy, FileText, Settings, LineChart } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useTheme } from 'next-themes';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { CMGLogo, CMGFavicon } from '@/components/ui/cmg-logo';
 
 interface NavItem {
@@ -30,8 +30,23 @@ const navItems: NavItem[] = [
 
 export function Sidebar({ isOpen, isMobile, onClose }: SidebarProps = {}) {
   const pathname = usePathname();
+  const router = useRouter();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  const [hoveredPath, setHoveredPath] = useState<string | null>(null);
+  
+  // Function to handle mouse enter for prefetching
+  const handleMouseEnter = (href: string) => {
+    setHoveredPath(href);
+    router.prefetch(href);
+  };
+  
+  // Prefetch all navigation paths on component mount
+  useEffect(() => {
+    navItems.forEach(item => {
+      router.prefetch(item.href);
+    });
+  }, [router]);
   
   return (
     <>
@@ -92,6 +107,9 @@ export function Sidebar({ isOpen, isMobile, onClose }: SidebarProps = {}) {
               pathname === item.href || 
               (pathname?.startsWith(item.href + '/') && item.href !== '/dashboard');
             
+            // Is this path being hovered
+            const isHovered = hoveredPath === item.href;
+            
             return (
               <Link
                 key={item.name}
@@ -104,9 +122,13 @@ export function Sidebar({ isOpen, isMobile, onClose }: SidebarProps = {}) {
                       : "bg-gray-100/80 text-gray-900"
                     : isDark
                       ? "text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-100" 
-                      : "text-gray-500 hover:bg-gray-100/60 hover:text-gray-900"
+                      : "text-gray-500 hover:bg-gray-100/60 hover:text-gray-900",
+                  isHovered && !isActive && "bg-opacity-80" // Subtle highlight on hover
                 )}
                 onClick={isMobile ? onClose : undefined}
+                onMouseEnter={() => handleMouseEnter(item.href)}
+                onMouseLeave={() => setHoveredPath(null)}
+                prefetch={true}
               >
                 <Icon className={cn(
                   "h-5 w-5",

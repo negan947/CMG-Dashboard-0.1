@@ -1,9 +1,11 @@
 'use client';
 
-import { ReactNode, useEffect } from 'react';
+import { ReactNode, useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import DashboardLoading from './loading';
+import QueryProvider from '@/providers/query-provider';
 
 export default function DashboardLayoutWrapper({
   children,
@@ -52,5 +54,14 @@ export default function DashboardLayoutWrapper({
   }
 
   // If user is authenticated, render the dashboard layout with children
-  return <DashboardLayout>{children}</DashboardLayout>;
+  // Wrap the children in a Suspense boundary for better loading experience
+  return (
+    <QueryProvider>
+      <DashboardLayout>
+        <Suspense fallback={<DashboardLoading />}>
+          {children}
+        </Suspense>
+      </DashboardLayout>
+    </QueryProvider>
+  );
 } 
