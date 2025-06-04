@@ -4,51 +4,38 @@ import { Bell, X, Check, CheckCheck, MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { NotificationItem, type Notification } from './NotificationItem';
-import { useAuth } from '@/hooks/use-auth';
-import { createClient } from '@/lib/supabase';
+import { NotificationItem } from './NotificationItem';
+import { useNotifications } from '@/context/notifications-provider';
 import { useMediaQuery } from '@/hooks/use-media-query';
-import { RealtimeChannel } from '@supabase/supabase-js';
 
 export function NotificationsDropdown() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
-  const { user } = useAuth();
+  const {
+    notifications,
+    unreadCount,
+    isLoading,
+    fetchNotifications,
+    markAsRead,
+    markAllAsRead,
+  } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const isMobile = useMediaQuery("(max-width: 640px)");
   const containerRef = useRef<HTMLDivElement>(null);
-  const channelRef = useRef<RealtimeChannel | null>(null);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
-  const PAGE_SIZE = 5; // Smaller initial page size for better UX
   
-  // Periodically poll for new notifications
-  useEffect(() => {
-    if (!user) return;
-    
-    // Initial fetch
-    fetchNotifications();
-    
-    // Set up interval to check for new notifications every 10 seconds
-    const interval = setInterval(() => {
-      fetchNotifications(true);
-    }, 10000); // 10 seconds
-    
-    return () => {
-      clearInterval(interval);
-    };
-  }, [user]);
+  // Periodically poll handled by NotificationsProvider
 
   // Refetch when dropdown opens
   useEffect(() => {
-    if (user && isOpen) {
-      fetchNotifications();
+    if (isOpen) {
+      setPage(0);
+      loadNotifications(0, false);
     }
-  }, [user, isOpen]);
+  }, [isOpen]);
 
   // Handle clicking outside the mobile dropdown
   useEffect(() => {
@@ -74,86 +61,29 @@ export function NotificationsDropdown() {
     }
   }, [isOpen]);
 
-  const unreadCount = notifications.filter(notification => !notification.read).length;
 
-  const fetchNotifications = async (isPolling = false) => {
-    if (!user) return;
-    
-    // Only show loading state when the dropdown is open and not polling
-    if (isOpen && !isPolling) {
-      setIsLoading(true);
-      // Reset pagination when manually fetching
-      if (!isPolling) {
-        setPage(0);
-        setHasMore(true);
-      }
-    }
-    
+  const loadNotifications = async (pageToLoad = 0, append = false) => {
     try {
-      const supabase = createClient();
-      const from = 0;
-      const to = PAGE_SIZE - 1;
-      
-      const { data, error, count } = await supabase
-        .from('notifications')
-        .select('*', { count: 'exact' })
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .range(from, to);
-      
-      if (error) throw error;
-      
-      setNotifications(data as Notification[]);
-      
-      // Check if there are more notifications to load
-      if (count) {
-        setHasMore(count > PAGE_SIZE);
-      }
+      const more = await fetchNotifications(pageToLoad, append);
+      setHasMore(Boolean(more));
     } catch (err) {
       console.error('Error fetching notifications:', err);
-      if (isOpen && !isPolling) {
+      if (isOpen) {
         setError('Failed to load notifications');
-      }
-    } finally {
-      if (isOpen && !isPolling) {
-        setIsLoading(false);
       }
     }
   };
 
   const loadMoreNotifications = async () => {
-    if (!user || !hasMore) return;
-    
+    if (!hasMore) return;
+
     setIsLoadingMore(true);
-    
+
     try {
-      const supabase = createClient();
       const nextPage = page + 1;
-      const from = nextPage * PAGE_SIZE;
-      const to = from + PAGE_SIZE - 1;
-      
-      const { data, error, count } = await supabase
-        .from('notifications')
-        .select('*', { count: 'exact' })
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .range(from, to);
-      
-      if (error) throw error;
-      
-      if (data && data.length > 0) {
-        setNotifications([...notifications, ...(data as Notification[])]);
-        setPage(nextPage);
-        
-        // Check if there are more notifications to load
-        if (count) {
-          setHasMore((from + data.length) < count);
-        } else {
-          setHasMore(data.length === PAGE_SIZE);
-        }
-      } else {
-        setHasMore(false);
-      }
+      const more = await fetchNotifications(nextPage, true);
+      setPage(nextPage);
+      setHasMore(Boolean(more));
     } catch (err) {
       console.error('Error loading more notifications:', err);
     } finally {
@@ -162,44 +92,17 @@ export function NotificationsDropdown() {
   };
 
   const handleMarkAsRead = async (id: string) => {
-    if (!user) return;
-    
     try {
-      const supabase = createClient();
-      const { error } = await supabase
-        .from('notifications')
-        .update({ read: true, updated_at: new Date().toISOString() })
-        .eq('id', id)
-        .eq('user_id', user.id);
-      
-      if (error) throw error;
-      
-      // Update local state
-      setNotifications(notifications.map(notification => 
-        notification.id === id 
-          ? { ...notification, read: true } 
-          : notification
-      ));
+      await markAsRead(id);
     } catch (err) {
       console.error('Error marking notification as read:', err);
     }
   };
 
   const handleMarkAllAsRead = async () => {
-    if (!user || unreadCount === 0) return;
-    
+    if (unreadCount === 0) return;
     try {
-      const supabase = createClient();
-      const { error } = await supabase
-        .from('notifications')
-        .update({ read: true, updated_at: new Date().toISOString() })
-        .eq('user_id', user.id)
-        .eq('read', false);
-      
-      if (error) throw error;
-      
-      // Update local state
-      setNotifications(notifications.map(notification => ({ ...notification, read: true })));
+      await markAllAsRead();
     } catch (err) {
       console.error('Error marking all notifications as read:', err);
     }
