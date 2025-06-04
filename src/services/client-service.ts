@@ -3,10 +3,22 @@ import { mapDbRow, camelToSnakeObject } from '@/lib/data-mapper';
 import { createClient } from '@/lib/supabase';
 import { sanitizeSearchQuery } from '@/lib/utils';
 
+// Define the ClientService interface to fix self-reference type issue
+interface ClientServiceType {
+  getClients(agencyId?: number): Promise<ClientModel[]>;
+  getClientById(id: number): Promise<ClientModel | null>;
+  getClientsByAgencyId(agencyId: number): Promise<ClientModel[]>;
+  createClient(client: CreateClientInput & { slug: string }): Promise<ClientModel>;
+  updateClient(client: UpdateClientInput): Promise<ClientModel>;
+  deleteClient(id: number): Promise<void>;
+  searchClients(query: string): Promise<ClientModel[]>;
+  getInstance(): ClientServiceType;
+}
+
 /**
  * Service for managing client data using DIRECT Supabase client methods
  */
-export const ClientService = {
+export const ClientService: ClientServiceType = {
   /**
    * Get all clients (optionally filtered by agency ID)
    */
@@ -227,7 +239,7 @@ export const ClientService = {
   /**
    * Get singleton instance (to match the expected interface in search-store)
    */
-  getInstance(): typeof ClientService {
+  getInstance(): ClientServiceType {
     return this;
   }
 }; 

@@ -5,7 +5,7 @@ import { WidgetEditControls } from './WidgetEditControls';
 import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
-import { AnalyticsService } from '@/services/analytics-service';
+import { AnalyticsService, ChannelData, ConversionData } from '@/services/analytics-service';
 import { PieChart, DonutChart } from '@/components/ui/charts';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -46,16 +46,12 @@ export function AnalyticsChartWidget({
     queryFn: async () => {
       console.log(`Fetching data for ${dataSource}`);
       try {
-        let result;
         if (dataSource === 'channelData') {
-          result = await analyticsService.getChannelData();
+          return await analyticsService.getChannelData();
         } else if (dataSource === 'conversionData') {
-          result = await analyticsService.getConversionData();
-        } else {
-          result = [];
+          return await analyticsService.getConversionData();
         }
-        console.log(`Got ${dataSource} data:`, result);
-        return result;
+        return [] as (ChannelData | ConversionData)[];
       } catch (err) {
         console.error(`Error fetching ${dataSource}:`, err);
         throw err;

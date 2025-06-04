@@ -5,10 +5,23 @@ import { createClient } from '@/lib/supabase'; // Import the Supabase client hel
 import { handleSupabaseError } from '@/lib/error-handling'; // Import handleSupabaseError
 import { sanitizeSearchQuery } from '@/lib/utils';
 
+// Define the ProjectService interface to fix self-reference type issue
+interface ProjectServiceType {
+  getProjects(clientId?: number): Promise<ProjectModel[]>;
+  getProjectById(id: number): Promise<ProjectModel | null>;
+  getProjectsByClientId(clientId: number): Promise<ProjectModel[]>;
+  getProjectsByAgencyId(agencyId: number): Promise<ProjectModel[]>;
+  createProject(project: CreateProjectInput): Promise<ProjectModel>;
+  updateProject(project: UpdateProjectInput): Promise<ProjectModel>;
+  deleteProject(id: number): Promise<void>;
+  searchProjects(query: string): Promise<Array<ProjectModel & { client_name?: string }>>;
+  getInstance(): ProjectServiceType;
+}
+
 /**
  * Service for managing project data
  */
-export const ProjectService = {
+export const ProjectService: ProjectServiceType = {
   /**
    * Get all projects
    * @param clientId Optional filter by client ID
@@ -234,7 +247,7 @@ export const ProjectService = {
   /**
    * Get singleton instance (to match the expected interface in search-store)
    */
-  getInstance(): typeof ProjectService {
+  getInstance(): ProjectServiceType {
     return this;
   }
 }; 

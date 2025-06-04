@@ -19,10 +19,40 @@ interface InvoiceModelWithClient extends InvoiceModel {
   clientName: string;
 }
 
+// Define the InvoiceService interface to fix self-reference type issue
+interface InvoiceServiceType {
+  getInvoices(agencyId?: number): Promise<InvoiceModelWithClient[]>;
+  getInvoicesByClientId(clientId: number): Promise<InvoiceModelWithClient[]>;
+  getInvoicesByProjectId(projectId: number): Promise<InvoiceModelWithClient[]>;
+  getInvoiceById(id: number): Promise<InvoiceModel | null>;
+  getInvoiceItems(invoiceId: number): Promise<InvoiceItemModel[]>;
+  createInvoice(input: CreateInvoiceInput): Promise<InvoiceModel>;
+  generateInvoicePdf(invoiceId: number): Promise<string | null>;
+  createInvoiceWithItems(
+    invoiceInput: CreateInvoiceInput,
+    items: CreateInvoiceItemInput[]
+  ): Promise<{ invoice: InvoiceModel; items: InvoiceItemModel[] }>;
+  updateInvoice(input: UpdateInvoiceInput): Promise<InvoiceModel>;
+  deleteInvoice(id: number): Promise<boolean>;
+  updateInvoiceStatus(id: number, status: InvoiceStatus): Promise<InvoiceModel>;
+  markInvoiceAsPaid(id: number, paymentDate?: Date): Promise<InvoiceModel>;
+  createInvoiceItem(input: CreateInvoiceItemInput): Promise<InvoiceItemModel>;
+  updateInvoiceItem(input: UpdateInvoiceItemInput): Promise<InvoiceItemModel>;
+  deleteInvoiceItem(id: number, invoiceId: number): Promise<boolean>;
+  getInvoiceStats(agencyId: number): Promise<{
+    total: number;
+    paid: number;
+    overdue: number;
+    draft: number;
+  }>;
+  searchInvoices(query: string): Promise<InvoiceModelWithClient[]>;
+  getInstance(): InvoiceServiceType;
+}
+
 /**
  * Service for managing invoice data using direct Supabase client
  */
-export const InvoiceService = {
+export const InvoiceService: InvoiceServiceType = {
   /**
    * Get all invoices (optionally filtered by agency ID)
    */
@@ -661,7 +691,7 @@ export const InvoiceService = {
   /**
    * Get singleton instance (to match the expected interface in search-store)
    */
-  getInstance(): typeof InvoiceService {
+  getInstance(): InvoiceServiceType {
     return this;
   }
 }; 
