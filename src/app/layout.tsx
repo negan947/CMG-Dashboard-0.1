@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AuthProvider } from "@/context/auth-provider";
+import { NotificationsProvider } from "@/context/notifications-provider";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
 import "./globals.css";
@@ -33,8 +34,10 @@ export default function RootLayout({
       >
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
           <AuthProvider>
-            {children}
-            <Toaster position="top-right" />
+            <NotificationsProvider>
+              {children}
+              <Toaster position="top-right" />
+            </NotificationsProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

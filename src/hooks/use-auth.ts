@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/stores/auth-store';
+import { useAuthContext } from '@/context/auth-provider';
 import type { LoginFormValues, RegisterFormValues, ResetPasswordFormValues, UpdatePasswordFormValues } from '@/lib/schemas/auth-schemas';
 import type { AuthUser, AuthSession } from '@/types/auth.types';
 import { APP_ROUTES } from '@/lib/constants/routes';
@@ -11,7 +12,7 @@ import { APP_ROUTES } from '@/lib/constants/routes';
  */
 export function useAuth() {
   const router = useRouter();
-  const [initializationAttempted, setInitializationAttempted] = useState(false);
+  const { isInitialized } = useAuthContext();
   
   const {
     user,
@@ -28,22 +29,6 @@ export function useAuth() {
     clearState
   } = useAuthStore();
 
-  // Initialize auth state on mount
-  useEffect(() => {
-    const initAuth = async () => {
-      try {
-        await initialize();
-      } catch (error) {
-        console.error("Auth initialization error:", error);
-      } finally {
-        setInitializationAttempted(true);
-      }
-    };
-    
-    if (!initializationAttempted) {
-      initAuth();
-    }
-  }, [initialize, initializationAttempted]);
 
   /**
    * Log in a user and navigate to home on success
@@ -121,7 +106,7 @@ export function useAuth() {
   const isAuthenticated = !!user && !!session;
 
   // Fixed: Removed the incorrect date calculation that was causing issues
-  const isAuthLoading = isLoading && !initializationAttempted;
+  const isAuthLoading = isLoading && !isInitialized;
 
   return {
     // Current state
@@ -130,7 +115,7 @@ export function useAuth() {
     isLoading: isAuthLoading,
     error,
     isAuthenticated,
-    initializationAttempted,
+    initializationAttempted: isInitialized,
     
     // Actions
     login,
