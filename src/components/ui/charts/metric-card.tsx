@@ -3,7 +3,7 @@ import { GlassCard } from "../glass-card";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
 import { ArrowUp, ArrowDown } from "lucide-react";
-import { DonutChart } from "./donut-chart";
+import { CHART_COLORS } from "./pie-chart";
 
 interface MetricCardProps {
   title: string;
@@ -24,6 +24,67 @@ interface MetricCardProps {
   isDark?: boolean;
 }
 
+// Simple Arc Chart component for the metric cards
+function ArcChart({ value, color, size = 60, thickness = 8 }: { value: number; color: string; size?: number; thickness?: number }) {
+  const { theme } = useTheme();
+  const isDark = theme !== "light";
+  
+  // Default background color based on theme
+  const bgColor = isDark ? "rgba(40, 40, 50, 0.3)" : "rgba(0, 0, 0, 0.08)";
+  
+  // Calculate percentage (0-100)
+  const percentage = Math.min(Math.max(value, 0), 100);
+  
+  // Calculate dimensions
+  const radius = size / 2;
+  const innerRadius = radius - thickness;
+  const circumference = 2 * Math.PI * innerRadius;
+  const arc = (percentage / 100) * circumference;
+  const strokeDasharray = `${arc} ${circumference}`;
+  
+  return (
+    <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
+      {/* Background circle */}
+      <svg 
+        width={size} 
+        height={size} 
+        viewBox={`0 0 ${size} ${size}`} 
+        className="absolute"
+      >
+        <circle
+          cx={radius}
+          cy={radius}
+          r={innerRadius}
+          fill="none"
+          stroke={bgColor}
+          strokeWidth={thickness}
+        />
+      </svg>
+      
+      {/* Foreground arc */}
+      <svg 
+        width={size} 
+        height={size} 
+        viewBox={`0 0 ${size} ${size}`} 
+        className="absolute" 
+        style={{ transform: 'rotate(-90deg)' }}
+      >
+        <circle
+          cx={radius}
+          cy={radius}
+          r={innerRadius}
+          fill="none"
+          stroke={color}
+          strokeWidth={thickness}
+          strokeDasharray={strokeDasharray}
+          strokeDashoffset="0"
+          strokeLinecap="round"
+        />
+      </svg>
+    </div>
+  );
+}
+
 export function MetricCard({
   title,
   value,
@@ -36,7 +97,7 @@ export function MetricCard({
   period,
   secondaryLabel,
   secondaryValue,
-  color = "blue",
+  color = "#3b82f6", // Use a default blue color
   showDonut = false,
   className,
   icon,
@@ -49,7 +110,7 @@ export function MetricCard({
   const isPositiveChange = changeType ? changeType === "increase" : (changePercentage !== undefined ? changePercentage >= 0 : true);
   const changeColor = isPositiveChange ? "text-green-500" : "text-red-500";
   
-  // Convert value to number for DonutChart if necessary
+  // Convert value to number for ArcChart if necessary
   const numericValue = typeof value === 'string' ? parseFloat(value.replace(/[^0-9.-]+/g, '')) || 0 : value;
   
   return (
@@ -68,11 +129,11 @@ export function MetricCard({
         
         <div className="flex items-center gap-2 sm:gap-3 md:gap-4 flex-1">
           {showDonut && (
-            <DonutChart
+            <ArcChart
               value={numericValue}
               color={color}
-              size={36}
-              className="shrink-0 sm:size-40 md:size-44 lg:size-48"
+              size={56}
+              thickness={8}
             />
           )}
           

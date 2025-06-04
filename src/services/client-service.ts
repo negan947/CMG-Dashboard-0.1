@@ -1,6 +1,7 @@
 import { ClientModel, CreateClientInput, UpdateClientInput } from '@/types/models.types';
 import { mapDbRow, camelToSnakeObject } from '@/lib/data-mapper';
 import { createClient } from '@/lib/supabase';
+import { sanitizeSearchQuery } from '@/lib/utils';
 
 /**
  * Service for managing client data using DIRECT Supabase client methods
@@ -185,5 +186,48 @@ export const ClientService = {
       console.error(`Error in deleteClient (ID: ${id}, direct method):`, error);
       throw error instanceof Error ? error : new Error('An unexpected error occurred deleting client');
     }
+  },
+
+  /**
+   * Search clients by name, email, or contact name
+   */
+  async searchClients(query: string): Promise<ClientModel[]> {
+    if (!query || query.length < 2) {
+      return [];
+    }
+    
+    // Sanitize the query to prevent SQL injection
+    const safeQuery = sanitizeSearchQuery(query);
+    if (!safeQuery) {
+      return [];
+    }
+    
+    const supabase = createClient();
+    try {
+      // Use the documented string format for .or()
+      const { data, error } = await supabase
+        .from('clients')
+        .select('*')
+        .or(`name.ilike.%${safeQuery}%,email.ilike.%${safeQuery}%,contact_name.ilike.%${safeQuery}%`)
+        .order('name')
+        .limit(10);
+      
+      if (error) {
+        console.error('Error searching clients:', error);
+        return [];
+      }
+      
+      return (data || []).map(row => mapDbRow(row) as ClientModel);
+    } catch (err) {
+      console.error('Unexpected error searching clients:', err);
+      return [];
+    }
+  },
+
+  /**
+   * Get singleton instance (to match the expected interface in search-store)
+   */
+  getInstance(): typeof ClientService {
+    return this;
   }
 }; 

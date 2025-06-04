@@ -3,6 +3,7 @@ import { ProjectModel, CreateProjectInput, UpdateProjectInput } from '@/types/mo
 import { mapDbRow, camelToSnakeObject } from '@/lib/data-mapper';
 import { createClient } from '@/lib/supabase'; // Import the Supabase client helper
 import { handleSupabaseError } from '@/lib/error-handling'; // Import handleSupabaseError
+import { sanitizeSearchQuery } from '@/lib/utils';
 
 /**
  * Service for managing project data
@@ -178,5 +179,62 @@ export const ProjectService = {
       console.error(`Error deleting project with ID ${id}:`, error);
       throw error;
     }
+  },
+
+  /**
+   * Search projects by name, description, or status
+   * Also includes client name in results for better context
+   */
+  async searchProjects(query: string): Promise<Array<ProjectModel & { client_name?: string }>> {
+    if (!query || query.length < 2) {
+      return [];
+    }
+    
+    // Sanitize the query to prevent SQL injection
+    const safeQuery = sanitizeSearchQuery(query);
+    if (!safeQuery) {
+      return [];
+    }
+    
+    const searchPattern = `%${safeQuery}%`;
+    const supabase = createClient();
+    
+    try {
+      // Use direct Supabase client with proper parameterized queries
+      const { data, error } = await supabase
+        .from('projects')
+        .select(`
+          *,
+          clients(name)
+        `)
+        .or(`name.ilike.${searchPattern},description.ilike.${searchPattern},status.ilike.${searchPattern}`)
+        .order('name')
+        .limit(10);
+      
+      if (error) {
+        console.error('Error searching projects:', error);
+        return [];
+      }
+      
+      // Process results and include client name
+      return data.map(row => {
+        const project = mapDbRow(row) as ProjectModel & { client_name?: string };
+        // Add client_name from the joined table
+        if (row.clients) {
+          project.client_name = (row.clients as any).name;
+        }
+        return project;
+      });
+    } catch (error) {
+      console.error('Error searching projects:', error);
+      return [];
+    }
+  },
+
+  /**
+   * Get singleton instance (to match the expected interface in search-store)
+   */
+  getInstance(): typeof ProjectService {
+    return this;
   }
 }; 

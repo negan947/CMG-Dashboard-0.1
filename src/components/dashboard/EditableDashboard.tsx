@@ -34,6 +34,17 @@ const gridStyles = `
   .react-grid-item:hover .react-resizable-handle {
     opacity: 1;
   }
+  
+  .widget-content {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+  }
 `;
 
 // Apply width provider to make the grid responsive
@@ -171,12 +182,11 @@ export function EditableDashboard({
             <div 
               key={widget.id} 
               className={cn(
-                "rounded-lg overflow-hidden h-full", 
+                "rounded-lg overflow-hidden", 
                 isDark ? "bg-zinc-900/80 border border-zinc-800" : "bg-white/80 border border-gray-200",
                 isEditing ? (isDark ? "shadow-lg shadow-blue-900/10" : "shadow-lg shadow-blue-500/10") : "",
                 isEditing ? "cursor-move" : ""
               )}
-              style={{ width: '100%', height: '100%' }}
             >
               {renderWidget(widget)}
             </div>

@@ -178,57 +178,60 @@ export function PieChart({
   };
 
   return (
-    <div className={cn("w-full h-full", className)}>
-      <ResponsiveContainer width="100%" height="100%">
-        <RechartsPieChart>
-          <Pie
-            data={processedData}
-            dataKey="value"
-            nameKey="name"
-            cx="50%"
-            cy="50%"
-            innerRadius={innerRadius}
-            outerRadius={outerRadius}
-            paddingAngle={2}
-            strokeWidth={1}
-            stroke={isDark ? "rgba(0, 0, 0, 0.3)" : "rgba(255, 255, 255, 0.5)"}
-            activeIndex={activeIndex}
-            activeShape={(props: any) => renderActiveShape({...props, isDark})}
-            onClick={onPieSegmentClick}
-            isAnimationActive={true}
-            animationBegin={0}
-            animationDuration={800}
-            animationEasing="ease-in-out"
-          >
-            {processedData.map((entry, index) => (
-              <Cell
-                key={`cell-${index}`}
-                fill={entry.color}
-                style={{
-                  filter: isDark 
-                    ? "brightness(1.15)" 
-                    : "brightness(0.95)",
-                  transition: "all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)",
-                  cursor: "pointer",
+    <div className={cn("w-full h-full flex flex-col", className)}>
+      <div className="w-full flex-grow">
+        <ResponsiveContainer width="100%" height="100%" debounce={50}>
+          <RechartsPieChart margin={{ top: 0, right: 0, bottom: showLegend ? 20 : 0, left: 0 }}>
+            <Pie
+              data={processedData}
+              dataKey="value"
+              nameKey="name"
+              cx="50%"
+              cy="50%"
+              innerRadius={innerRadius}
+              outerRadius={outerRadius}
+              paddingAngle={2}
+              strokeWidth={1}
+              stroke={isDark ? "rgba(0, 0, 0, 0.3)" : "rgba(255, 255, 255, 0.5)"}
+              activeIndex={activeIndex}
+              activeShape={(props: any) => renderActiveShape({...props, isDark})}
+              onClick={onPieSegmentClick}
+              isAnimationActive={true}
+              animationBegin={0}
+              animationDuration={800}
+              animationEasing="ease-in-out"
+            >
+              {processedData.map((entry, index) => (
+                <Cell
+                  key={`cell-${index}`}
+                  fill={entry.color}
+                  style={{
+                    filter: isDark 
+                      ? "brightness(1.15)" 
+                      : "brightness(0.95)",
+                    transition: "all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                    cursor: "pointer",
+                  }}
+                />
+              ))}
+            </Pie>
+            {showLegend && (
+              <Legend 
+                content={renderLegend}
+                verticalAlign="bottom"
+                align="center"
+                wrapperStyle={{
+                  width: '100%',
+                  marginTop: '5px',
+                  fontSize: '10px',
+                  position: 'relative',
+                  bottom: 0
                 }}
               />
-            ))}
-          </Pie>
-          {showLegend && (
-            <Legend 
-              content={renderLegend}
-              verticalAlign="bottom"
-              align="center"
-              wrapperStyle={{
-                position: 'absolute',
-                bottom: '-5px',
-                width: '100%',
-                fontSize: '10px'
-              }}
-            />
-          )}
-        </RechartsPieChart>
-      </ResponsiveContainer>
+            )}
+          </RechartsPieChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 }

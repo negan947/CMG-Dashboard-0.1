@@ -10,6 +10,7 @@ import {
 import { mapDbRow, camelToSnakeObject } from '@/lib/data-mapper';
 import { createClient } from '@/lib/supabase';
 import { handleSupabaseError } from '@/lib/error-handling';
+import { sanitizeSearchQuery } from '@/lib/utils';
 import { User } from '@supabase/auth-helpers-nextjs';
 import { PostgrestError } from '@supabase/supabase-js';
 
@@ -604,5 +605,63 @@ export const InvoiceService = {
     } catch (error) {
       throw handleSupabaseError(error as PostgrestError | Error);
     }
+  },
+
+  /**
+   * Search invoices by invoice number, client name, or amount
+   */
+  async searchInvoices(query: string): Promise<InvoiceModelWithClient[]> {
+    if (!query || query.length < 2) {
+      return [];
+    }
+    
+    // Sanitize the query to prevent SQL injection
+    const safeQuery = sanitizeSearchQuery(query);
+    if (!safeQuery) {
+      return [];
+    }
+    
+    const searchPattern = `%${safeQuery}%`;
+    const supabase = createClient();
+    try {
+      // Get invoices where invoice_number contains the search term
+      const { data, error } = await supabase
+        .from('invoices')
+        .select(`
+          *,
+          clients(id, name)
+        `)
+        .ilike('invoice_number', searchPattern)
+        .limit(10);
+      
+      if (error) {
+        console.error('Error searching invoices:', error);
+        return [];
+      }
+      
+      // Map the results
+      const results = (data || []).map(row => {
+        const invoice = mapDbRow(row) as InvoiceModelWithClient;
+        // Add clientName from the joined table
+        if (row.clients) {
+          invoice.clientName = (row.clients as any).name;
+        } else {
+          invoice.clientName = 'Unknown Client';
+        }
+        return invoice;
+      });
+      
+      return results;
+    } catch (err) {
+      console.error('Unexpected error searching invoices:', err);
+      return [];
+    }
+  },
+
+  /**
+   * Get singleton instance (to match the expected interface in search-store)
+   */
+  getInstance(): typeof InvoiceService {
+    return this;
   }
 }; 

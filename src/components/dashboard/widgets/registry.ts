@@ -7,6 +7,12 @@ import { PieChartWidget } from './PieChartWidget';
 import { PieChartConfig } from './config/PieChartConfig';
 import { DataTableWidget } from './DataTableWidget';
 import { DataTableConfig } from './config/DataTableConfig';
+import { AnalyticsMetricWidget } from './AnalyticsMetricWidget';
+import { AnalyticsChartWidget } from './AnalyticsChartWidget';
+import { AnalyticsMetricConfig } from './config/AnalyticsMetricConfig';
+import { AnalyticsChartConfig } from './config/AnalyticsChartConfig';
+import { PerformanceTrendsWidget } from './PerformanceTrendsWidget';
+import { PerformanceTrendsConfig } from './config/PerformanceTrendsConfig';
 
 export enum WidgetSize {
   SMALL = "small", // 1x1
@@ -78,5 +84,45 @@ export const availableWidgets: Record<string, WidgetDefinition> = {
       rowsToDisplay: 5
     },
     configComponent: DataTableConfig
+  },
+  analyticsMetric: {
+    id: "analyticsMetric",
+    name: "Analytics Metric",
+    description: "Display analytics KPI with change indicator",
+    component: AnalyticsMetricWidget,
+    defaultSize: { w: 1, h: 1 },
+    defaultConfig: {
+      title: "Engagement",
+      metricName: "Engagement",
+      suffix: "%",
+      showDonut: true,
+      color: CHART_COLORS[2]
+    },
+    configComponent: AnalyticsMetricConfig
+  },
+  analyticsChart: {
+    id: "analyticsChart",
+    name: "Analytics Chart",
+    description: "Display analytics data as a pie chart",
+    component: AnalyticsChartWidget,
+    defaultSize: { w: 2, h: 1 },
+    defaultConfig: {
+      title: "Traffic by Channel",
+      chartType: "pie",
+      dataSource: "channelData"
+    },
+    configComponent: AnalyticsChartConfig
+  },
+  performanceTrends: {
+    id: "performanceTrends",
+    name: "Performance Trends",
+    description: "Display engagement, conversion and revenue trends over time",
+    component: PerformanceTrendsWidget,
+    defaultSize: { w: 2, h: 1 },
+    defaultConfig: {
+      title: "Performance Trends",
+      timeRange: "month"
+    },
+    configComponent: PerformanceTrendsConfig
   }
 }; 

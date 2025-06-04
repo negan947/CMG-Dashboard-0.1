@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { GlassCard } from '@/components/ui/glass-card';
 import { cn } from '@/lib/utils';
 import { CHART_COLORS } from '@/components/ui/charts/pie-chart';
@@ -22,11 +22,19 @@ import {
   Zap,
   Target,
   DollarSign,
-  Percent
+  Percent,
+  Plus
 } from 'lucide-react';
 import { AnalyticsService } from '@/services/analytics-service';
 import { ChannelData, ConversionData, PerformanceTrendData } from '@/services/analytics-service';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/hooks/use-auth';
+import { UserWidget } from '@/components/dashboard/widgets/types';
+import { EditableDashboard } from '@/components/dashboard/EditableDashboard';
+import { AddWidgetModal } from '@/components/dashboard/AddWidgetModal';
+import { WidgetConfigModal } from '@/components/dashboard/WidgetConfigModal';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 
 // Define types for the props
 interface AnalyticsData {
@@ -48,14 +56,22 @@ interface ClientPageProps {
 }
 
 export default function ClientPage({ initialAnalyticsData }: ClientPageProps) {
+  const { user } = useAuth();
   const { theme } = useTheme();
   const isDark = theme !== "light";
   const [timeFrame, setTimeFrame] = useState<'week' | 'month' | 'quarter' | 'year'>('month');
   const service = AnalyticsService.getInstance();
   
+  // State for the editable dashboard
+  const [isEditing, setIsEditing] = useState(false);
+  const [showAddWidget, setShowAddWidget] = useState(false);
+  const [configWidget, setConfigWidget] = useState<UserWidget | null>(null);
+  const [userWidgets, setUserWidgets] = useState<UserWidget[]>([]);
+  const [pendingChanges, setPendingChanges] = useState<UserWidget[]>([]);
+  
   // Use React Query to fetch and cache data, with initial data from the server
-  const { data: analyticsData, isLoading, isFetching } = useQuery({
-    queryKey: ['analytics-data'],
+  const { data: analyticsData } = useQuery({
+    queryKey: ['analytics-data', timeFrame],
     queryFn: async () => {
       const metrics = await service.getMetrics();
       const channelData = await service.getChannelData();
@@ -81,8 +97,153 @@ export default function ClientPage({ initialAnalyticsData }: ClientPageProps) {
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  // Determine if we're in a loading state
-  const isLoadingData = isLoading || isFetching;
+  // Fetch user's analytics widgets
+  const { data: widgets, isLoading: isLoadingWidgets, refetch: refetchWidgets } = useQuery({
+    queryKey: ['user-analytics-widgets', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      return service.getUserAnalyticsWidgets(user.id);
+    },
+    enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+  
+  // Mutation for saving widgets
+  const saveWidgetsMutation = useMutation({
+    mutationFn: async (widgets: UserWidget[]) => {
+      if (!user?.id) return false;
+      return service.saveUserAnalyticsWidgets(user.id, widgets);
+    },
+    onSuccess: () => {
+      refetchWidgets();
+      toast.success('Analytics dashboard layout saved');
+      setIsEditing(false);
+    },
+    onError: () => {
+      toast.error('Failed to save analytics dashboard layout');
+    },
+  });
+  
+  // If user has no saved widgets, use default layout
+  useEffect(() => {
+    if (!isLoadingWidgets) {
+      if (!widgets || widgets.length === 0) {
+        setUserWidgets(service.getDefaultAnalyticsWidgets());
+      } else {
+        setUserWidgets(widgets);
+      }
+    }
+  }, [widgets, isLoadingWidgets, service]);
+  
+  const userName = user?.email ? user.email.split('@')[0] : 'User';
+  
+  // Handle editing mode
+  const startEditing = () => {
+    setPendingChanges([...userWidgets]);
+    setIsEditing(true);
+  };
+  
+  const cancelEditing = () => {
+    setIsEditing(false);
+    setPendingChanges([]);
+    setConfigWidget(null);
+  };
+  
+  const saveLayout = () => {
+    saveWidgetsMutation.mutate(pendingChanges);
+  };
+  
+  // Add/remove widgets
+  const handleAddWidget = (widget: UserWidget) => {
+    setPendingChanges([...pendingChanges, widget]);
+  };
+  
+  /**
+   * Removes a widget from the dashboard
+   */
+  const handleRemoveWidget = (widgetId: string) => {
+    console.log('Handling widget removal for widget ID:', widgetId);
+    
+    // Get the current widgets based on edit state
+    const currentWidgets = isEditing ? pendingChanges : userWidgets;
+    
+    // Create new array without the widget to remove
+    const updatedWidgets = currentWidgets.filter(w => w.id !== widgetId);
+    console.log(`Filtered widgets from ${currentWidgets.length} to ${updatedWidgets.length}`);
+    
+    if (isEditing) {
+      // In edit mode, just update the pending changes
+      setPendingChanges(updatedWidgets);
+    } else {
+      // In view mode, update both states and persist changes
+      setUserWidgets(updatedWidgets);
+      setPendingChanges(updatedWidgets);
+      
+      // If user is removing a widget outside of edit mode, we need to save the change
+      // First enable edit mode temporarily
+      setIsEditing(true);
+      
+      // Then save the changes after a short delay
+      setTimeout(() => {
+        saveWidgetsMutation.mutate(updatedWidgets);
+      }, 0);
+    }
+  };
+  
+  // Configure widget
+  const handleConfigureWidget = (widgetId: string) => {
+    // Find the widget in either userWidgets or pendingChanges based on edit mode
+    const widget = isEditing 
+      ? pendingChanges.find(w => w.id === widgetId)
+      : userWidgets.find(w => w.id === widgetId);
+    
+    if (widget) {
+      console.log('Configuring widget:', widget);
+      
+      // If not in edit mode, start editing mode and set pending changes first
+      if (!isEditing) {
+        setPendingChanges([...userWidgets]);
+        setIsEditing(true);
+        // Use setTimeout to ensure state updates before setting config widget
+        setTimeout(() => {
+          setConfigWidget(widget);
+        }, 0);
+      } else {
+        setConfigWidget(widget);
+      }
+    } else {
+      console.error(`Widget with ID ${widgetId} not found for configuration`);
+    }
+  };
+  
+  const handleSaveWidgetConfig = (widgetId: string, newConfig: Record<string, any>) => {
+    setPendingChanges(pendingChanges.map(widget => 
+      widget.id === widgetId 
+        ? { ...widget, config: newConfig }
+        : widget
+    ));
+    setConfigWidget(null);
+  };
+  
+  // Update layout
+  const handleLayoutChange = (layout: any) => {
+    const updatedWidgets = pendingChanges.map(widget => {
+      const layoutItem = layout.find((item: any) => item.i === widget.id);
+      if (!layoutItem) return widget;
+      
+      return {
+        ...widget,
+        gridPosition: {
+          x: layoutItem.x,
+          y: layoutItem.y,
+          w: layoutItem.w,
+          h: layoutItem.h
+        }
+      };
+    });
+    
+    setPendingChanges(updatedWidgets);
+  };
 
   return (
     <div className="relative min-h-screen">
@@ -131,140 +292,84 @@ export default function ClientPage({ initialAnalyticsData }: ClientPageProps) {
               </p>
             </div>
             
-            <Tabs defaultValue="month" className="w-full md:w-auto">
-              <TabsList className="grid grid-cols-4 w-full md:w-auto">
-                <TabsTrigger value="week" onClick={() => setTimeFrame('week')}>Week</TabsTrigger>
-                <TabsTrigger value="month" onClick={() => setTimeFrame('month')}>Month</TabsTrigger>
-                <TabsTrigger value="quarter" onClick={() => setTimeFrame('quarter')}>Quarter</TabsTrigger>
-                <TabsTrigger value="year" onClick={() => setTimeFrame('year')}>Year</TabsTrigger>
-              </TabsList>
-            </Tabs>
+            <div className="flex flex-col md:flex-row gap-2 items-start md:items-center">
+              <Tabs defaultValue="month" className="w-full md:w-auto">
+                <TabsList className="grid grid-cols-4 w-full md:w-auto">
+                  <TabsTrigger value="week" onClick={() => setTimeFrame('week')}>Week</TabsTrigger>
+                  <TabsTrigger value="month" onClick={() => setTimeFrame('month')}>Month</TabsTrigger>
+                  <TabsTrigger value="quarter" onClick={() => setTimeFrame('quarter')}>Quarter</TabsTrigger>
+                  <TabsTrigger value="year" onClick={() => setTimeFrame('year')}>Year</TabsTrigger>
+                </TabsList>
+              </Tabs>
+              
+              <div className="flex-shrink-0">
+                {isEditing ? (
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={saveLayout}
+                      className={cn(
+                        "px-3 py-1.5 sm:px-4 sm:py-2 rounded-md text-sm sm:text-base",
+                        "bg-blue-600 text-white hover:bg-blue-700",
+                        "shadow-sm"
+                      )}
+                    >
+                      Save Layout
+                    </Button>
+                    <Button
+                      onClick={cancelEditing}
+                      className={cn(
+                        "px-3 py-1.5 sm:px-4 sm:py-2 rounded-md text-sm sm:text-base",
+                        isDark 
+                          ? "bg-zinc-800 text-zinc-100 hover:bg-zinc-700" 
+                          : "bg-gray-200 text-gray-700 hover:bg-gray-300",
+                        "shadow-sm"
+                      )}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    onClick={startEditing}
+                    className={cn(
+                      "px-3 py-1.5 sm:px-4 sm:py-2 rounded-md text-sm sm:text-base",
+                      isDark 
+                        ? "bg-zinc-800 text-zinc-100 hover:bg-zinc-700" 
+                        : "bg-white text-gray-700 hover:bg-gray-100",
+                      "border border-solid",
+                      isDark ? "border-zinc-700" : "border-gray-200",
+                      "shadow-sm"
+                    )}
+                  >
+                    Edit Dashboard
+                  </Button>
+                )}
+              </div>
+            </div>
           </div>
         </GlassCard>
         
-        {/* Key Performance Metrics */}
-        <div className="grid grid-cols-2 gap-3 md:gap-4 lg:gap-5 lg:grid-cols-4">
-          {isLoadingData ? (
-            // Show skeleton UI when loading
-            Array(4).fill(0).map((_, i) => (
-              <GlassCard key={i}>
-                <div className="p-4 flex flex-col gap-2">
-                  <Skeleton className="h-5 w-32" />
-                  <div className="flex justify-between items-center">
-                    <Skeleton className="h-8 w-16" />
-                    <Skeleton className="h-10 w-10 rounded-full" />
-                  </div>
-                  <Skeleton className="h-4 w-24 mt-1" />
-                </div>
-              </GlassCard>
-            ))
-          ) : (
-            // Show actual data when loaded
-            analyticsData.metrics.map((metric) => (
-              <MetricCard 
-                key={metric.id}
-                title={metric.name} 
-                value={metric.value} 
-                prefix={metric.period === '$' ? '$' : ''}
-                suffix={metric.period === '%' ? '%' : ''}
-                changePercentage={metric.changePercentage || 0}
-                color={CHART_COLORS[metric.id % CHART_COLORS.length]}
-                showDonut={metric.period === '%'}
-              />
-            ))
-          )}
-        </div>
-
-        {/* Charts: Traffic & Conversion */}
-        <div className="grid grid-cols-1 gap-3 md:gap-5 lg:grid-cols-2">
-          {isLoadingData ? (
-            // Show skeleton UI when loading
-            Array(2).fill(0).map((_, i) => (
-              <GlassCard key={i}>
-                <div className="p-4 flex flex-col gap-2">
-                  <Skeleton className="h-5 w-32" />
-                  <Skeleton className="h-4 w-24" />
-                  <div className="flex justify-center items-center h-[240px]">
-                    <Skeleton className="h-[200px] w-[200px] rounded-full" />
-                  </div>
-                </div>
-              </GlassCard>
-            ))
-          ) : (
-            // Show actual charts when loaded
-            <>
-              <GlassCard>
-                <div className="flex flex-col gap-1 p-4">
-                  <h2 className={`text-lg font-semibold ${isDark ? "text-zinc-100" : "text-gray-800"}`}>
-                    Traffic by Channel
-                  </h2>
-                  <p className={`text-xs ${isDark ? "text-zinc-400" : "text-gray-500"}`}>
-                    This {timeFrame}
-                  </p>
-                  
-                  <div className="h-[240px] mt-4">
-                    <PieChart
-                      data={analyticsData.channelData}
-                      innerRadius={50}
-                      outerRadius="80%"
-                      showLegend={true}
-                    />
-                  </div>
-                </div>
-              </GlassCard>
-              
-              <GlassCard>
-                <div className="flex flex-col gap-1 p-4">
-                  <h2 className={`text-lg font-semibold ${isDark ? "text-zinc-100" : "text-gray-800"}`}>
-                    Conversion Funnel
-                  </h2>
-                  <p className={`text-xs ${isDark ? "text-zinc-400" : "text-gray-500"}`}>
-                    This {timeFrame}
-                  </p>
-                  
-                  <div className="h-[240px] mt-4">
-                    <PieChart
-                      data={analyticsData.conversionData}
-                      innerRadius={50}
-                      outerRadius="80%"
-                      showLegend={true}
-                    />
-                  </div>
-                </div>
-              </GlassCard>
-            </>
-          )}
-        </div>
+        <EditableDashboard 
+          widgets={isEditing ? pendingChanges : userWidgets}
+          isEditing={isEditing}
+          onLayoutChange={handleLayoutChange}
+          onRemoveWidget={handleRemoveWidget}
+          onConfigureWidget={handleConfigureWidget}
+          onAddWidget={() => setShowAddWidget(true)}
+        />
         
-        {/* Performance Trends */}
-        <GlassCard>
-          {isLoadingData ? (
-            // Show skeleton UI when loading
-            <div className="p-4 flex flex-col gap-2">
-              <Skeleton className="h-6 w-36" />
-              <Skeleton className="h-4 w-40" />
-              <div className="h-[300px] mt-4 w-full">
-                <Skeleton className="h-full w-full" />
-              </div>
-            </div>
-          ) : (
-            // Show actual chart when loaded
-            <div className="flex flex-col gap-1 p-4">
-              <h2 className={`text-lg font-semibold ${isDark ? "text-zinc-100" : "text-gray-800"}`}>
-                Performance Trends
-              </h2>
-              <p className={`text-xs ${isDark ? "text-zinc-400" : "text-gray-500"}`}>
-                Key metrics performance over time
-              </p>
-              
-              <div className="h-[300px] mt-4">
-                <ClientTrendsChart 
-                  data={analyticsData.performanceTrends as any[]} 
-                />
-              </div>
-            </div>
-          )}
-        </GlassCard>
+        {/* Widget modals */}
+        <AddWidgetModal 
+          isOpen={showAddWidget}
+          onClose={() => setShowAddWidget(false)}
+          onAddWidget={handleAddWidget}
+        />
+        
+        <WidgetConfigModal 
+          widget={configWidget}
+          onClose={() => setConfigWidget(null)}
+          onSave={handleSaveWidgetConfig}
+        />
       </div>
     </div>
   );

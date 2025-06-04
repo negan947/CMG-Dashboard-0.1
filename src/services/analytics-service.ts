@@ -1,4 +1,6 @@
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { v4 as uuidv4 } from 'uuid';
+import { UserWidget } from '@/components/dashboard/widgets/types';
 
 export interface ChannelData {
   name: string;
@@ -21,8 +23,12 @@ export interface PerformanceTrendData {
 
 export class AnalyticsService {
   private static instance: AnalyticsService;
+  private supabase: any;
 
-  private constructor() {}
+  private constructor() {
+    // Initialize Supabase client
+    this.supabase = createClientComponentClient();
+  }
 
   public static getInstance(): AnalyticsService {
     if (!AnalyticsService.instance) {
@@ -95,6 +101,161 @@ export class AnalyticsService {
         previous_value: 66.7, 
         change_percentage: 5.3, 
         period: '%' 
+      }
+    ];
+  }
+
+  /**
+   * Get user's analytics widgets
+   */
+  async getUserAnalyticsWidgets(userId: string): Promise<UserWidget[]> {
+    try {
+      const { data, error } = await this.supabase
+        .from('user_analytics_widgets')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: true });
+      
+      if (error) {
+        console.error('Error fetching user analytics widgets:', error);
+        return [];
+      }
+      
+      return (data || []).map((item: any) => ({
+        id: item.id,
+        type: item.widget_type,
+        config: item.widget_config,
+        gridPosition: item.grid_position
+      }));
+    } catch (err) {
+      console.error('Unexpected error fetching user analytics widgets:', err);
+      return [];
+    }
+  }
+
+  /**
+   * Save user's analytics widgets
+   */
+  async saveUserAnalyticsWidgets(userId: string, widgets: UserWidget[]): Promise<boolean> {
+    try {
+      // First remove all existing widgets for this user
+      const { error: deleteError } = await this.supabase
+        .from('user_analytics_widgets')
+        .delete()
+        .eq('user_id', userId);
+      
+      if (deleteError) {
+        console.error('Error deleting existing analytics widgets:', deleteError);
+        return false;
+      }
+      
+      if (widgets.length === 0) {
+        // If no widgets to save, we're done after deletion
+        return true;
+      }
+      
+      // Then insert new widgets
+      const { error: insertError } = await this.supabase
+        .from('user_analytics_widgets')
+        .insert(
+          widgets.map(widget => ({
+            id: widget.id || uuidv4(),
+            user_id: userId,
+            widget_type: widget.type,
+            widget_config: widget.config,
+            grid_position: widget.gridPosition
+          }))
+        );
+      
+      if (insertError) {
+        console.error('Error saving analytics widgets:', insertError);
+        return false;
+      }
+      
+      return true;
+    } catch (err) {
+      console.error('Unexpected error saving analytics dashboard:', err);
+      return false;
+    }
+  }
+
+  /**
+   * Get default analytics widgets when user has none configured
+   */
+  getDefaultAnalyticsWidgets(): UserWidget[] {
+    return [
+      {
+        id: uuidv4(),
+        type: 'analyticsMetric',
+        config: {
+          title: 'Conversion Rate',
+          metricName: 'Conversion Rate',
+          suffix: '%',
+          showDonut: true
+        },
+        gridPosition: { x: 0, y: 0, w: 1, h: 1 }
+      },
+      {
+        id: uuidv4(),
+        type: 'analyticsMetric',
+        config: {
+          title: 'Average Revenue',
+          metricName: 'Avg. Revenue',
+          prefix: '$',
+          showDonut: false
+        },
+        gridPosition: { x: 1, y: 0, w: 1, h: 1 }
+      },
+      {
+        id: uuidv4(),
+        type: 'analyticsMetric',
+        config: {
+          title: 'Engagement',
+          metricName: 'Engagement',
+          suffix: '%',
+          showDonut: true
+        },
+        gridPosition: { x: 2, y: 0, w: 1, h: 1 }
+      },
+      {
+        id: uuidv4(),
+        type: 'analyticsMetric',
+        config: {
+          title: 'Goal Completion',
+          metricName: 'Goal Completion',
+          suffix: '%',
+          showDonut: true
+        },
+        gridPosition: { x: 3, y: 0, w: 1, h: 1 }
+      },
+      {
+        id: uuidv4(),
+        type: 'analyticsChart',
+        config: {
+          title: 'Traffic by Channel',
+          chartType: 'donut',
+          dataSource: 'channelData'
+        },
+        gridPosition: { x: 0, y: 1, w: 2, h: 1 }
+      },
+      {
+        id: uuidv4(),
+        type: 'analyticsChart',
+        config: {
+          title: 'Conversion Funnel',
+          chartType: 'donut',
+          dataSource: 'conversionData'
+        },
+        gridPosition: { x: 2, y: 1, w: 2, h: 1 }
+      },
+      {
+        id: uuidv4(),
+        type: 'performanceTrends',
+        config: {
+          title: 'Performance Trends',
+          timeRange: 'month'
+        },
+        gridPosition: { x: 0, y: 2, w: 4, h: 1 }
       }
     ];
   }
