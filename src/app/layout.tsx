@@ -5,7 +5,7 @@ import { NotificationsProvider } from "@/context/notifications-provider";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
 import "./globals.css";
-
+// Ensuring that the thing is applied 
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
