@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 interface GlassCardProps {
   title?: string;
   description?: string;
-  children: React.ReactNode;
+  children?: React.ReactNode;
   className?: string;
   color?: string;
   variant?: "default" | "subtle" | "outline";

@@ -34,7 +34,7 @@ export function RecentTicketsTable({ tickets }: RecentTicketsTableProps) {
       case 'on_hold':
         return <Badge variant="outline">On Hold</Badge>;
       case 'resolved':
-        return <Badge variant="success">Resolved</Badge>;
+        return <Badge variant="default">Resolved</Badge>;
       case 'closed':
         return <Badge variant="destructive">Closed</Badge>;
       default:

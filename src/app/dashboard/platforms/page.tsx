@@ -9,6 +9,7 @@ import { DataVolumeChart } from '@/components/dashboard/platforms/DataVolumeChar
 import { GlassCard } from '@/components/ui/glass-card';
 import { cn } from '@/lib/utils';
 import { useTheme } from 'next-themes';
+import { PlatformModel, PlatformStatus } from '@/types/models.types';
 // import { PlatformService } from '@/services/platform-service';
 // import { getAuthenticatedUser } from '@/lib/auth';
 
@@ -21,11 +22,11 @@ export default function PlatformsPage() {
   // const platforms = agencyId ? await PlatformService.getPlatforms(agencyId) : [];
   // const kpiData = agencyId ? await PlatformService.getPlatformKpis(agencyId) : {};
   
-  const platforms = [ // Using mock array for now
-    { id: 1, name: 'Google Ads', status: 'active', createdAt: new Date().toISOString(), agencyId: 1, logoUrl: '...' },
-    { id: 2, name: 'Facebook Ads', status: 'active', createdAt: new Date().toISOString(), agencyId: 1, logoUrl: '...' },
-    { id: 3, name: 'Google Analytics', status: 'disabled', createdAt: new Date().toISOString(), agencyId: 1, logoUrl: '...' },
-    { id: 4, name: 'LinkedIn Ads', status: 'error', createdAt: new Date().toISOString(), agencyId: 1, logoUrl: '...' },
+  const platforms: PlatformModel[] = [ // Using mock array for now
+    { id: 1, name: 'Google Ads', status: 'active', createdAt: new Date().toISOString(), agencyId: 1, logoUrl: '...', updatedAt: new Date().toISOString(), connectionDetails: {} },
+    { id: 2, name: 'Facebook Ads', status: 'active', createdAt: new Date().toISOString(), agencyId: 1, logoUrl: '...', updatedAt: new Date().toISOString(), connectionDetails: {} },
+    { id: 3, name: 'Google Analytics', status: 'disabled', createdAt: new Date().toISOString(), agencyId: 1, logoUrl: '...', updatedAt: new Date().toISOString(), connectionDetails: {} },
+    { id: 4, name: 'LinkedIn Ads', status: 'error', createdAt: new Date().toISOString(), agencyId: 1, logoUrl: '...', updatedAt: new Date().toISOString(), connectionDetails: {} },
   ];
   const kpiData = { // Mock data
     totalPlatforms: 5,
@@ -60,7 +61,7 @@ export default function PlatformsPage() {
         }
         contentClassName="p-0"
       >
-        {/* The GlassCard is now just a header, content is outside */}
+        {}
       </GlassCard>
 
       {platforms.length === 0 ? (

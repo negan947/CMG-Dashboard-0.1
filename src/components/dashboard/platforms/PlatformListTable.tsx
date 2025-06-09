@@ -28,7 +28,7 @@ export function PlatformListTable({ platforms }: PlatformListTableProps) {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'active':
-        return <Badge variant="success">Active</Badge>;
+        return <Badge variant="default">Active</Badge>;
       case 'disabled':
         return <Badge variant="secondary">Disabled</Badge>;
       case 'error':

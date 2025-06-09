@@ -9,6 +9,7 @@ import { SupportKpiCards } from '@/components/dashboard/support/SupportKpiCards'
 import { RecentTicketsTable } from '@/components/dashboard/support/RecentTicketsTable';
 import { KnowledgeBaseSearch } from '@/components/dashboard/support/KnowledgeBaseSearch';
 import { SupportResources } from '@/components/dashboard/support/SupportResources';
+import { SupportTicketModel, TicketStatus, TicketPriority } from '@/types/models.types';
 // import { SupportService } from '@/services/support-service';
 
 export default function SupportPage() {
@@ -16,10 +17,10 @@ export default function SupportPage() {
   const isDark = theme !== 'light';
 
   // Mock data for now
-  const tickets = [
-    { id: 1, title: 'Problem with Google Ads', client: { name: 'Client A' }, status: 'in_progress', assignee: { fullName: 'John Doe' }, updatedAt: new Date().toISOString() },
-    { id: 2, title: 'Question about billing', client: { name: 'Client B' }, status: 'open', assignee: { fullName: 'Unassigned' }, updatedAt: new Date().toISOString() },
-    { id: 3, title: 'API rate limit question', client: { name: 'Client C' }, status: 'closed', assignee: { fullName: 'Jane Smith' }, updatedAt: new Date().toISOString() },
+  const tickets: SupportTicketModel[] = [
+    { id: 1, agencyId: 1, createdByUserId: 'uuid', priority: 'high' as TicketPriority, title: 'Problem with Google Ads', client: { name: 'Client A' }, status: 'in_progress' as TicketStatus, assignee: { fullName: 'John Doe' }, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+    { id: 2, agencyId: 1, createdByUserId: 'uuid', priority: 'medium' as TicketPriority, title: 'Question about billing', client: { name: 'Client B' }, status: 'open' as TicketStatus, assignee: { fullName: 'Unassigned' }, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+    { id: 3, agencyId: 1, createdByUserId: 'uuid', priority: 'low' as TicketPriority, title: 'API rate limit question', client: { name: 'Client C' }, status: 'closed' as TicketStatus, assignee: { fullName: 'Jane Smith' }, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
   ];
   const kpiData = {
     openTickets: 7,
@@ -50,7 +51,9 @@ export default function SupportPage() {
           </div>
         }
         contentClassName="p-0"
-      />
+      >
+        {}
+      </GlassCard>
 
       {tickets.length === 0 ? (
         <GlassCard contentClassName="p-12">
@@ -74,7 +77,7 @@ export default function SupportPage() {
               <RecentTicketsTable tickets={tickets} />
             </GlassCard>
             <GlassCard title="Ticket Status">
-              {/* Ticket Status Chart will go here */}
+              {}
             </GlassCard>
           </div>
 
