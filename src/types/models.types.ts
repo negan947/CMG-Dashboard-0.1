@@ -573,4 +573,35 @@ export interface UpdateTaskInput {
   priority?: 'low' | 'medium' | 'high';
   dueDate?: string;
   agencyId?: number;
-} 
+}
+
+// Platform Management
+export type PlatformStatus = 'active' | 'disabled' | 'error';
+export type SyncStatus = 'success' | 'failure' | 'in_progress';
+
+export type PlatformModel = {
+  id: number;
+  agencyId: number;
+  name: string;
+  logoUrl?: string;
+  status: PlatformStatus;
+  connectionDetails?: any;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PlatformSyncLogModel = {
+  id: number;
+  platformId: number;
+  syncStartTime: string;
+  syncEndTime?: string;
+  status: SyncStatus;
+  recordsSynced?: number;
+  dataVolumeKb?: number;
+  errorMessage?: string;
+  createdAt: string;
+};
+
+export type NotificationModel = {
+  // ... existing code ...
+}; 

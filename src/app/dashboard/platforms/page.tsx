@@ -1,77 +1,100 @@
 'use client';
 
+import { PlusCircle, Monitor } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { PlatformKpiCards } from '@/components/dashboard/platforms/PlatformKpiCards';
+import { PlatformListTable } from '@/components/dashboard/platforms/PlatformListTable';
+import { PlatformHealthChart } from '@/components/dashboard/platforms/PlatformHealthChart';
+import { DataVolumeChart } from '@/components/dashboard/platforms/DataVolumeChart';
 import { GlassCard } from '@/components/ui/glass-card';
-import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
-import { Monitor } from 'lucide-react';
+import { useTheme } from 'next-themes';
+// import { PlatformService } from '@/services/platform-service';
+// import { getAuthenticatedUser } from '@/lib/auth';
 
 export default function PlatformsPage() {
   const { theme } = useTheme();
   const isDark = theme !== 'light';
 
+  // const user = await getAuthenticatedUser();
+  // const agencyId = user?.agencyId;
+  // const platforms = agencyId ? await PlatformService.getPlatforms(agencyId) : [];
+  // const kpiData = agencyId ? await PlatformService.getPlatformKpis(agencyId) : {};
+  
+  const platforms = [ // Using mock array for now
+    { id: 1, name: 'Google Ads', status: 'active', createdAt: new Date().toISOString(), agencyId: 1, logoUrl: '...' },
+    { id: 2, name: 'Facebook Ads', status: 'active', createdAt: new Date().toISOString(), agencyId: 1, logoUrl: '...' },
+    { id: 3, name: 'Google Analytics', status: 'disabled', createdAt: new Date().toISOString(), agencyId: 1, logoUrl: '...' },
+    { id: 4, name: 'LinkedIn Ads', status: 'error', createdAt: new Date().toISOString(), agencyId: 1, logoUrl: '...' },
+  ];
+  const kpiData = { // Mock data
+    totalPlatforms: 5,
+    activeSyncsToday: 12,
+    lastSuccessfulSync: new Date().toISOString(),
+    syncErrorsToday: 1,
+  };
+
   return (
-    <div className="relative min-h-screen">
-      {/* Background elements */}
-      <div className={cn(
-        "fixed inset-0 -z-10",
-        isDark 
-          ? "bg-gradient-to-br from-[#0F0F12] via-[#171720] to-[#1C1C25]" 
-          : "bg-gradient-to-br from-[#E8EDFF] via-[#F0F5FF] to-[#F5F9FF]"
-      )} />
-      
-      <div className={cn(
-        "fixed -top-20 -left-20 -z-5 h-72 w-72 rounded-full blur-[100px]",
-        isDark ? "bg-purple-900 opacity-[0.15]" : "bg-purple-400 opacity-[0.18]"
-      )} />
-      <div className={cn(
-        "fixed top-1/3 right-1/4 -z-5 h-60 w-60 rounded-full blur-[80px]",
-        isDark ? "bg-blue-900 opacity-[0.15]" : "bg-blue-400 opacity-[0.18]"
-      )} />
-      <div className={cn(
-        "fixed bottom-1/4 -right-10 -z-5 h-48 w-48 rounded-full blur-[70px]",
-        isDark ? "bg-fuchsia-900 opacity-[0.1]" : "bg-pink-300 opacity-[0.15]"
-      )} />
-      <div className={cn(
-        "fixed top-2/3 left-1/4 -z-5 h-36 w-36 rounded-full blur-[60px]",
-        isDark ? "bg-indigo-900 opacity-[0.1]" : "bg-indigo-400 opacity-[0.15]"
-      )} />
-      
-      <div className={cn(
-        "fixed inset-0 -z-9 opacity-[0.05] pointer-events-none",
-        isDark ? "block" : "hidden"
-      )} style={{
-        backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'600\' height=\'600\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.65\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\' opacity=\'0.4\'/%3E%3C/svg%3E")',
-        backgroundRepeat: 'repeat',
-      }} />
-
-      <div className="space-y-6 md:space-y-8 relative z-10 py-2 p-4 md:p-6">
-        <GlassCard contentClassName="p-6">
-          <div className="flex items-center space-x-3">
-            <Monitor className={cn("h-8 w-8", isDark ? "text-blue-400" : "text-blue-600")} />
-            <h1 className={cn(
-              "text-2xl font-bold md:text-3xl",
-              isDark ? "text-zinc-100" : "text-gray-800"
-            )}>
-              Platforms
-            </h1>
+    <div className="space-y-6 md:space-y-8">
+      <GlassCard
+        title="Platforms"
+        description="Connect, monitor, and manage your data sources"
+        headerContent={
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <Monitor className={cn("h-8 w-8", isDark ? "text-blue-400" : "text-blue-600")} />
+              <div>
+                <h1 className={cn("text-2xl font-bold md:text-3xl", isDark ? "text-zinc-100" : "text-gray-800")}>
+                  Platforms
+                </h1>
+                <p className={cn("text-md", isDark ? "text-zinc-300" : "text-gray-600")}>
+                  Connect, monitor, and manage your data sources
+                </p>
+              </div>
+            </div>
+            <Button>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Connect New Platform
+            </Button>
           </div>
-          <p className={cn(
-            "mt-4 text-md",
-            isDark ? "text-zinc-300" : "text-gray-600"
-          )}>
-            This section is currently under development. Please check back later for platform integration features.
-          </p>
-        </GlassCard>
+        }
+        contentClassName="p-0"
+      >
+        {/* The GlassCard is now just a header, content is outside */}
+      </GlassCard>
 
-        <GlassCard contentClassName="p-6 min-h-[300px] flex items-center justify-center">
-          <div className="text-center">
-            <Monitor className={cn("h-16 w-16 mx-auto mb-4", isDark ? "text-zinc-500" : "text-gray-400")} />
-            <p className={cn("text-lg", isDark ? "text-zinc-400" : "text-gray-500")}>
-              Platform data and integrations will be displayed here.
-            </p>
-          </div>
+      {platforms.length === 0 ? (
+        <GlassCard contentClassName="p-12">
+            <div className="flex flex-col items-center justify-center text-center">
+              <div className="text-2xl font-bold">No platforms connected</div>
+              <p className="text-muted-foreground mt-2">
+                Connect your first platform to start ingesting data.
+              </p>
+              <Button className="mt-6">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Connect Your First Platform
+              </Button>
+            </div>
         </GlassCard>
-      </div>
+      ) : (
+        <div className="space-y-8">
+          <PlatformKpiCards data={kpiData} />
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-7">
+            <GlassCard className="lg:col-span-4" contentClassName="p-4">
+              <PlatformHealthChart />
+            </GlassCard>
+            <GlassCard className="lg:col-span-3" contentClassName="p-4">
+              <DataVolumeChart />
+            </GlassCard>
+          </div>
+          <GlassCard title="Platform List" contentClassName="p-0">
+            <PlatformListTable platforms={platforms} />
+          </GlassCard>
+          <GlassCard title="Upcoming Scheduled Syncs">
+            <p className="p-6">Upcoming syncs will be displayed here.</p>
+          </GlassCard>
+        </div>
+      )}
     </div>
   );
 } 
