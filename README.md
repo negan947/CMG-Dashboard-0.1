@@ -1,139 +1,242 @@
-# CMG Dashboard - Marketing Agency CRM
+# CMG Dashboard - Advanced Marketing Agency CRM
 
-[![Powered by Next.js](https://img.shields.io/badge/Powered%20by-Next.js-black?style=for-the-badge&logo=next.js)](https://nextjs.org)
-[![Styled with Tailwind CSS](https://img.shields.io/badge/Styled%20with-Tailwind%20CSS-38B2AC?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com)
-[![Built with Supabase](https://img.shields.io/badge/Built%20with-Supabase-3ECF8E?style=for-the-badge&logo=supabase)](https://supabase.io)
+<p align="center">
+  <img src="https://raw.githubusercontent.com/user-attachments/assets/15f8121d-4458-444a-a28a-7e0bfa9d83df/logo.png" alt="CMG Dashboard Logo" width="150">
+</p>
 
-CMG Dashboard is a comprehensive CRM platform tailored for marketing agencies. It provides a suite of tools to manage clients, handle invoicing, track analytics, and streamline agency operations.
+<h1 align="center">CMG Dashboard</h1>
+
+<p align="center">
+  A comprehensive, multi-tenant CRM platform engineered for modern marketing agencies.
+</p>
+
+<p align="center">
+  <a href="https://nextjs.org" target="_blank"><img src="https://img.shields.io/badge/Next.js-15-black?style=for-the-badge&logo=next.js" alt="Next.js"></a>
+  <a href="https://supabase.io" target="_blank"><img src="https://img.shields.io/badge/Supabase-DB%20&%20Auth-3ECF8E?style=for-the-badge&logo=supabase" alt="Supabase"></a>
+  <a href="https://tailwindcss.com" target="_blank"><img src="https://img.shields.io/badge/Tailwind%20CSS-4-38B2AC?style=for-the-badge&logo=tailwind-css" alt="Tailwind CSS"></a>
+  <a href="https://www.typescriptlang.org/" target="_blank"><img src="https://img.shields.io/badge/TypeScript-5-blue?style=for-the-badge&logo=typescript" alt="TypeScript"></a>
+  <a href="#"><img src="https://img.shields.io/badge/License-Proprietary-red?style=for-the-badge" alt="License"></a>
+</p>
+
+---
+
+CMG Dashboard is a powerful, enterprise-ready CRM designed to be the central nervous system for marketing agencies. It provides a rich suite of tools for managing clients, projects, and finances, all within a secure, multi-tenant architecture.
+
+## TOC
+
+- [Live Demo](#live-demo)
+- [Key Features](#-key-features)
+- [Technical Architecture](#-technical-architecture)
+- [Tech Stack](#-tech-stack)
+- [Design System](#-design-system)
+- [Getting Started](#-getting-started)
+- [Development Workflow](#-development-workflow)
+- [Codebase Guide](#-codebase-guide)
+- [Contributing](#-contributing)
+
+## Live Demo
+
+_(Note: Add a link to the deployed application here)_
+[https://your-live-demo-url.com](https://your-live-demo-url.com)
 
 ## ✨ Key Features
 
-- **Client Management:** Keep track of all your clients, their projects, and important contact information.
-- **Invoice Tracking:** Create, manage, and monitor invoices and payment statuses.
-- **Analytics Dashboard:** Visualize key metrics and performance indicators for your agency and clients.
-- **User & Agency Profiles:** Manage profiles for team members and the agency itself.
-- **Team & Security Settings:** Configure team roles, permissions, and security preferences.
-- **Platform Integrations:** Connect with various platforms to consolidate data (feature in development).
-- **Notification System:** In-app notifications for important events.
-- **Light & Dark Modes:** A sleek, theme-aware interface for user comfort.
+- **Multi-Tenant Agency Management:** Securely manage multiple agencies, each with its own isolated data, clients, and team members.
+- **Comprehensive Client Profiles:** Maintain detailed client records, including contacts, project history, and communication logs.
+- **Financial Tracking:** Create, send, and track invoices with status management (Draft, Sent, Paid, Overdue).
+- **Advanced Analytics:** A rich dashboard with customizable widgets to visualize key performance indicators (KPIs) for clients and agency performance.
+- **User & Role Management:** Granular control over team members with distinct roles and permissions.
+- **Centralized Settings:** Manage agency-wide settings, including branding, billing, and security configurations.
+- **Real-time Notifications:** In-app notification system to keep users informed of important events.
+- **Themeable Interface:** A sleek and modern UI with full support for both Light and Dark modes.
+
+## 🏛️ Technical Architecture
+
+The application is built on a robust, scalable architecture leveraging Next.js and Supabase.
+
+### High-Level Overview
+
+```mermaid
+graph TD
+    subgraph Browser
+        A[Next.js Client Components]
+    end
+
+    subgraph Vercel Server
+        B[Next.js Server Components]
+        C[API Routes]
+        D[Middleware]
+    end
+
+    subgraph Supabase
+        E[PostgreSQL Database]
+        F[Auth]
+        G[Storage]
+        H[Edge Functions]
+    end
+
+    A -- "RSC Payloads" --> B
+    A -- "API Calls" --> C
+    B -- "Server-side Functions" --> E
+    B -- "Server-side Auth" --> F
+    C -- "Database Operations" --> E
+    D -- "Intercepts Requests" --> A
+    D -- "Intercepts Requests" --> B
+    D -- "Intercepts Requests" --> C
+    D -- "Session Refresh" --> F
+
+    style A fill:#D6EAF8,stroke:#3498DB
+    style B fill:#D1F2EB,stroke:#1ABC9C
+    style C fill:#D5F5E3,stroke:#2ECC71
+    style D fill:#FCF3CF,stroke:#F1C40F
+    style E fill:#FADBD8,stroke:#E74C3C
+    style F fill:#EBDEF0,stroke:#8E44AD
+    style G fill:#E8DAEF,stroke:#9B59B6
+    style H fill:#E8DAEF,stroke:#9B59B6
+```
+
+### Authentication & Security
+
+- **JWT-based Auth:** Supabase handles user authentication, issuing JWTs that are stored securely in cookies.
+- **Middleware Protection:** All incoming requests are intercepted by `src/middleware.ts`. This middleware:
+  - Refreshes user sessions.
+  - Redirects unauthenticated users from protected routes to the login page.
+  - Enforces strict Content Security Policies (CSP) and other security headers.
+- **Row Level Security (RLS):** Data is protected at the database level using PostgreSQL's RLS, ensuring tenants can only access their own data.
+- **Admin Client:** For administrative tasks, a Supabase client with the `service_role_key` is used in secure server-side environments to bypass RLS.
 
 ## 🛠️ Tech Stack
 
-This project is built with a modern, robust, and scalable tech stack:
+This project leverages a curated set of modern technologies for a performant and developer-friendly experience.
 
-- **Framework:** [Next.js](https://nextjs.org/) (v15) with App Router
-- **Database & Auth:** [Supabase](https://supabase.io/)
-- **Styling:** [Tailwind CSS](https://tailwindcss.com/) with [Radix UI](https://www.radix-ui.com/) for headless components
-- **State Management:** [Zustand](https://github.com/pmndrs/zustand) for global client-side state
-- **Forms:** [React Hook Form](https://react-hook-form.com/) with [Zod](https://zod.dev/) for validation
-- **Charting:** [Chart.js](https://www.chartjs.org/) & [Recharts](https://recharts.org/)
-- **Icons:** [Lucide React](https://lucide.dev/)
-- **TypeScript** for end-to-end type safety
+| Category          | Technology                                                                                                          | Purpose                                                 |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| **Framework**     | [Next.js](https://nextjs.org/) (v15)                                                                                | Full-stack web framework with App Router                |
+| **Backend & DB**  | [Supabase](https://supabase.io/)                                                                                    | Database, Authentication, and Storage                   |
+| **Styling**       | [Tailwind CSS](https://tailwindcss.com/)                                                                            | Utility-first CSS framework                             |
+| **UI Components** | [Radix UI](https://www.radix-ui.com/)                                                                               | Headless components for accessibility and functionality |
+| **State**         | [Zustand](https://github.com/pmndrs/zustand)                                                                        | Minimalist global client-side state management          |
+| **Forms**         | [React Hook Form](https://react-hook-form.com/) & [Zod](https://zod.dev/)                                           | Efficient form handling and robust schema validation    |
+| **Charting**      | [Chart.js](https://www.chartjs.org/) & [Recharts](https://recharts.org/)                                            | Data visualization                                      |
+| **Icons**         | [Lucide React](https://lucide.dev/)                                                                                 | Simply beautiful and consistent icons                   |
+| **Language**      | [TypeScript](https://www.typescriptlang.org/)                                                                       | End-to-end type safety                                  |
+| **Linting**       | [ESLint](https://eslint.org/) & [Prettier](https://prettier.io/)                                                    | Code quality and consistent formatting                  |
+| **Testing**       | [Jest](https://jestjs.io/) & [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/) | Unit and integration testing                            |
+
+## 🎨 Design System
+
+The UI is built upon a flexible design system configured in `tailwind.config.js`.
+
+- **CSS Variables:** The entire color palette and styling system (borders, radii) is powered by CSS variables, allowing for dynamic theming.
+- **Theming:** Light and dark modes are managed by `next-themes`, configured in the root layout (`src/app/layout.tsx`). The theme is applied globally by adding a `dark` or `light` class to the `<html>` element.
+- **Fonts:** The project uses `Geist Sans` for UI text and `Geist Mono` for code, loaded via `next/font`.
+- **Animation:** UI animations are handled with `tailwindcss-animate`.
 
 ## 🚀 Getting Started
 
-Follow these instructions to get a local development environment up and running.
+Follow these steps to set up and run the project locally.
 
-### Prerequisites
+### 1. Prerequisites
 
-- [Node.js](https://nodejs.org/) version `18.17.0` or higher.
-- `npm` (comes with Node.js).
-- Access to the project's Supabase instance.
+- **Node.js:** `v18.17.0` or higher.
+- **npm:** `v8.x` or higher.
+- **Supabase Account:** Access to the project's Supabase instance.
 
-### 1. Clone the Repository
-
-Clone the project to your local machine:
+### 2. Clone the Repository
 
 ```bash
 git clone <your-repository-url>
 cd cmg-dashboard
 ```
 
-### 2. Install Dependencies
-
-Install the required `npm` packages:
+### 3. Install Dependencies
 
 ```bash
 npm install
 ```
 
-### 3. Environment Variables
+### 4. Configure Environment Variables
 
-Create a `.env.local` file in the root of the project. You only need to add the Supabase Service Role Key, which is used for administrative tasks that bypass Row Level Security (RLS).
+Create a `.env.local` file in the project root. The only required variable for local development is the `SUPABASE_SERVICE_ROLE_KEY`.
 
-```
+```properties
+# .env.local
 SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
 ```
 
-**Note:** The Supabase URL and Anon Key are currently hardcoded in `src/lib/supabase-server.ts`. For better security and flexibility, it is recommended to move these to the `.env.local` file as well:
+You can find this key in your Supabase project settings under `API` > `Project API Keys`.
 
-```
-# Recommended additions to .env.local
-NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
-```
+> **Note:** The Supabase URL and Anon Key are hardcoded in `src/lib/supabase-server.ts`. For production, it's recommended to move these to environment variables.
 
-### 4. Database Setup
+### 5. Setup Database & Types
 
-The database schema must be set up in your Supabase project.
+The project relies on a pre-existing database schema on Supabase.
 
-⚠️ **Important:** This repository does not currently contain SQL migration files. The schema is assumed to exist on the Supabase project. Please contact the project lead for the schema SQL dump or for access to a development database.
+⚠️ **No Migrations:** This repository does not contain SQL migration files. For local development, you will need to either:
+a) Get a SQL schema dump from the project lead.
+b) Connect to a shared development instance of the Supabase database.
 
-Once your database is ready, you need to generate the TypeScript types for it. This enables full type safety when interacting with the database.
+Once your database is accessible, generate TypeScript types for full type-safety:
 
 ```bash
 npm run db:types
 ```
 
-This command will populate `src/types/supabase.ts` based on your database schema.
+This script introspects your Supabase schema and generates `src/types/supabase.ts`.
 
-## 🏃 Running the Application
+### 6. Run the Development Server
 
-- **Development Server:** To run the app in development mode with hot-reloading:
+```bash
+npm run dev
+```
 
-  ```bash
-  npm run dev
-  ```
+The application will be available at `http://localhost:3000`.
 
-  Open [http://localhost:3000](http://localhost:3000) in your browser.
+## ⚙️ Development Workflow
 
-- **Testing:** The project is configured with Jest for unit and integration testing.
+### Scripts
 
-  ```bash
-  npm test # Run all tests
-  npm test:watch # Run tests in watch mode
-  ```
+- `npm run dev`: Starts the Next.js development server.
+- `npm run build`: Creates a production build. **Do not use for development.**
+- `npm run lint`: Lints the codebase for errors.
+- `npm run test`: Runs all Jest tests.
+- `npm run db:types`: Generates TypeScript types from the Supabase schema.
 
-- **Production Build:** To create a production-ready build of the application:
-  ```bash
-  npm run build
-  ```
-  **Note:** As per project guidelines, do not use `npm run build` during development. Use `npm run dev` exclusively.
+### Coding Standards
 
-## 📂 Codebase Overview
+- **Follow Existing Patterns:** Adhere to the architecture and patterns established in the codebase.
+- **Services for DB Interaction:** All database operations should be encapsulated within service classes in `src/services/`. Avoid direct database calls from components.
+- **Error Handling:** Use centralized error handlers and the `AppError` class.
+- **Environment Variables:** All secrets and environment-specific configurations must be handled through environment variables.
 
-The project follows a standard Next.js App Router structure with some key conventions:
+### Testing
 
-- `src/app/`: Contains all routes, pages, and layouts. The core features are nested under `src/app/dashboard/`.
-- `src/components/`: Shared, reusable React components.
-- `src/services/`: Houses the business logic for interacting with the Supabase backend. It contains classes like `ProfileService`, `SettingsService`, etc.
-- `src/lib/`: Core utilities, helper functions, and configurations.
-  - `src/lib/supabase-server.ts`: Handles Supabase client creation on the server.
-  - `src/lib/mcp.ts`: Contains a legacy method for making raw SQL queries. New features should prefer using the service layer.
-  - `src/lib/schemas/`: Zod schemas for form and data validation.
-  - `src/lib/stores/`: Zustand store for global state.
-- `src/types/`: Contains TypeScript type definitions, including the auto-generated `supabase.ts`.
+The project uses Jest and React Testing Library. Test files are co-located with their corresponding modules in `__tests__` directories.
+
+- Run all tests with `npm test`.
+- Run tests for a specific area (e.g., services) with `npm run test:services`.
+
+## 📂 Codebase Guide
+
+| Path                 | Description                                                                                          |
+| -------------------- | ---------------------------------------------------------------------------------------------------- |
+| `src/app/`           | **Routes & Pages:** All application routes, layouts, and pages, following the App Router convention. |
+| `src/app/dashboard/` | Core CRM feature modules (Clients, Invoices, Analytics, etc.).                                       |
+| `src/components/`    | **Reusable UI:** Shared React components (buttons, cards, inputs).                                   |
+| `src/services/`      | **Business Logic:** Service classes that encapsulate all interactions with the Supabase backend.     |
+| `src/lib/`           | **Core Utilities:** Helpers, constants, and configuration files.                                     |
+| `src/lib/schemas/`   | **Zod Schemas:** Validation schemas for forms and API data.                                          |
+| `src/lib/stores/`    | **Zustand Stores:** Definitions for global client-side state.                                        |
+| `src/context/`       | **React Context:** Application-wide providers (e.g., `AuthProvider`).                                |
+| `src/types/`         | **TypeScript Types:** Global type definitions. `supabase.ts` is auto-generated.                      |
+| `src/middleware.ts`  | **Security & Routing:** Intercepts requests for authentication, redirection, and security headers.   |
 
 ## 🌱 Contributing
 
-Contributions are welcome! If you'd like to contribute, please fork the repository and create a pull request. For major changes, please open an issue first to discuss what you would like to change.
+We welcome contributions! Please follow these steps:
 
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## 📄 License
-
-This project is not currently licensed. Please contact the repository owners for more information.
+1.  Fork the repository.
+2.  Create a new feature branch (`git checkout -b feature/your-feature-name`).
+3.  Commit your changes (`git commit -m 'feat: Add some amazing feature'`).
+4.  Push to the branch (`git push origin feature/your-feature-name`).
+5.  Open a Pull Request for review.
