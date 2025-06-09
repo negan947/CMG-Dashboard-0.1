@@ -9,7 +9,7 @@ interface NotificationsContextValue {
   notifications: Notification[];
   unreadCount: number;
   isLoading: boolean;
-  fetchNotifications: (page?: number, append?: boolean, isPolling?: boolean) => Promise<boolean | void>;
+  fetchNotifications: (page?: number, append?: boolean) => Promise<boolean | void>;
   markAsRead: (id: string) => Promise<void>;
   markAllAsRead: () => Promise<void>;
 }
@@ -23,7 +23,7 @@ const NotificationsContext = createContext<NotificationsContextValue>({
   markAllAsRead: async () => {},
 });
 
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 10;
 
 export function NotificationsProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
@@ -32,11 +32,10 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
 
   const fetchNotifications = async (
     page = 0,
-    append = false,
-    isPolling = false
+    append = false
   ): Promise<boolean | void> => {
     if (!user) return;
-    if (!append && !isPolling) setIsLoading(true);
+    if (!append) setIsLoading(true);
     try {
       const supabase = createClient();
       const from = page * PAGE_SIZE;
@@ -55,7 +54,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
     } catch (err) {
       console.error('Error fetching notifications:', err);
     } finally {
-      if (!append && !isPolling) setIsLoading(false);
+      if (!append) setIsLoading(false);
     }
   };
 
@@ -99,11 +98,53 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
       setIsLoading(false);
       return;
     }
+
+    // Initial fetch for existing notifications
     fetchNotifications();
-    const interval = setInterval(() => {
-      fetchNotifications(0, false, true);
-    }, 10000);
-    return () => clearInterval(interval);
+
+    const supabase = createClient();
+    
+    // Set up real-time subscription for new and updated notifications
+    const channel = supabase
+      .channel(`notifications:${user.id}`)
+      .on<Notification>(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          // Add the new notification to the top of the list
+          setNotifications((current) => [payload.new as Notification, ...current]);
+        }
+      )
+      .on<Notification>(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          // Update the notification in the list
+          setNotifications((current) =>
+            current.map((n) =>
+              n.id === payload.new.id ? { ...n, ...(payload.new as Notification) } : n
+            )
+          );
+        }
+      )
+      .subscribe();
+      
+    // Cleanup function to remove the subscription when the component unmounts
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
   }, [user]);
 
   const unreadCount = notifications.filter(n => !n.read).length;
