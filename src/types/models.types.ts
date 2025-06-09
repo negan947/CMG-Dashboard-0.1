@@ -604,4 +604,43 @@ export type PlatformSyncLogModel = {
 
 export type NotificationModel = {
   // ... existing code ...
+};
+
+// Support & Helpdesk
+export type TicketStatus = 'open' | 'in_progress' | 'on_hold' | 'resolved' | 'closed';
+export type TicketPriority = 'low' | 'medium' | 'high' | 'urgent';
+
+export type SupportTicketModel = {
+  id: number;
+  agencyId: number;
+  clientId?: number;
+  client?: { name: string };
+  createdByUserId: string;
+  assignedToUserId?: string;
+  assignee?: { fullName: string };
+  title: string;
+  description?: string;
+  status: TicketStatus;
+  priority: TicketPriority;
+  createdAt: string;
+  updatedAt: string;
+  resolvedAt?: string;
+};
+
+export type SupportTicketMessageModel = {
+  id: number;
+  ticketId: number;
+  userId: string;
+  message: string;
+  createdAt: string;
+};
+
+export type KnowledgeBaseArticleModel = {
+  id: number;
+  category: string;
+  title: string;
+  content: string;
+  slug: string;
+  createdAt: string;
+  updatedAt: string;
 }; 

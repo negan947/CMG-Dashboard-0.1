@@ -1,77 +1,92 @@
 'use client';
 
+import { PlusCircle, LifeBuoy } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { GlassCard } from '@/components/ui/glass-card';
-import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
-import { LifeBuoy } from 'lucide-react';
+import { useTheme } from 'next-themes';
+import { SupportKpiCards } from '@/components/dashboard/support/SupportKpiCards';
+import { RecentTicketsTable } from '@/components/dashboard/support/RecentTicketsTable';
+import { KnowledgeBaseSearch } from '@/components/dashboard/support/KnowledgeBaseSearch';
+import { SupportResources } from '@/components/dashboard/support/SupportResources';
+// import { SupportService } from '@/services/support-service';
 
 export default function SupportPage() {
   const { theme } = useTheme();
   const isDark = theme !== 'light';
 
+  // Mock data for now
+  const tickets = [
+    { id: 1, title: 'Problem with Google Ads', client: { name: 'Client A' }, status: 'in_progress', assignee: { fullName: 'John Doe' }, updatedAt: new Date().toISOString() },
+    { id: 2, title: 'Question about billing', client: { name: 'Client B' }, status: 'open', assignee: { fullName: 'Unassigned' }, updatedAt: new Date().toISOString() },
+    { id: 3, title: 'API rate limit question', client: { name: 'Client C' }, status: 'closed', assignee: { fullName: 'Jane Smith' }, updatedAt: new Date().toISOString() },
+  ];
+  const kpiData = {
+    openTickets: 7,
+    avgResponseTime: '3h 24m',
+    resolvedThisWeek: 15,
+  };
+
   return (
-    <div className="relative min-h-screen">
-      {/* Background elements */}
-      <div className={cn(
-        "fixed inset-0 -z-10",
-        isDark 
-          ? "bg-gradient-to-br from-[#0F0F12] via-[#171720] to-[#1C1C25]" 
-          : "bg-gradient-to-br from-[#E8EDFF] via-[#F0F5FF] to-[#F5F9FF]"
-      )} />
-      
-      <div className={cn(
-        "fixed -top-20 -left-20 -z-5 h-72 w-72 rounded-full blur-[100px]",
-        isDark ? "bg-purple-900 opacity-[0.15]" : "bg-purple-400 opacity-[0.18]"
-      )} />
-      <div className={cn(
-        "fixed top-1/3 right-1/4 -z-5 h-60 w-60 rounded-full blur-[80px]",
-        isDark ? "bg-blue-900 opacity-[0.15]" : "bg-blue-400 opacity-[0.18]"
-      )} />
-      <div className={cn(
-        "fixed bottom-1/4 -right-10 -z-5 h-48 w-48 rounded-full blur-[70px]",
-        isDark ? "bg-fuchsia-900 opacity-[0.1]" : "bg-pink-300 opacity-[0.15]"
-      )} />
-      <div className={cn(
-        "fixed top-2/3 left-1/4 -z-5 h-36 w-36 rounded-full blur-[60px]",
-        isDark ? "bg-indigo-900 opacity-[0.1]" : "bg-indigo-400 opacity-[0.15]"
-      )} />
-      
-      <div className={cn(
-        "fixed inset-0 -z-9 opacity-[0.05] pointer-events-none",
-        isDark ? "block" : "hidden"
-      )} style={{
-        backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'600\' height=\'600\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.65\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\' opacity=\'0.4\'/%3E%3C/svg%3E")',
-        backgroundRepeat: 'repeat',
-      }} />
-
-      <div className="space-y-6 md:space-y-8 relative z-10 py-2 p-4 md:p-6">
-        <GlassCard contentClassName="p-6">
-          <div className="flex items-center space-x-3">
-            <LifeBuoy className={cn("h-8 w-8", isDark ? "text-blue-400" : "text-blue-600")} />
-            <h1 className={cn(
-              "text-2xl font-bold md:text-3xl",
-              isDark ? "text-zinc-100" : "text-gray-800"
-            )}>
-              Support
-            </h1>
+    <div className="space-y-6 md:space-y-8">
+      <GlassCard
+        headerContent={
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <LifeBuoy className={cn("h-8 w-8", isDark ? "text-green-400" : "text-green-600")} />
+              <div>
+                <h1 className={cn("text-2xl font-bold md:text-3xl", isDark ? "text-zinc-100" : "text-gray-800")}>
+                  Support
+                </h1>
+                <p className={cn("text-md", isDark ? "text-zinc-300" : "text-gray-600")}>
+                  Get help, track tickets, and access resources
+                </p>
+              </div>
+            </div>
+            <Button>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              New Support Ticket
+            </Button>
           </div>
-          <p className={cn(
-            "mt-4 text-md",
-            isDark ? "text-zinc-300" : "text-gray-600"
-          )}>
-            This section is currently under development. Please check back later for support ticket and FAQ features.
-          </p>
-        </GlassCard>
+        }
+        contentClassName="p-0"
+      />
 
-        <GlassCard contentClassName="p-6 min-h-[300px] flex items-center justify-center">
-          <div className="text-center">
-            <LifeBuoy className={cn("h-16 w-16 mx-auto mb-4", isDark ? "text-zinc-500" : "text-gray-400")} />
-            <p className={cn("text-lg", isDark ? "text-zinc-400" : "text-gray-500")}>
-              Support information and ticket system will be displayed here.
-            </p>
-          </div>
+      {tickets.length === 0 ? (
+        <GlassCard contentClassName="p-12">
+            <div className="flex flex-col items-center justify-center text-center">
+              <div className="text-2xl font-bold">No open tickets</div>
+              <p className="text-muted-foreground mt-2">
+                Raise your first support request to get started.
+              </p>
+              <Button className="mt-6">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Create a Ticket
+              </Button>
+            </div>
         </GlassCard>
-      </div>
+      ) : (
+        <div className="space-y-8">
+          <SupportKpiCards data={kpiData} />
+          
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+            <GlassCard className="lg:col-span-2" title="Recent Tickets" contentClassName='p-0'>
+              <RecentTicketsTable tickets={tickets} />
+            </GlassCard>
+            <GlassCard title="Ticket Status">
+              {/* Ticket Status Chart will go here */}
+            </GlassCard>
+          </div>
+
+          <GlassCard title="Knowledge Base" contentClassName="p-0">
+            <KnowledgeBaseSearch />
+          </GlassCard>
+          
+          <GlassCard title="Support Resources" contentClassName="p-0">
+            <SupportResources />
+          </GlassCard>
+        </div>
+      )}
     </div>
   );
 } 
