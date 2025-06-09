@@ -15,6 +15,8 @@
   <a href="https://supabase.io" target="_blank"><img src="https://img.shields.io/badge/Supabase-DB%20&%20Auth-3ECF8E?style=for-the-badge&logo=supabase" alt="Supabase"></a>
   <a href="https://tailwindcss.com" target="_blank"><img src="https://img.shields.io/badge/Tailwind%20CSS-4-38B2AC?style=for-the-badge&logo=tailwind-css" alt="Tailwind CSS"></a>
   <a href="https://www.typescriptlang.org/" target="_blank"><img src="https://img.shields.io/badge/TypeScript-5-blue?style=for-the-badge&logo=typescript" alt="TypeScript"></a>
+  <a href="https://jestjs.io/" target="_blank"><img src="https://img.shields.io/badge/Testing-Jest-C21325?style=for-the-badge&logo=jest" alt="Jest"></a>
+  <a href="https://prettier.io" target="_blank"><img src="https://img.shields.io/badge/Code%20Style-Prettier-F7B93E?style=for-the-badge&logo=prettier" alt="Prettier"></a>
   <a href="#"><img src="https://img.shields.io/badge/License-Proprietary-red?style=for-the-badge" alt="License"></a>
 </p>
 
@@ -22,88 +24,169 @@
 
 CMG Dashboard is a powerful, enterprise-ready CRM designed to be the central nervous system for marketing agencies. It provides a rich suite of tools for managing clients, projects, and finances, all within a secure, multi-tenant architecture.
 
-## TOC
+### TOC
 
-- [Live Demo](#live-demo)
-- [Key Features](#-key-features)
-- [Technical Architecture](#-technical-architecture)
-- [Tech Stack](#-tech-stack)
-- [Design System](#-design-system)
-- [Getting Started](#-getting-started)
-- [Development Workflow](#-development-workflow)
-- [Codebase Guide](#-codebase-guide)
-- [Contributing](#-contributing)
+- [✨ Key Features](#-key-features)
+- [🏛️ Technical Architecture](#️-technical-architecture)
+- [🔑 Authentication Flow](#-authentication-flow)
+- [💾 Data Flow Architecture](#-data-flow-architecture)
+- [🛠️ Tech Stack](#️-tech-stack)
+- [🎨 Design System](#-design-system)
+- [🚀 Getting Started](#-getting-started)
+- [⚙️ Development Workflow](#️-development-workflow)
+- [📂 Codebase Guide](#-codebase-guide)
+- [🚢 Deployment](#-deployment)
+- [🌱 Contributing](#-contributing)
 
-## Live Demo
-
-_(Note: Add a link to the deployed application here)_
-[https://your-live-demo-url.com](https://your-live-demo-url.com)
+---
 
 ## ✨ Key Features
 
-- **Multi-Tenant Agency Management:** Securely manage multiple agencies, each with its own isolated data, clients, and team members.
-- **Comprehensive Client Profiles:** Maintain detailed client records, including contacts, project history, and communication logs.
-- **Financial Tracking:** Create, send, and track invoices with status management (Draft, Sent, Paid, Overdue).
-- **Advanced Analytics:** A rich dashboard with customizable widgets to visualize key performance indicators (KPIs) for clients and agency performance.
-- **User & Role Management:** Granular control over team members with distinct roles and permissions.
-- **Centralized Settings:** Manage agency-wide settings, including branding, billing, and security configurations.
-- **Real-time Notifications:** In-app notification system to keep users informed of important events.
-- **Themeable Interface:** A sleek and modern UI with full support for both Light and Dark modes.
+- **🏢 Multi-Tenant Agency Management:** Securely manage multiple agencies, each with its own isolated data, clients, and team members, enforced by RLS.
+- **👥 Comprehensive Client Profiles:** Maintain detailed client records, including contacts, project history, and communication logs.
+- **🧾 Financial Tracking:** Create, send, and track invoices with status management (Draft, Sent, Paid, Overdue).
+- **📊 Advanced Analytics:** A rich dashboard with customizable widgets to visualize key performance indicators (KPIs) for clients and agency performance.
+- **🔐 User & Role Management:** Granular control over team members with distinct roles and permissions.
+- **⚙️ Centralized Settings:** Manage agency-wide settings, including branding, billing, and security configurations.
+- **🔔 Real-time Notifications:** In-app notification system to keep users informed of important events.
+- **🌓 Themeable Interface:** A sleek and modern UI with full support for both Light and Dark modes.
+
+---
 
 ## 🏛️ Technical Architecture
 
 The application is built on a robust, scalable architecture leveraging Next.js and Supabase.
 
-### High-Level Overview
-
 ```mermaid
 graph TD
     subgraph Browser
-        A[Next.js Client Components]
+        A[Next.js UI<br/>Client Components, Hooks]
     end
 
-    subgraph Vercel Server
-        B[Next.js Server Components]
-        C[API Routes]
-        D[Middleware]
+    subgraph "Vercel (or Node.js Server)"
+        B[Next.js Backend<br/>Server Components, API Routes]
+        D[Middleware<br/>`src/middleware.ts`]
     end
 
-    subgraph Supabase
-        E[PostgreSQL Database]
-        F[Auth]
-        G[Storage]
-        H[Edge Functions]
+    subgraph "Supabase Platform"
+        E[PostgreSQL Database<br/>with Row Level Security]
+        F[Supabase Auth]
+        G[Supabase Storage]
     end
 
-    A -- "RSC Payloads" --> B
-    A -- "API Calls" --> C
-    B -- "Server-side Functions" --> E
-    B -- "Server-side Auth" --> F
-    C -- "Database Operations" --> E
-    D -- "Intercepts Requests" --> A
-    D -- "Intercepts Requests" --> B
-    D -- "Intercepts Requests" --> C
-    D -- "Session Refresh" --> F
+    A -- "React Server Component (RSC) Calls" --> B
+    A -- "API Calls (/api/*)" --> B
+    B -- "Supabase JS Client" --> E
+    B -- "Supabase JS Client" --> F
+    B -- "Admin Client (Service Role)" --> E
+    D -- "Intercepts ALL Requests" --> A & B
+    D -- "Session Management" --> F
 
     style A fill:#D6EAF8,stroke:#3498DB
     style B fill:#D1F2EB,stroke:#1ABC9C
-    style C fill:#D5F5E3,stroke:#2ECC71
     style D fill:#FCF3CF,stroke:#F1C40F
     style E fill:#FADBD8,stroke:#E74C3C
     style F fill:#EBDEF0,stroke:#8E44AD
     style G fill:#E8DAEF,stroke:#9B59B6
-    style H fill:#E8DAEF,stroke:#9B59B6
 ```
 
-### Authentication & Security
+---
 
-- **JWT-based Auth:** Supabase handles user authentication, issuing JWTs that are stored securely in cookies.
-- **Middleware Protection:** All incoming requests are intercepted by `src/middleware.ts`. This middleware:
-  - Refreshes user sessions.
-  - Redirects unauthenticated users from protected routes to the login page.
-  - Enforces strict Content Security Policies (CSP) and other security headers.
-- **Row Level Security (RLS):** Data is protected at the database level using PostgreSQL's RLS, ensuring tenants can only access their own data.
-- **Admin Client:** For administrative tasks, a Supabase client with the `service_role_key` is used in secure server-side environments to bypass RLS.
+## 🔑 Authentication Flow
+
+Authentication is managed by Supabase Auth and protected by route middleware. This sequence diagram illustrates the process for a protected route.
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Browser
+    participant Middleware as "Next.js Middleware"
+    participant Server as "Next.js Server"
+    participant Supabase
+
+    User->>Browser: Accesses /dashboard
+    Browser->>Middleware: Request for /dashboard
+    Middleware->>Supabase: supabase.auth.getSession()
+    Supabase-->>Middleware: Returns session (or null)
+    alt No Session Found
+        Middleware->>Browser: Redirect to /login
+        Browser->>User: Shows Login Page
+    else Session Exists
+        Middleware->>Server: Forwards request
+        Server-->>Browser: Renders /dashboard page
+        Browser-->>User: Shows Dashboard
+    end
+```
+
+- **JWT-based Auth:** Supabase handles user authentication, issuing JWTs that are stored securely in `HttpOnly` cookies.
+- **Middleware Protection:** All incoming requests are intercepted by `src/middleware.ts`, which refreshes user sessions and redirects unauthenticated users.
+- **Security Headers:** The middleware also enforces strict Content Security Policies (CSP) and other security headers (`X-Frame-Options`, etc.) for all responses.
+
+---
+
+## 💾 Data Flow Architecture
+
+This project employs a service-oriented architecture for interacting with the database.
+
+### Recommended Pattern: Service Layer
+
+All new features **must** use the service layer pattern. This centralizes data logic, improves reusability, and respects Supabase RLS policies by default.
+
+```mermaid
+graph TD
+    subgraph "UI Layer (React Components)"
+        Comp[Component/Hook]
+    end
+    subgraph "Service Layer (`src/services`)"
+        Service[ProfileService.ts]
+    end
+    subgraph "Data Layer (Supabase)"
+        DB[Supabase DB]
+    end
+
+    Comp -- "Calls `ProfileService.getProfile()`" --> Service
+    Service -- "Uses `createClientComponentClient()`" --> DB
+    DB -- "Returns data respecting RLS" --> Service
+    Service -- "Returns formatted data/error" --> Comp
+
+    style Comp fill:#D6EAF8,stroke:#3498DB
+    style Service fill:#D1F2EB,stroke:#1ABC9C
+    style DB fill:#FADBD8,stroke:#E74C3C
+```
+
+### Legacy Pattern: MCP (Model Context Protocol)
+
+This pattern is deprecated and should be refactored when possible. It involves an extra API round-trip and relies on a backend function that executes raw SQL.
+
+```mermaid
+graph TD
+    subgraph "UI Layer"
+        Comp[Component/Hook]
+    end
+    subgraph "API Layer"
+        API[API Route<br/>`/api/mcp/supabase`]
+    end
+    subgraph "Data Layer"
+        RPC[Supabase RPC<br/>`execute_sql`]
+        DB[Supabase DB]
+    end
+
+    Comp -- "Calls `MCP.supabase.query()`" --> API
+    API -- "Invokes RPC" --> RPC
+    RPC -- "Executes raw SQL" --> DB
+    DB -- "Returns data" --> RPC
+    RPC -- "Returns result" --> API
+    API -- "Returns JSON" --> Comp
+
+    style Comp fill:#D6EAF8,stroke:#3498DB
+    style API fill:#D5F5E3,stroke:#2ECC71
+    style RPC fill:#FCF3CF,stroke:#F1C40F
+    style DB fill:#FADBD8,stroke:#E74C3C
+```
+
+<br/>
+
+---
 
 ## 🛠️ Tech Stack
 
@@ -123,14 +206,18 @@ This project leverages a curated set of modern technologies for a performant and
 | **Linting**       | [ESLint](https://eslint.org/) & [Prettier](https://prettier.io/)                                                    | Code quality and consistent formatting                  |
 | **Testing**       | [Jest](https://jestjs.io/) & [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/) | Unit and integration testing                            |
 
+---
+
 ## 🎨 Design System
 
-The UI is built upon a flexible design system configured in `tailwind.config.js`.
+The UI is built upon a flexible and themeable design system.
 
-- **CSS Variables:** The entire color palette and styling system (borders, radii) is powered by CSS variables, allowing for dynamic theming.
-- **Theming:** Light and dark modes are managed by `next-themes`, configured in the root layout (`src/app/layout.tsx`). The theme is applied globally by adding a `dark` or `light` class to the `<html>` element.
-- **Fonts:** The project uses `Geist Sans` for UI text and `Geist Mono` for code, loaded via `next/font`.
+- **CSS Variables:** The entire color palette and styling primitives (borders, radii) are powered by CSS variables defined in `src/app/globals.css`, allowing for dynamic theming.
+- **Theming:** Light and dark modes are managed by `next-themes`. The theme is applied globally by adding a `dark` or `light` class to the `<html>` element.
+- **Fonts:** The project uses `Geist Sans` for UI text and `Geist Mono` for code snippets, loaded via `next/font`.
 - **Animation:** UI animations are handled with `tailwindcss-animate`.
+
+---
 
 ## 🚀 Getting Started
 
@@ -157,24 +244,33 @@ npm install
 
 ### 4. Configure Environment Variables
 
-Create a `.env.local` file in the project root. The only required variable for local development is the `SUPABASE_SERVICE_ROLE_KEY`.
+Create a `.env.local` file in the project root.
+
+<details>
+<summary><strong>Click to see `.env.local` configuration</strong></summary>
 
 ```properties
 # .env.local
+
+# REQUIRED
+# Found in your Supabase project settings under API > Project API Keys
 SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
+
+# OPTIONAL (but recommended for production)
+# These are hardcoded in the app but should be moved here.
+# Found in your Supabase project settings under API.
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
 ```
 
-You can find this key in your Supabase project settings under `API` > `Project API Keys`.
-
-> **Note:** The Supabase URL and Anon Key are hardcoded in `src/lib/supabase-server.ts`. For production, it's recommended to move these to environment variables.
+</details>
 
 ### 5. Setup Database & Types
 
 The project relies on a pre-existing database schema on Supabase.
 
-⚠️ **No Migrations:** This repository does not contain SQL migration files. For local development, you will need to either:
-a) Get a SQL schema dump from the project lead.
-b) Connect to a shared development instance of the Supabase database.
+> ⚠️ **Important: No Migrations**
+> This repository does not contain SQL migration files. For local development, you must get a SQL schema dump from the project lead or connect to a shared development database.
 
 Once your database is accessible, generate TypeScript types for full type-safety:
 
@@ -192,21 +288,31 @@ npm run dev
 
 The application will be available at `http://localhost:3000`.
 
+---
+
 ## ⚙️ Development Workflow
 
-### Scripts
+### Available Scripts
 
-- `npm run dev`: Starts the Next.js development server.
-- `npm run build`: Creates a production build. **Do not use for development.**
-- `npm run lint`: Lints the codebase for errors.
-- `npm run test`: Runs all Jest tests.
-- `npm run db:types`: Generates TypeScript types from the Supabase schema.
+<details>
+<summary><strong>Click to see available npm scripts</strong></summary>
+
+| Script             | Description                                         |
+| ------------------ | --------------------------------------------------- |
+| `npm run dev`      | Starts the Next.js development server.              |
+| `npm run build`    | Creates a production build. **Do not use for dev.** |
+| `npm run start`    | Starts a production server.                         |
+| `npm run lint`     | Lints the codebase for errors.                      |
+| `npm run test`     | Runs all Jest tests.                                |
+| `npm run db:types` | Generates TypeScript types from Supabase schema.    |
+
+</details>
 
 ### Coding Standards
 
 - **Follow Existing Patterns:** Adhere to the architecture and patterns established in the codebase.
-- **Services for DB Interaction:** All database operations should be encapsulated within service classes in `src/services/`. Avoid direct database calls from components.
-- **Error Handling:** Use centralized error handlers and the `AppError` class.
+- **Services for DB Interaction:** All database operations must be encapsulated within service classes in `src/services/`.
+- **Error Handling:** Use centralized error handlers and the `AppError` class for throwing exceptions.
 - **Environment Variables:** All secrets and environment-specific configurations must be handled through environment variables.
 
 ### Testing
@@ -215,6 +321,8 @@ The project uses Jest and React Testing Library. Test files are co-located with 
 
 - Run all tests with `npm test`.
 - Run tests for a specific area (e.g., services) with `npm run test:services`.
+
+---
 
 ## 📂 Codebase Guide
 
@@ -230,6 +338,18 @@ The project uses Jest and React Testing Library. Test files are co-located with 
 | `src/context/`       | **React Context:** Application-wide providers (e.g., `AuthProvider`).                                |
 | `src/types/`         | **TypeScript Types:** Global type definitions. `supabase.ts` is auto-generated.                      |
 | `src/middleware.ts`  | **Security & Routing:** Intercepts requests for authentication, redirection, and security headers.   |
+
+---
+
+## 🚢 Deployment
+
+This application is designed for deployment on [Vercel](https://vercel.com).
+
+- **Environment Variables:** Ensure all required environment variables (especially `SUPABASE_SERVICE_ROLE_KEY`) are set in the Vercel project settings.
+- **Build Command:** Vercel will automatically use `npm run build`.
+- **Domains:** Assign your custom domain in the Vercel project settings.
+
+---
 
 ## 🌱 Contributing
 
