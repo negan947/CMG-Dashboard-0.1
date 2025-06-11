@@ -12,6 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useQuery } from '@tanstack/react-query';
 import { AnalyticsService } from '@/services/analytics-service';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
 export function AnalyticsMetricConfig({ id, config, onChange, onClose }: WidgetConfigProps) {
   const { theme } = useTheme();
@@ -52,94 +53,100 @@ export function AnalyticsMetricConfig({ id, config, onChange, onClose }: WidgetC
   };
 
   return (
-    <div className="space-y-4 py-2 pb-4">
-      <div className="space-y-2">
-        <Label htmlFor="title">Widget Title</Label>
-        <Input
-          id="title"
-          value={formState.title}
-          onChange={(e) => handleChange('title', e.target.value)}
-          placeholder="Analytics Metric"
-        />
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="metricName">Metric</Label>
-        <Select
-          value={formState.metricName}
-          onValueChange={(value) => handleChange('metricName', value)}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select metric" />
-          </SelectTrigger>
-          <SelectContent>
-            {metrics?.map((metric) => (
-              <SelectItem key={metric.id} value={metric.metric_name}>
-                {metric.metric_name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="color">Color</Label>
-        <div className="flex flex-wrap gap-2">
-          {CHART_COLORS.map((color, index) => (
-            <div
-              key={index}
-              className={cn(
-                "w-8 h-8 rounded-full cursor-pointer border-2",
-                formState.color === color ? "border-blue-500" : "border-transparent"
-              )}
-              style={{ backgroundColor: color }}
-              onClick={() => handleChange('color', color)}
+    <Dialog open={true} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Configure Analytics Metric</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-2 pb-4">
+          <div className="space-y-2">
+            <Label htmlFor="title">Widget Title</Label>
+            <Input
+              id="title"
+              value={formState.title}
+              onChange={(e) => handleChange('title', e.target.value)}
+              placeholder="Analytics Metric"
             />
-          ))}
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="metricName">Metric</Label>
+            <Select
+              value={formState.metricName}
+              onValueChange={(value) => handleChange('metricName', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select metric" />
+              </SelectTrigger>
+              <SelectContent>
+                {metrics?.map((metric) => (
+                  <SelectItem key={metric.id} value={metric.metric_name}>
+                    {metric.metric_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="color">Color</Label>
+            <div className="flex flex-wrap gap-2">
+              {CHART_COLORS.map((color, index) => (
+                <div
+                  key={index}
+                  className={cn(
+                    "w-8 h-8 rounded-full cursor-pointer border-2",
+                    formState.color === color ? "border-blue-500" : "border-transparent"
+                  )}
+                  style={{ backgroundColor: color }}
+                  onClick={() => handleChange('color', color)}
+                />
+              ))}
+            </div>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="showDonut"
+              checked={formState.showDonut}
+              onCheckedChange={(checked) => handleChange('showDonut', checked)}
+            />
+            <Label htmlFor="showDonut">Show as donut chart</Label>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="prefix">Prefix</Label>
+              <Input
+                id="prefix"
+                value={formState.prefix}
+                onChange={(e) => handleChange('prefix', e.target.value)}
+                placeholder="$"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="suffix">Suffix</Label>
+              <Input
+                id="suffix"
+                value={formState.suffix}
+                onChange={(e) => handleChange('suffix', e.target.value)}
+                placeholder="%"
+              />
+            </div>
+          </div>
         </div>
-      </div>
-      
-      <div className="flex items-center space-x-2">
-        <Checkbox
-          id="showDonut"
-          checked={formState.showDonut}
-          onCheckedChange={(checked) => handleChange('showDonut', checked)}
-        />
-        <Label htmlFor="showDonut">Show as donut chart</Label>
-      </div>
-      
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="prefix">Prefix</Label>
-          <Input
-            id="prefix"
-            value={formState.prefix}
-            onChange={(e) => handleChange('prefix', e.target.value)}
-            placeholder="$"
-          />
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="suffix">Suffix</Label>
-          <Input
-            id="suffix"
-            value={formState.suffix}
-            onChange={(e) => handleChange('suffix', e.target.value)}
-            placeholder="%"
-          />
-        </div>
-      </div>
-      
-      <div className="flex justify-end pt-4">
-        <Button 
-          variant="outline" 
-          onClick={onClose} 
-          className="mr-2"
-        >
-          Cancel
-        </Button>
-        <Button onClick={handleSave}>Save Changes</Button>
-      </div>
-    </div>
+        <DialogFooter>
+          <Button 
+            variant="outline" 
+            onClick={onClose} 
+            className="mr-2"
+          >
+            Cancel
+          </Button>
+          <Button onClick={handleSave}>Save Changes</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 } 
